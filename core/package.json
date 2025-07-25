@@ -12,6 +12,7 @@
   "type": "commonjs",
   "dependencies": {
     "chrome-remote-interface": "^0.33.3",
+    "enquirer": "^2.4.1",
     "express": "^5.1.0",
     "lodash": "^4.17.21"
   }
