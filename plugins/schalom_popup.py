@@ -2,6 +2,7 @@ from plugin_system import PluginBase, plugin_command, js_export
 
 
 class SchalomPopupPlugin(PluginBase):
+    
     """Show a beautiful Schalom popup on screen!"""
     VERSION = "1.0.0"
     DESCRIPTION = "Show a beautiful Schalom popup on screen!"
