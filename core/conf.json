@@ -1,0 +1,19 @@
+{
+  "openDevTools": false,
+  "interactive": true,
+  "plugins": [
+    "spawn_item"
+  ],
+  "plugin_configs": {
+    "schalom_popup": {
+      "debug": false
+    },
+    "spawn_item": {
+      "debug": true
+    }
+  },
+  "debug": false,
+  "injectFiles": [
+    "plugins_combined.js"
+  ]
+}
