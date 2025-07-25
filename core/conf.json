@@ -2,7 +2,8 @@
   "openDevTools": false,
   "interactive": true,
   "plugins": [
-    "spawn_item"
+    "spawn_item",
+    "mob_spawn_rate"
   ],
   "plugin_configs": {
     "schalom_popup": {
@@ -10,6 +11,13 @@
     },
     "spawn_item": {
       "debug": true
+    },
+    "mob_spawn_rate": {
+      "debug": true,
+      "RespawnRate": {
+        "rate": 0,
+        "toggle": true
+      }
     }
   },
   "debug": false,
