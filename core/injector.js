@@ -67,7 +67,7 @@ function launchChromiumWithIdleon() {
     '--remote-allow-origins=*',
   ];
   if (process.platform === 'linux') {
-    args.push('--no-sandbox', '--disable-gpu');
+    args.push('--disable-gpu');
   }
   args.push(IDLEON_URL);
   console.log(`[Injector] Launching Chromium with Idleon at ${IDLEON_URL} ...`);
@@ -128,6 +128,11 @@ function waitForCDP(timeout = 60_000) {
     await Page.enable();
     await Page.setBypassCSP({ enabled: true });
 
+    // Enable console logging like main.js does
+    Runtime.consoleAPICalled((entry) => {
+      console.log('[Game Console]', entry.args.map(arg => arg.value).join(" "));
+    });
+
     Network.setRequestInterception({
       patterns: [{
         urlPattern: NJS_PATTERN,
@@ -135,9 +140,7 @@ function waitForCDP(timeout = 60_000) {
         interceptionStage: 'HeadersReceived'
       }]
     });
-
-    await new Promise(r => setTimeout(r, 1000));
-
+ 
     await Page.reload({ ignoreCache: true });
     let intercepted = false;
     Network.requestIntercepted(async ({ interceptionId, request }) => {
@@ -148,7 +151,8 @@ function waitForCDP(timeout = 60_000) {
           console.log(`[Injector] Intercepting and modifying: ${request.url}`);
           const response = await Network.getResponseBodyForInterception({ interceptionId });
           const originalBody = Buffer.from(response.body, 'base64').toString();
-          // Inject global object
+          
+          // Inject global object using the same pattern as main.js
           const injreg = /\w+\.ApplicationMain\s*?=/;
           const match = injreg.exec(originalBody);
           if (!match) {
@@ -159,14 +163,22 @@ function waitForCDP(timeout = 60_000) {
           const varName = match[0].split('.')[0];
           let injected = originalBody.replace(match[0], `window.__idleon_cheats__=${varName};${match[0]}`);
 
-          // --- NEW: Prepend plugin JS code directly into N.js ---
+          // Prepend plugin JS code directly into N.js
           let pluginJsCode = '';
           const pluginJsPath = path.join(__dirname, 'plugins_combined.js');
           if (fs.existsSync(pluginJsPath)) {
             pluginJsCode = fs.readFileSync(pluginJsPath, 'utf-8');
             console.log(`[Injector] Prepending plugin JS from: ${pluginJsPath}`);
-            console.log(`[Injector] Plugin JS code (first 300 chars):\n${pluginJsCode.substring(0, 300)}...`);
           }
+          
+          // Also prepend core.js for game readiness detection
+          const corePath = path.join(__dirname, 'core.js');
+          if (fs.existsSync(corePath)) {
+            const coreCode = fs.readFileSync(corePath, 'utf-8');
+            pluginJsCode = coreCode + '\n' + pluginJsCode;
+            console.log(`[Injector] Prepending core.js for game readiness`);
+          }
+          
           injected = pluginJsCode + '\n' + injected;
 
           // Serve modified JS
@@ -187,20 +199,6 @@ function waitForCDP(timeout = 60_000) {
             rawResponse
           });
           console.log("[Injector] Served modified JS to game (with plugin JS prepended).");
-
-          // --- Inject JS Files IMMEDIATELY after N.js is served ---
-          let injectedCode = '';
-          if (fs.existsSync(pluginJsPath)) {
-            const code = fs.readFileSync(pluginJsPath, 'utf-8');
-            injectedCode += code + '\n';
-            console.log(`[Injector] Will inject: plugins_combined.js`);
-            console.log(`[Injector] Injecting code from plugins_combined.js:\n${code.substring(0, 200)}...`);
-          } else {
-            console.warn(`[Injector] Warning: JS file not found: plugins_combined.js`);
-          }
-          console.log("[Injector] Injecting JS files into game context (after N.js)...");
-          await Runtime.evaluate({ expression: injectedCode });
-          console.log("[Injector] JS injected successfully (after N.js).");
         } else {
           // Always continue all other requests
           await Network.continueInterceptedRequest({ interceptionId });
@@ -216,67 +214,109 @@ function waitForCDP(timeout = 60_000) {
       await new Promise(r => setTimeout(r, 500));
     }
 
-    // Wait for the page to be fully loaded
+    // Wait for the page to be fully loaded - CRITICAL FIX
     let pageLoaded = false;
     Page.loadEventFired(async () => {
+      console.log("[Injector] Page load event fired. Waiting for game context...");
+      
       let contextReady = false;
       let contextExpr = "window.__idleon_cheats__";
+      
+      // Wait for context in main window first
       for (let i = 0; i < 60; ++i) {
         let res = await client.Runtime.evaluate({ expression: `typeof ${contextExpr} === 'object'`, returnByValue: true });
         if (res.result && res.result.value) {
           contextReady = true;
+          console.log("[Injector] Found context in main window");
           break;
         }
-        // Try iframe context if not found in main
-        res = await client.Runtime.evaluate({ expression: "typeof window.document.querySelector('iframe')?.contentWindow?.__idleon_cheats__ === 'object'", returnByValue: true });
+        
+        // CRITICAL: Check iframe context like main.js does
+        res = await client.Runtime.evaluate({ 
+          expression: "typeof window.document.querySelector('iframe')?.contentWindow?.__idleon_cheats__ === 'object'", 
+          returnByValue: true 
+        });
         if (res.result && res.result.value) {
           contextExpr = "window.document.querySelector('iframe').contentWindow.__idleon_cheats__";
           contextReady = true;
+          console.log("[Injector] Found context in iframe");
           break;
         }
         await new Promise(r => setTimeout(r, 1000));
       }
-      if (contextReady) {
-        global.gameContext = contextExpr;
-        global.cdpClient = client;
-        console.log("[Injector] Game context detected and verified.");
-      } else {
+      
+      if (!contextReady) {
         console.error("[Injector] ERROR: Could not find __idleon_cheats__ context after page load.");
         process.exit(1);
       }
+
+      // CRITICAL FIX: Wait for game to be ready using the same approach as main.js
+      console.log("[Injector] Waiting for game to be fully ready...");
+      try {
+        // Use the __idleon_wait_for_game_ready function from core.js
+        await client.Runtime.evaluate({ 
+          expression: `await window.__idleon_wait_for_game_ready()`, 
+          awaitPromise: true 
+        });
+        console.log("[Injector] Game is ready!");
+        
+        // Now inject plugins into the correct context
+        const pluginJsPath = path.join(__dirname, 'plugins_combined.js');
+        if (fs.existsSync(pluginJsPath)) {
+          const code = fs.readFileSync(pluginJsPath, 'utf-8');
+          console.log("[Injector] Injecting plugins into game context...");
+          
+          // CRITICAL: Inject into the correct context (iframe if needed)
+          let injectExpression;
+          if (contextExpr.includes('iframe')) {
+            // Inject into iframe context
+            injectExpression = `
+              (function() {
+                const iframe = window.document.querySelector('iframe');
+                if (iframe && iframe.contentWindow) {
+                  iframe.contentWindow.eval(\`${code.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`);
+                  return 'Injected into iframe context';
+                } else {
+                  return 'Error: iframe not found';
+                }
+              })()
+            `;
+          } else {
+            // Inject into main window context
+            injectExpression = code;
+          }
+          
+          await client.Runtime.evaluate({ 
+            expression: injectExpression, 
+            allowUnsafeEvalBlockedByCSP: true 
+          });
+          console.log("[Injector] Plugins injected successfully.");
+        }
+        
+      } catch (gameReadyError) {
+        console.error("[Injector] Error waiting for game ready:", gameReadyError);
+      }
+      
       pageLoaded = true;
-      console.log("[Injector] Page load event fired.");
     });
+    
+    // Wait for page load event
     while (!pageLoaded) {
       await new Promise(r => setTimeout(r, 500));
     }
 
-    // --- Inject JS Files ---
-    let injectedCode = '';
-    const pluginJsPath = path.join(__dirname, 'plugins_combined.js');
-    if (fs.existsSync(pluginJsPath)) {
-      const code = fs.readFileSync(pluginJsPath, 'utf-8');
-      injectedCode += code + '\n';
-      console.log(`[Injector] Will inject: plugins_combined.js`);
-      console.log(`[Injector] Injecting code from plugins_combined.js:\n${code.substring(0, 200)}...`);
-    } else {
-      console.warn(`[Injector] Warning: JS file not found: plugins_combined.js`);
-    }
-    console.log("[Injector] Injecting JS files into game context...");
-    await Runtime.evaluate({ expression: injectedCode });
-    console.log("[Injector] JS injected successfully.");
-
-    // --- Call setup() if present ---
-    console.log("[Injector] Calling setup() in game context...");
-    await Runtime.evaluate({ expression: `if (typeof setup === 'function') setup.call(${global.gameContext});` });
-    console.log("[Injector] setup() called.");
-
-    // --- Exit after injection ---
-    console.log('[Injector] Injection complete. Exiting.');
-    process.exit(0);
+    console.log('[Injector] Injection complete. Keeping process alive for interaction...');
+    
+    // Keep process alive instead of exiting immediately
+       
+    // Give a moment for any final logging, then exit cleanly
+    setTimeout(() => {
+      process.exit(0);
+    }, 2000);
+    
   } catch (err) {
     console.error('[Injector] Uncaught error:', err && err.stack ? err.stack : err);
     process.stderr.write('\n');
     process.exit(1);
   }
-})(); 
+})();
