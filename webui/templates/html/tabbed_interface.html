@@ -1,7 +1,7 @@
 <div class="tab-container">
     <div class="tab-header">
         {% for plugin_name, schema in plugin_schemas.items() %}
-        {% set total_elements = schema.categories.values() | sum(attribute='length') %}
+        {% set total_elements = schema.categories.values() | map('length') | sum %}
         <button class="tab-button" data-tab="{{ plugin_name }}">
             <div class="plugin-info">
                 <span class="plugin-badge">{{ schema.plugin_info.get('name', plugin_name) }}</span>
