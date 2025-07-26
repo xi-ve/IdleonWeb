@@ -1,6 +1,6 @@
 from ast import Dict
 from typing import Any, Dict
-from plugin_system import plugin_command, js_export, PluginBase, console
+from plugin_system import plugin_command, js_export, PluginBase, console, ui_toggle, ui_button
 from config_manager import config_manager
 
 class InstantMobRespawnPlugin(PluginBase):
@@ -29,10 +29,59 @@ class InstantMobRespawnPlugin(PluginBase):
 
     async def on_config_changed(self, config: Dict[str, Any]) -> None:
         self.debug = config_manager.get_path('plugin_configs.instant_mob_respawn.debug', True)
-        if self.debug:
+        if GLOBAL_DEBUG:
             console.print(f"[instant_mob_respawn] Config changed: {config}")
         if hasattr(self, 'injector') and self.injector:
             self.set_config(config)
+
+    @ui_toggle(
+        label="Enable Instant Mob Respawn",
+        description="Toggle instant mob respawn functionality",
+        config_key="toggle",
+        default_value=True,
+        category="Mob Settings",
+        order=1
+    )
+    async def enable_instant_respawn(self, value: bool = None):
+        """Enable or disable instant mob respawn."""
+        if value is not None:
+            self.config["toggle"] = value
+            self.save_to_global_config()
+        return f"Instant mob respawn {'enabled' if self.config.get('toggle', True) else 'disabled'}"
+
+    @ui_toggle(
+        label="Debug Mode",
+        description="Enable debug logging for mob respawn plugin",
+        config_key="debug",
+        default_value=True,
+        category="Debug Settings",
+        order=1
+    )
+    async def enable_debug(self, value: bool = None):
+        """Enable or disable debug mode."""
+        if value is not None:
+            self.config["debug"] = value
+            self.save_to_global_config()
+        return f"Debug mode {'enabled' if self.config.get('debug', True) else 'disabled'}"
+
+    @ui_button(
+        label="Test Mob Respawn",
+        description="Test the mob respawn functionality",
+        category="Actions",
+        order=1
+    )
+    async def test_mob_respawn(self):
+        """Test the mob respawn functionality."""
+        if hasattr(self, 'injector') and self.injector:
+            try:
+                # Test the proxy setup
+                result = self.run_js_export('setup_proxy_mob_respawn_rate_js', self.injector)
+                enabled = self.config.get('toggle', True)
+                return f"SUCCESS: Mob respawn test - Enabled: {enabled}, Result: {result}"
+            except Exception as e:
+                return f"ERROR: Error testing mob respawn: {str(e)}"
+        else:
+            return "ERROR: No injector available - run 'inject' first"
 
     @plugin_command(
         help="Set instant mob respawn.",

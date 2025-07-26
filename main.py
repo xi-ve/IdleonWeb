@@ -18,6 +18,7 @@ from rich import box
 from plugin_system import PluginManager
 from core.py_injector import PyInjector
 from config_manager import config_manager
+from webui.web_api_integration import PluginWebAPI
 
 NODE_PATH = 'node'
 CORE_DIR = Path(__file__).parent / 'core'
@@ -29,6 +30,8 @@ console = Console()
 injector = None
 update_loop_task = None
 update_loop_stop = threading.Event()
+web_server = None
+web_server_task = None
 
 def ensure_node_dependencies(startup_msgs=None):
     node_modules_path = CORE_DIR / 'node_modules'
@@ -128,7 +131,7 @@ def run_update_loop(plugin_manager):
         loop.close()
 
 def cmd_inject(args=None, plugin_manager=None):
-    global injector, update_loop_task, update_loop_stop
+    global injector, update_loop_task, update_loop_stop, web_server, web_server_task
     collect_plugin_js(plugin_manager)
     update_inject_files()
     console.print("[cyan]Running injector.js with config from conf.json...[/cyan]")
@@ -138,6 +141,8 @@ def cmd_inject(args=None, plugin_manager=None):
         injector.connect()
         console.print("[green]Injector connected successfully.[/green]")
         asyncio.run(plugin_manager.initialize_all(injector, load_config().get('plugin_configs', {})))
+        
+        # Start update loop
         if update_loop_task is None or not update_loop_task.is_alive():
             update_loop_stop.clear()
             update_loop_task = threading.Thread(
@@ -146,6 +151,17 @@ def cmd_inject(args=None, plugin_manager=None):
                 daemon=True
             )
             update_loop_task.start()
+        
+        # Start web server for plugin UI
+        if web_server_task is None or not web_server_task.is_alive():
+            web_server = PluginWebAPI(plugin_manager)
+            web_server_task = threading.Thread(
+                target=lambda: asyncio.run(web_server.start_server()),
+                daemon=True
+            )
+            web_server_task.start()
+            console.print("[green]Plugin UI web server started at http://localhost:8080[/green]")
+            
     except Exception as e:
         console.print(f"[red]Failed to connect injector: {e}[/red]")
         injector = None
@@ -183,12 +199,33 @@ def cmd_help(args=None, plugin_manager=None, all_commands=None):
     console.print(table)
     console.print("[cyan]Type a command and press [bold]Tab[/bold] for autocomplete.[/cyan]")
 
+def cmd_web_ui(args=None, plugin_manager=None):
+    global web_server, web_server_task
+    if web_server_task and web_server_task.is_alive():
+        console.print("[yellow]Web server is already running at http://localhost:8080[/yellow]")
+        return
+    
+    try:
+        web_server = PluginWebAPI(plugin_manager)
+        web_server_task = threading.Thread(
+            target=lambda: asyncio.run(web_server.start_server()),
+            daemon=True
+        )
+        web_server_task.start()
+        console.print("[green]Plugin UI web server started at http://localhost:8080[/green]")
+        console.print("[cyan]Open your browser to configure plugins with a modern web interface![/cyan]")
+    except Exception as e:
+        console.print(f"[red]Failed to start web server: {e}[/red]")
+
 def cmd_exit(args=None, plugin_manager=None):
-    global update_loop_stop, update_loop_task
+    global update_loop_stop, update_loop_task, web_server_task
     console.print("[bold green]Shutting down...[/bold green]")
     update_loop_stop.set()
     if update_loop_task and update_loop_task.is_alive():
         update_loop_task.join(timeout=2)
+    if web_server_task and web_server_task.is_alive():
+        console.print("[cyan]Stopping web server...[/cyan]")
+        # The web server will stop when the main process exits
     if plugin_manager:
         asyncio.run(plugin_manager.cleanup_all())
     console.print("[bold green]Goodbye![/bold green]")
@@ -247,6 +284,7 @@ def main():
         'config': {'func': cmd_config, 'help': 'Show current injector config.'},
         'plugins': {'func': cmd_plugins, 'help': 'List loaded plugins.'},
         'reload_config': {'func': cmd_reload_config, 'help': 'Reload plugin configurations from conf.json.'},
+        'web_ui': {'func': cmd_web_ui, 'help': 'Start the plugin web UI server.'},
         'help': {'func': cmd_help, 'help': 'Show this help menu.'},
         'exit': {'func': cmd_exit, 'help': 'Exit the CLI.'}
     }

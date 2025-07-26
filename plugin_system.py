@@ -5,9 +5,10 @@ import logging
 import asyncio
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type, Callable
+from typing import Any, Dict, List, Optional, Type, Callable, Union
 import traceback
 import json
+from enum import Enum
 
 from rich.console import Console
 from config_manager import config_manager
@@ -18,6 +19,19 @@ logger = logging.getLogger(__name__)
 console = Console()
 
 command_registry = {}
+
+class UIElementType(Enum):
+    TOGGLE = "toggle"
+    SLIDER = "slider"
+    BUTTON = "button"
+    SELECT = "select"
+    TEXT_INPUT = "text_input"
+    NUMBER_INPUT = "number_input"
+    COLOR_PICKER = "color_picker"
+    FILE_UPLOAD = "file_upload"
+    INPUT_WITH_BUTTON = "input_with_button"
+    SEARCH_WITH_RESULTS = "search_with_results"
+    AUTOCOMPLETE_INPUT = "autocomplete_input"
 
 def plugin_command(help: str = None, js_export: bool = False, params: List[Dict[str, Any]] = None):
     def decorator(func: Callable) -> Callable:
@@ -36,6 +50,201 @@ def js_export(params: List[str] = None):
         func._js_params = params or []
         return func
     return decorator
+
+def ui_element(
+    element_type: Union[UIElementType, str],
+    label: str = None,
+    description: str = None,
+    config_key: str = None,
+    default_value: Any = None,
+    min_value: Union[int, float] = None,
+    max_value: Union[int, float] = None,
+    step: Union[int, float] = None,
+    options: List[Dict[str, Any]] = None,
+    placeholder: str = None,
+    required: bool = False,
+    category: str = "General",
+    order: int = 0,
+    **kwargs
+):
+    """
+    Decorator to create UI elements for plugin configuration.
+    
+    Args:
+        element_type: Type of UI element (toggle, slider, button, etc.)
+        label: Display label for the element
+        description: Help text for the element
+        config_key: Key in plugin config to bind to (defaults to function name)
+        default_value: Default value for the element
+        min_value: Minimum value for numeric inputs
+        max_value: Maximum value for numeric inputs
+        step: Step value for sliders
+        options: List of options for select elements
+        placeholder: Placeholder text for inputs
+        required: Whether the field is required
+        category: UI category to group elements
+        order: Display order within category
+        **kwargs: Additional element-specific properties
+    """
+    def decorator(func: Callable) -> Callable:
+        # Convert string to enum if needed
+        final_element_type = element_type
+        if isinstance(element_type, str):
+            try:
+                final_element_type = UIElementType(element_type.lower())
+            except ValueError:
+                raise ValueError(f"Invalid UI element type: {element_type}")
+        
+        func._ui_element = True
+        func._ui_element_type = final_element_type
+        func._ui_label = label or func.__name__.replace('_', ' ').title()
+        func._ui_description = description or ""
+        func._ui_config_key = config_key or func.__name__
+        func._ui_default_value = default_value
+        func._ui_min_value = min_value
+        func._ui_max_value = max_value
+        func._ui_step = step
+        func._ui_options = options or []
+        func._ui_placeholder = placeholder or ""
+        func._ui_required = required
+        func._ui_category = category
+        func._ui_order = order
+        func._ui_properties = kwargs
+        
+        return func
+    return decorator
+
+# Convenience decorators for common UI elements
+def ui_toggle(label: str = None, description: str = None, config_key: str = None, 
+              default_value: bool = False, category: str = "General", order: int = 0):
+    """Decorator for toggle/switch UI elements."""
+    return ui_element(
+        UIElementType.TOGGLE,
+        label=label,
+        description=description,
+        config_key=config_key,
+        default_value=default_value,
+        category=category,
+        order=order
+    )
+
+def ui_slider(label: str = None, description: str = None, config_key: str = None,
+              default_value: Union[int, float] = 0, min_value: Union[int, float] = 0,
+              max_value: Union[int, float] = 100, step: Union[int, float] = 1,
+              category: str = "General", order: int = 0):
+    """Decorator for slider UI elements."""
+    return ui_element(
+        UIElementType.SLIDER,
+        label=label,
+        description=description,
+        config_key=config_key,
+        default_value=default_value,
+        min_value=min_value,
+        max_value=max_value,
+        step=step,
+        category=category,
+        order=order
+    )
+
+def ui_button(label: str = None, description: str = None, category: str = "Actions", 
+              order: int = 0, **kwargs):
+    """Decorator for button UI elements."""
+    return ui_element(
+        UIElementType.BUTTON,
+        label=label,
+        description=description,
+        category=category,
+        order=order,
+        **kwargs
+    )
+
+def ui_select(label: str = None, description: str = None, config_key: str = None,
+              options: List[Dict[str, Any]] = None, default_value: Any = None,
+              category: str = "General", order: int = 0):
+    """Decorator for select/dropdown UI elements."""
+    return ui_element(
+        UIElementType.SELECT,
+        label=label,
+        description=description,
+        config_key=config_key,
+        default_value=default_value,
+        options=options or [],
+        category=category,
+        order=order
+    )
+
+def ui_text_input(label: str = None, description: str = None, config_key: str = None,
+                  default_value: str = "", placeholder: str = None, required: bool = False,
+                  category: str = "General", order: int = 0):
+    """Decorator for text input UI elements."""
+    return ui_element(
+        UIElementType.TEXT_INPUT,
+        label=label,
+        description=description,
+        config_key=config_key,
+        default_value=default_value,
+        placeholder=placeholder or "",
+        required=required,
+        category=category,
+        order=order
+    )
+
+def ui_number_input(label: str = None, description: str = None, config_key: str = None,
+                   default_value: Union[int, float] = 0, min_value: Union[int, float] = None,
+                   max_value: Union[int, float] = None, step: Union[int, float] = 1,
+                   category: str = "General", order: int = 0):
+    """Decorator for number input UI elements."""
+    return ui_element(
+        UIElementType.NUMBER_INPUT,
+        label=label,
+        description=description,
+        config_key=config_key,
+        default_value=default_value,
+        min_value=min_value,
+        max_value=max_value,
+        step=step,
+        category=category,
+        order=order
+    )
+
+def ui_input_with_button(label: str = None, description: str = None, button_text: str = "Execute",
+                        placeholder: str = None, category: str = "Actions", order: int = 0):
+    """Decorator for input field with button UI elements."""
+    return ui_element(
+        UIElementType.INPUT_WITH_BUTTON,
+        label=label,
+        description=description,
+        placeholder=placeholder or "",
+        category=category,
+        order=order,
+        button_text=button_text
+    )
+
+def ui_search_with_results(label: str = None, description: str = None, button_text: str = "Search",
+                          placeholder: str = None, category: str = "Search", order: int = 0):
+    """Decorator for search input with results list UI elements."""
+    return ui_element(
+        UIElementType.SEARCH_WITH_RESULTS,
+        label=label,
+        description=description,
+        placeholder=placeholder or "",
+        category=category,
+        order=order,
+        button_text=button_text
+    )
+
+def ui_autocomplete_input(label: str = None, description: str = None, button_text: str = "Execute",
+                         placeholder: str = None, category: str = "Actions", order: int = 0):
+    """Decorator for autocomplete input with button UI elements."""
+    return ui_element(
+        UIElementType.AUTOCOMPLETE_INPUT,
+        label=label,
+        description=description,
+        placeholder=placeholder or "",
+        category=category,
+        order=order,
+        button_text=button_text
+    )
 
 class PluginBase(ABC):
     
@@ -87,6 +296,60 @@ class PluginBase(ABC):
                     "params": getattr(attr, "_command_params", [])
                 }
         return commands
+
+    def get_ui_elements(self) -> Dict[str, List[Dict[str, Any]]]:
+        """Collect all UI elements from the plugin, organized by category."""
+        elements_by_category = {}
+        
+        for attr_name in dir(self):
+            attr = getattr(self, attr_name)
+            if callable(attr) and getattr(attr, "_ui_element", False):
+                element_data = {
+                    "name": attr_name,
+                    "type": getattr(attr, "_ui_element_type", UIElementType.BUTTON).value,
+                    "label": getattr(attr, "_ui_label", attr_name),
+                    "description": getattr(attr, "_ui_description", ""),
+                    "config_key": getattr(attr, "_ui_config_key", attr_name),
+                    "default_value": getattr(attr, "_ui_default_value", None),
+                    "min_value": getattr(attr, "_ui_min_value", None),
+                    "max_value": getattr(attr, "_ui_max_value", None),
+                    "step": getattr(attr, "_ui_step", None),
+                    "options": getattr(attr, "_ui_options", []),
+                    "placeholder": getattr(attr, "_ui_placeholder", ""),
+                    "required": getattr(attr, "_ui_required", False),
+                    "order": getattr(attr, "_ui_order", 0),
+                    "properties": getattr(attr, "_ui_properties", {}),
+                    "func": attr
+                }
+                
+                category = getattr(attr, "_ui_category", "General")
+                if category not in elements_by_category:
+                    elements_by_category[category] = []
+                elements_by_category[category].append(element_data)
+        
+        # Sort elements by order within each category
+        for category in elements_by_category:
+            elements_by_category[category].sort(key=lambda x: x["order"])
+        
+        return elements_by_category
+
+    def get_ui_schema(self) -> Dict[str, Any]:
+        """Generate a complete UI schema for the plugin."""
+        ui_elements = self.get_ui_elements()
+        
+        schema = {
+            "plugin_name": self.name,
+            "plugin_description": self.description,
+            "plugin_version": self.version,
+            "categories": {}
+        }
+        
+        for category, elements in ui_elements.items():
+            schema["categories"][category] = {
+                "elements": elements
+            }
+        
+        return schema
 
     def get_web_routes(self) -> List[tuple]:
         return []
@@ -178,6 +441,7 @@ class PluginBase(ABC):
     def save_to_global_config(self, config: Dict[str, Any] = None) -> None:
         plugin_config = config or self.config
         
+        # Save to config manager (this automatically saves to file)
         config_manager.set_plugin_config(self.name, plugin_config)
         
         if self.plugin_manager:
@@ -203,6 +467,9 @@ class PluginManager:
 
     async def load_plugins(self, injector, plugin_configs: Dict[str, Any] = None, 
                           global_debug: bool = True) -> None:
+        # Ensure we have the latest config from file
+        config_manager.reload()
+        
         if plugin_configs is None:
             plugin_configs = config_manager.get_all_plugin_configs()
         
@@ -357,6 +624,93 @@ class PluginManager:
             routes.extend(plugin.get_web_routes())
         return routes
 
+    def get_all_ui_elements(self) -> Dict[str, Dict[str, List[Dict[str, Any]]]]:
+        """Collect all UI elements from all plugins, organized by plugin and category."""
+        all_ui_elements = {}
+        
+        for plugin_name, plugin in self.plugins.items():
+            plugin_ui_elements = plugin.get_ui_elements()
+            if plugin_ui_elements:  # Only include plugins with UI elements
+                all_ui_elements[plugin_name] = {
+                    "plugin_info": {
+                        "name": plugin.name,
+                        "description": plugin.description,
+                        "version": plugin.version
+                    },
+                    "categories": plugin_ui_elements
+                }
+        
+        return all_ui_elements
+
+    def get_ui_schema_for_plugin(self, plugin_name: str) -> Optional[Dict[str, Any]]:
+        """Get UI schema for a specific plugin."""
+        plugin = self.plugins.get(plugin_name)
+        if plugin:
+            return plugin.get_ui_schema()
+        return None
+
+    def get_all_ui_schemas(self) -> Dict[str, Dict[str, Any]]:
+        """Get UI schemas for all plugins."""
+        schemas = {}
+        for plugin_name, plugin in self.plugins.items():
+            schemas[plugin_name] = plugin.get_ui_schema()
+        return schemas
+
+    async def execute_ui_action(self, plugin_name: str, element_name: str, value: Any = None) -> Any:
+        """Execute a UI element action for a specific plugin."""
+        plugin = self.plugins.get(plugin_name)
+        if not plugin:
+            return {"error": f"Plugin '{plugin_name}' not found"}
+        
+        # Find the UI element function
+        ui_elements = plugin.get_ui_elements()
+        target_func = None
+        
+        for category_elements in ui_elements.values():
+            for element in category_elements:
+                if element["name"] == element_name:
+                    target_func = element["func"]
+                    break
+            if target_func:
+                break
+        
+        if not target_func:
+            return {"error": f"UI element '{element_name}' not found in plugin '{plugin_name}'"}
+        
+        try:
+            # Check if the function expects a value parameter
+            sig = inspect.signature(target_func)
+            params = list(sig.parameters.keys())
+            
+            # Skip 'self' parameter
+            if params and params[0] == 'self':
+                params = params[1:]
+            
+            # Execute the function with or without value parameter
+            if inspect.iscoroutinefunction(target_func):
+                if params and len(params) > 0:
+                    result = await target_func(value)
+                else:
+                    result = await target_func()
+            else:
+                if params and len(params) > 0:
+                    result = target_func(value)
+                else:
+                    result = target_func()
+            
+            # Update config if the function has a config_key and value is provided
+            config_key = getattr(target_func, "_ui_config_key", None)
+            if config_key and value is not None:
+                # Update plugin config
+                plugin.config[config_key] = value
+                
+                # Save to global config (this will handle the config change notification)
+                plugin.save_to_global_config()
+            
+            return {"success": True, "result": result}
+        except Exception as e:
+            return {"error": f"Error executing UI action: {str(e)}"}
+
     async def notify_cheat_executed(self, command: str, result: Any) -> None:
         for plugin in self.plugins.values():
             try:
@@ -376,13 +730,15 @@ class PluginManager:
             try:
                 await self.plugins[plugin_name].on_config_changed(config)
             except Exception as e:
-                logger.error(f"Error notifying plugin of config change: {e}")
+                if GLOBAL_DEBUG:
+                    logger.error(f"Error notifying plugin of config change: {e}")
         else:
             for name, plugin in self.plugins.items():
                 try:
                     await plugin.on_config_changed(plugin.config)
                 except Exception as e:
-                    logger.error(f"Error notifying plugin of config change: {e}")
+                    if GLOBAL_DEBUG:
+                        logger.error(f"Error notifying plugin of config change: {e}")
 
     def collect_all_plugin_js(self) -> str:
         js_code = ""

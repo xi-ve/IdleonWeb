@@ -1,5 +1,5 @@
 from typing import Dict, Any
-from plugin_system import plugin_command, js_export, PluginBase, console
+from plugin_system import plugin_command, js_export, PluginBase, console, ui_toggle, ui_input_with_button, ui_search_with_results, ui_autocomplete_input
 from config_manager import config_manager
 
 class SpawnItemPlugin(PluginBase):
@@ -11,6 +11,9 @@ class SpawnItemPlugin(PluginBase):
         self.injector = None
         self.name = 'spawn_item'
         self.debug = config_manager.get_path('plugin_configs.spawn_item.debug', True)
+        self._item_cache = None
+        self._cache_timestamp = 0
+        self._cache_duration = 300  # 5 minutes cache
 
     async def cleanup(self) -> None:
         pass
@@ -20,13 +23,170 @@ class SpawnItemPlugin(PluginBase):
 
     async def on_config_changed(self, config: Dict[str, Any]) -> None:
         self.debug = config_manager.get_path('plugin_configs.spawn_item.debug', True)
-        if self.debug:
+        if GLOBAL_DEBUG:
             console.print(f"[spawn_item] Config changed: {config}")
         if hasattr(self, 'injector') and self.injector:
             self.set_config(config)
 
     async def on_game_ready(self) -> None:
         pass
+
+    @ui_toggle(
+        label="Debug Mode",
+        description="Enable debug logging for spawn item plugin",
+        config_key="debug",
+        default_value=True,
+        category="Debug Settings",
+        order=1
+    )
+    async def enable_debug(self, value: bool = None):
+        """Enable or disable debug mode."""
+        if value is not None:
+            self.config["debug"] = value
+            self.save_to_global_config()
+        return f"Debug mode {'enabled' if self.config.get('debug', True) else 'disabled'}"
+
+    @ui_autocomplete_input(
+        label="Spawn Item",
+        description="Enter item ID and amount to spawn (with autocomplete)",
+        button_text="Spawn",
+        placeholder="Item ID (e.g. Copper, Timecandy6)",
+        category="Spawn Actions",
+        order=1
+    )
+    async def spawn_item_ui(self, value: str = None):
+        """Spawn an item using UI input with autocomplete."""
+        if value:
+            # Parse input (format: "item_id amount" or just "item_id")
+            parts = value.strip().split()
+            item_id = parts[0] if parts else "Copper"
+            amount = int(parts[1]) if len(parts) > 1 else 1
+            
+            # Actually call the spawn function
+            if hasattr(self, 'injector') and self.injector:
+                try:
+                    result = await self.spawn(item_id, amount, self.injector)
+                    return f"SUCCESS: {result}"
+                except Exception as e:
+                    return f"ERROR: Error spawning item: {str(e)}"
+            else:
+                return "ERROR: No injector available - run 'inject' first"
+        return "Enter item ID and optional amount (e.g. 'Copper 5')"
+
+    async def get_spawn_autocomplete(self, query: str = ""):
+        """Get autocomplete suggestions for spawn items."""
+        return await self.get_item_autocomplete(query)
+
+    @ui_search_with_results(
+        label="Search Items",
+        description="Search for items by name or ID",
+        button_text="Search",
+        placeholder="Enter search term...",
+        category="Search",
+        order=1
+    )
+    async def search_items_ui(self, value: str = None):
+        """Search for items using UI input."""
+        if value:
+            # Actually call the search function
+            if hasattr(self, 'injector') and self.injector:
+                try:
+                    result = await self.search_items(value, self.injector)
+                    return result
+                except Exception as e:
+                    return f"ERROR: Error searching items: {str(e)}"
+            else:
+                return "ERROR: No injector available - run 'inject' first"
+        return "Enter search term to find items"
+
+    @ui_search_with_results(
+        label="List All Items",
+        description="List all available items in the game",
+        button_text="List All",
+        placeholder="(Leave empty to list all)",
+        category="Search",
+        order=2
+    )
+    async def list_all_items_ui(self, value: str = None):
+        """List all items using UI input."""
+        # Actually call the list function
+        if hasattr(self, 'injector') and self.injector:
+            try:
+                result = await self.get_cached_item_list()
+                return result
+            except Exception as e:
+                return f"ERROR: Error listing items: {str(e)}"
+        else:
+            return "ERROR: No injector available - run 'inject' first"
+
+    async def get_cached_item_list(self):
+        """Get cached item list or fetch new one."""
+        import time
+        current_time = time.time()
+        
+        # Check if cache is valid
+        if (self._item_cache is not None and 
+            current_time - self._cache_timestamp < self._cache_duration):
+            return self._item_cache
+        
+        # Fetch new data
+        raw_result = await self.list_items(self.injector)
+        
+        # Format the result
+        if raw_result and not raw_result.startswith("Error:"):
+            try:
+                # Split by newlines and format each item
+                items = raw_result.split('\n')
+                formatted_items = []
+                
+                for item in items:
+                    if ' : ' in item:
+                        item_id, display_name = item.split(' : ', 1)
+                        formatted_items.append(f"• **{item_id}** : {display_name}")
+                    else:
+                        formatted_items.append(f"• {item}")
+                
+                formatted_result = f"**All Items** ({len(formatted_items)} items):\n\n" + "\n".join(formatted_items)
+                
+                # Cache the formatted result
+                self._item_cache = formatted_result
+                self._cache_timestamp = current_time
+                
+                return formatted_result
+            except Exception as e:
+                return f"**All Items**:\n\n{raw_result}"
+        else:
+            return f"ERROR: Error fetching items: {raw_result}"
+
+    async def get_item_autocomplete(self, query: str = ""):
+        """Get autocomplete suggestions for items."""
+        if not hasattr(self, 'injector') or not self.injector:
+            return []
+        
+        try:
+            # Get cached or fresh item list
+            await self.get_cached_item_list()
+            
+            if not self._item_cache:
+                return []
+            
+            # Parse the cached items for autocomplete
+            suggestions = []
+            query_lower = query.lower()
+            
+            # Extract items from cached result
+            lines = self._item_cache.split('\n')
+            for line in lines:
+                if '**' in line and ' : ' in line:
+                    # Extract item ID from formatted line
+                    item_id = line.split('**')[1]
+                    if query_lower in item_id.lower():
+                        suggestions.append(item_id)
+            
+            return suggestions[:10]  # Limit to 10 suggestions
+            
+        except Exception as e:
+            return []
 
     @plugin_command(
         help="Spawn (drop) an item at your character's location.",

@@ -7,10 +7,13 @@
   ],
   "plugin_configs": {
     "spawn_item": {
-      "debug": true
+      "debug": false,
+      "spawn_item_ui": "EquipmentHats10",
+      "search_items_ui": "Timecandy9",
+      "list_all_items_ui": "Timecandy"
     },
     "instant_mob_respawn": {
-      "debug": true,
+      "debug": false,
       "toggle": true
     }
   },
