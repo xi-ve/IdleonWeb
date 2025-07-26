@@ -22,15 +22,17 @@ IdleonWeb is designed for modularity and extensibility. The core components inte
 
 ```mermaid
 graph TD
-    A[main.py (CLI)] -->|Loads| B[PluginManager]
-    B -->|Loads| C[Plugins (Python)]
+    A[main.py CLI] -->|Loads| B[PluginManager]
+    B -->|Loads| C[Plugins Python]
     B -->|Uses| D[ConfigManager]
-    A -->|Runs| E[injector.js (Node.js)]
-    E -->|Injects| F[plugins_combined.js (JS)]
-    F -->|Interacts| G[Idleon Game Context]
+    A -->|Runs| E[injector.js Node.js]
+    E -->|Injects| F[plugins_combined.js JS]
+    F -->|Interacts| G[Idleon Game]
     C -->|Exports JS| F
     D -->|Manages| H[core/conf.json]
 ```
+
+*See below for more details on each component.*
 
 - **main.py**: Entry point, provides the CLI, manages plugin loading, configuration, and launches the injector.
 - **PluginManager**: Loads and manages all plugins, handles lifecycle events, and exposes plugin commands to the CLI.
