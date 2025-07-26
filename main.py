@@ -1,11 +1,8 @@
 import subprocess
 import sys
-import os
-import json
 import logging
 import asyncio
 import threading
-import signal
 from pathlib import Path
 
 from prompt_toolkit import PromptSession
