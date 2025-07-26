@@ -5,7 +5,7 @@
 
 set -e  # Exit on any error
 
-echo "🚀 Setting up IdleonWeb development environment..."
+echo "Setting up IdleonWeb development environment..."
 
 # Colors for output
 RED='\033[0;31m'
@@ -207,14 +207,14 @@ main() {
     setup_config
     echo ""
     
-    print_success "Setup completed successfully! 🎉"
+    print_success "Setup completed successfully!"
     echo ""
     echo "Next steps:"
     echo "1. Activate the virtual environment: source .venv/bin/activate"
     echo "2. Run the application: python main.py"
     echo "3. For development, use: python test_js_gen.py"
     echo ""
-    echo "Happy coding! 🚀"
+    echo "Setup complete."
 }
 
 # Run main function

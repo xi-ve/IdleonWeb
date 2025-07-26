@@ -7,6 +7,7 @@
 *.pyc
 *.pyo
 *.pyd
+package-lock.json
 
 # Generated JavaScript files
 /cheats.js

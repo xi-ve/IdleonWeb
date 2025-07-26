@@ -4,7 +4,7 @@ A modern, extensible launcher and plugin system for automating and enhancing Leg
 
 ---
 
-## 🚀 Features
+## Features
 
 - **Plugin System:** Write Python plugins to inject custom JavaScript into Idleon, automate tasks, or add new features.
 - **Rich CLI:** Beautiful, interactive command-line interface with autocompletion, help, and plugin command discovery.
@@ -15,7 +15,7 @@ A modern, extensible launcher and plugin system for automating and enhancing Leg
 
 ---
 
-## 🛠️ Setup
+## Setup
 
 ### Quick Setup (Recommended)
 Run the automated setup script:
@@ -24,12 +24,12 @@ Run the automated setup script:
 ```
 
 This script will:
-- ✅ Check for Python 3 and Node.js installations
-- ✅ Create and configure the Python virtual environment
-- ✅ Install all Python dependencies from `requirements.txt`
-- ✅ Install Node.js dependencies in the `core/` directory
-- ✅ Create necessary directories (`plugins/`, `core/tmp_js/`)
-- ✅ Generate initial configuration file (`core/conf.json`)
+- Check for Python 3 and Node.js installations
+- Create and configure the Python virtual environment
+- Install all Python dependencies from `requirements.txt`
+- Install Node.js dependencies in the `core/` directory
+- Create necessary directories (`plugins/`, `core/tmp_js/`)
+- Generate initial configuration file (`core/conf.json`)
 
 ### Manual Setup
 If you prefer manual setup:
@@ -58,7 +58,7 @@ If you prefer manual setup:
 
 ---
 
-## 🧩 Plugin System Overview
+## Plugin System Overview
 
 - **Plugins are Python classes** in the `plugins/` directory, using the `@plugin_command` decorator to expose commands to the CLI.
 - **Each plugin can export JavaScript** to be injected into Idleon via the browser.
@@ -67,7 +67,7 @@ If you prefer manual setup:
 
 ---
 
-## 🖥️ Usage
+## Usage
 
 - **Start the CLI:**
   ```sh
@@ -90,7 +90,7 @@ If you prefer manual setup:
 
 ---
 
-## 🧑‍💻 Writing Your Own Plugin
+## Writing Your Own Plugin
 
 1. **Create a new Python file in `plugins/`** (e.g., `myplugin.py`).
 2. **Define a class inheriting from `PluginBase`.**
@@ -116,7 +116,7 @@ plugin_class = MyPlugin
 
 ---
 
-## 🐞 Troubleshooting
+## Troubleshooting
 
 - **Node.js not found?** Ensure Node.js and npm are installed and in your PATH.
 - **Chromium/Chrome not found?** The injector tries common install locations. Install Chromium or Google Chrome if needed.
@@ -125,7 +125,7 @@ plugin_class = MyPlugin
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 IdleonWeb/
