@@ -58,7 +58,8 @@ function launchChromiumWithIdleon() {
     console.error("Could not find Chromium/Chrome executable. Please install Chromium or Google Chrome.");
     process.exit(1);
   }
-  const userDataDir = path.join(os.tmpdir(), 'idleon-chromium-profile');
+  // use cwd for userDataDir
+  const userDataDir = path.join(process.cwd(), 'idleon-chromium-profile');
   const args = [
     `--remote-debugging-port=${CDP_PORT}`,
     `--user-data-dir=${userDataDir}`,

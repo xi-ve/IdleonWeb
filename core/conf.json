@@ -6,18 +6,12 @@
     "mob_spawn_rate"
   ],
   "plugin_configs": {
-    "schalom_popup": {
+    "spawn_item": {
       "debug": false
     },
-    "spawn_item": {
-      "debug": true
-    },
     "mob_spawn_rate": {
-      "debug": true,
-      "RespawnRate": {
-        "rate": 0,
-        "toggle": true
-      }
+      "debug": false,
+      "toggle": true
     }
   },
   "debug": false,

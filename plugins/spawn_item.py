@@ -1,26 +1,32 @@
-from rich.panel import Panel
-from plugin_system import plugin_command, js_export, PluginBase
+from typing import Dict, Any
+from plugin_system import plugin_command, js_export, PluginBase, console
+from config_manager import config_manager
 
 class SpawnItemPlugin(PluginBase):
-
-    VERSION = "1.0.0"
-    DESCRIPTION = "Spawn (drop) an item at your character's location."
+    VERSION = "1.0.1"
+    DESCRIPTION = "Spawn / List / Search items"
 
     def __init__(self, config=None):
         super().__init__(config or {})
         self.injector = None
-        self.debug = self.config.get('debug', True)
-        self.name = self.__class__.__name__
-
-    async def initialize(self, injector) -> bool:
-        self.injector = injector
-        return True
+        self.name = 'spawn_item'
+        self.debug = config_manager.get_path('plugin_configs.spawn_item.debug', True)
 
     async def cleanup(self) -> None:
         pass
 
     async def update(self) -> None:
-        self.debug = self.config.get('debug', True)
+        self.debug = config_manager.get_path('plugin_configs.spawn_item.debug', True)
+
+    async def on_config_changed(self, config: Dict[str, Any]) -> None:
+        self.debug = config_manager.get_path('plugin_configs.spawn_item.debug', True)
+        if self.debug:
+            console.print(f"[spawn_item] Config changed: {config}")
+        if hasattr(self, 'injector') and self.injector:
+            self.set_config(config)
+
+    async def on_game_ready(self) -> None:
+        pass
 
     @plugin_command(
         help="Spawn (drop) an item at your character's location.",
@@ -30,8 +36,8 @@ class SpawnItemPlugin(PluginBase):
         ],
     )
     async def spawn(self, item: str, amount: int = 1, injector=None, **kwargs):
-        """Spawn (drop) an item at your character's location."""
-        print(f"> Spawning item: {item} (amount: {amount})")
+        if self.debug:
+            console.print(f"> Spawning item: {item} (amount: {amount})")
         return self.run_js_export('spawn_item_js', injector, item=item, amount=amount)
 
     @js_export(params=["item", "amount"])
@@ -70,9 +76,8 @@ class SpawnItemPlugin(PluginBase):
         params=[],
     )
     async def list_items(self, injector=None, **kwargs):
-        """List all available item IDs and their display names."""
         if self.debug:
-            print("[spawn_item] Listing all items...")
+            console.print("[spawn_item] Listing all items...")
         return self.run_js_export('list_items_js', injector)
 
     @js_export()
@@ -98,9 +103,8 @@ class SpawnItemPlugin(PluginBase):
         ],
     )
     async def search_items(self, query: str, injector=None, **kwargs):
-        """Search for items by partial name."""
         if self.debug:
-            print(f"[spawn_item] Searching items with query: {query}")
+            console.print(f"[spawn_item] Searching items with query: {query}")
         return self.run_js_export('search_items_js', injector, query=query)
 
     @js_export(params=["query"])
@@ -123,6 +127,6 @@ class SpawnItemPlugin(PluginBase):
         } catch (e) {
             return `Error: ${e.message}`;
         }
-        ''' 
+        '''
 
 plugin_class = SpawnItemPlugin
