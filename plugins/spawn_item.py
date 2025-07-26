@@ -16,7 +16,7 @@ class SpawnItemPlugin(PluginBase):
         pass
 
     async def update(self) -> None:
-        self.debug = config_manager.get_path('plugin_configs.spawn_item.debug', True)
+        pass
 
     async def on_config_changed(self, config: Dict[str, Any]) -> None:
         self.debug = config_manager.get_path('plugin_configs.spawn_item.debug', True)
@@ -36,16 +36,16 @@ class SpawnItemPlugin(PluginBase):
         ],
     )
     async def spawn(self, item: str, amount: int = 1, injector=None, **kwargs):
-        if self.debug:
-            console.print(f"> Spawning item: {item} (amount: {amount})")
+        console.print(f"> Spawning item: {item} (amount: {amount})")
         return self.run_js_export('spawn_item_js', injector, item=item, amount=amount)
 
     @js_export(params=["item", "amount"])
     def spawn_item_js(self, item=None, amount=None):
         return '''
         try {
+            console.log("Spawning item: ", item, " (amount: ", amount, ")");
+
             const ctx = window.__idleon_cheats__;
-            if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
             const engine = ctx["com.stencyl.Engine"].engine;
             const itemDefs = engine.getGameAttribute("ItemDefinitionsGET").h;
             const character = engine.getGameAttribute("OtherPlayers").h[engine.getGameAttribute("UserInfo")[0]];
@@ -65,6 +65,8 @@ class SpawnItemPlugin(PluginBase):
                 dropFn._customBlock_DropSomething(item, amount, 0, 0, 2, y, 0, x, y);
             }
             
+            console.log("Dropped item: ", itemDef.h.displayName.replace(/_/g, " "), " (x", amount, ")");
+
             return `Dropped ${itemDef.h.displayName.replace(/_/g, " ")} (x${amount})`;
         } catch (e) {
             return `Error: ${e.message}`;
@@ -78,7 +80,10 @@ class SpawnItemPlugin(PluginBase):
     async def list_items(self, injector=None, **kwargs):
         if self.debug:
             console.print("[spawn_item] Listing all items...")
-        return self.run_js_export('list_items_js', injector)
+        result = self.run_js_export('list_items_js', injector)
+        if self.debug:
+            console.print(f"[spawn_item] Result: {result}")
+        return result
 
     @js_export()
     def list_items_js(self):
@@ -105,7 +110,10 @@ class SpawnItemPlugin(PluginBase):
     async def search_items(self, query: str, injector=None, **kwargs):
         if self.debug:
             console.print(f"[spawn_item] Searching items with query: {query}")
-        return self.run_js_export('search_items_js', injector, query=query)
+        result = self.run_js_export('search_items_js', injector, query=query)
+        if self.debug:
+            console.print(f"[spawn_item] Result: {result}")
+        return result
 
     @js_export(params=["query"])
     def search_items_js(self, query=None):

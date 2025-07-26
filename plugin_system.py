@@ -20,13 +20,11 @@ import os
 from rich.console import Console
 from config_manager import config_manager
 
-# Global debug flag, set by main.py
 GLOBAL_DEBUG = False
 
 logger = logging.getLogger(__name__)
 console = Console()
 
-# Command registry for plugin commands
 command_registry = {}
 
 def plugin_command(help: str = None, js_export: bool = False, params: List[Dict[str, Any]] = None):
@@ -140,23 +138,48 @@ class PluginBase(ABC):
 
     def run_js_export(self, js_func_name: str, injector, **params) -> Any:
         """Run a JavaScript exported function."""
+        if not injector:
+            if GLOBAL_DEBUG:
+                console.print(f"[DEBUG] No injector available for {js_func_name}")
+            return None
+            
         js_func = getattr(self, js_func_name)
         js_name = js_func_name[:-3] if js_func_name.endswith('_js') else js_func_name
         
-        # Prepare argument list
         js_params = getattr(js_func, '_js_params', [])
         args = [params.get(p, '') for p in js_params]
         
-        # Serialize arguments for JS call
         js_args = ', '.join(json.dumps(a) for a in args)
         
-        # Execute in correct context
-        expr = (f'(typeof getIdleonContext === "function" ? '
-                f'window.{js_name}.call(getIdleonContext(), {js_args}) : '
-                f'window.{js_name}({js_args}))')
+        # First check if the function exists
+        check_expr = f"typeof window.{js_name} === 'function'"
+        try:
+            check_result = injector.evaluate(check_expr)
+            if not check_result.get('result', {}).get('value', False):
+                if GLOBAL_DEBUG:
+                    console.print(f"[DEBUG] Function {js_name} not found in window")
+                return f"Error: Function {js_name} not found"
+        except Exception as e:
+            if GLOBAL_DEBUG:
+                console.print(f"[DEBUG] Error checking function {js_name}: {e}")
+            return f"Error checking function: {e}"
         
-        result = injector.evaluate(expr)
-        return result.get('result', {}).get('value')
+        # Call the function with awaitPromise to handle async functions
+        expr = f"window.{js_name}({js_args})"
+        
+        if GLOBAL_DEBUG:
+            console.print(f"[DEBUG] Executing: {expr}")
+        
+        try:
+            result = injector.evaluate(expr, awaitPromise=True)
+            value = result.get('result', {}).get('value')
+            if GLOBAL_DEBUG:
+                console.print(f"[DEBUG] Result: {value}")
+            return value
+        except Exception as e:
+            if GLOBAL_DEBUG:
+                console.print(f"[DEBUG] Error executing {js_name}: {e}")
+            return f"Error executing {js_name}: {e}"
 
     def set_config(self, config: Dict[str, Any]) -> None:
         """Set plugin configuration in browser context."""
@@ -184,11 +207,9 @@ class PluginBase(ABC):
             console.print(f"[DEBUG] Initializing config for plugin {self.name}")
         
         try:
-            # Ensure window.pluginConfigs exists
             init_expr = "window.pluginConfigs = window.pluginConfigs || {};"
             self.injector.evaluate(init_expr)
             
-            # Set this plugin's config
             self.set_config(self.config)
         except Exception as e:
             if GLOBAL_DEBUG:
@@ -198,10 +219,8 @@ class PluginBase(ABC):
         """Save plugin configuration using ConfigManager."""
         plugin_config = config or self.config
         
-        # Use ConfigManager to save the config
         config_manager.set_plugin_config(self.name, plugin_config)
         
-        # Notify only this plugin about the config change
         if self.plugin_manager:
             try:
                 loop = None
@@ -214,7 +233,7 @@ class PluginBase(ABC):
                 else:
                     asyncio.run(self.plugin_manager.notify_config_changed(plugin_config, self.name))
             except Exception:
-                pass  # Ignore if already running
+                pass
 
 class PluginManager:
     """Manages loading, initialization, and lifecycle of plugins."""
@@ -227,7 +246,6 @@ class PluginManager:
     async def load_plugins(self, injector, plugin_configs: Dict[str, Any] = None, 
                           global_debug: bool = True) -> None:
         """Load all configured plugins."""
-        # Use ConfigManager to get plugin configs if not provided
         if plugin_configs is None:
             plugin_configs = config_manager.get_all_plugin_configs()
         
@@ -259,7 +277,6 @@ class PluginManager:
         plugin_instance.plugin_manager = self
         plugin_instance.global_debug = global_debug
         
-        # Check dependencies
         for dependency in getattr(plugin_instance, 'dependencies', []):
             if dependency not in self.plugins:
                 console.print(f"[yellow]Plugin '{plugin_name}' requires '{dependency}' "
@@ -288,7 +305,6 @@ class PluginManager:
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         
-        # Find plugin class
         for name, obj in inspect.getmembers(module):
             if (inspect.isclass(obj) and 
                 issubclass(obj, PluginBase) and 
@@ -307,14 +323,12 @@ class PluginManager:
         for plugin_name in self.plugin_names:
             try:
                 if plugin_name in self.plugins:
-                    # Re-initialize existing plugin with new injector
                     plugin = self.plugins[plugin_name]
                     plugin.injector = injector
                     await plugin.initialize(injector)
                     if GLOBAL_DEBUG:
                         console.print(f"Re-initialized plugin: {plugin_name}")
                 else:
-                    # Load new plugin
                     await self._load_plugin(
                         plugin_name, 
                         plugin_configs.get(plugin_name, {}), 
@@ -324,7 +338,6 @@ class PluginManager:
                 console.print(f"[red]Failed to initialize plugin '{plugin_name}': {e}[/red]")
                 logger.error(f"Failed to initialize plugin '{plugin_name}': {e}")
         
-        # Execute on_game_ready for all plugins
         if injector:
             for plugin in self.plugins.values():
                 try:
@@ -431,13 +444,11 @@ class PluginManager:
         """Collect JavaScript code from all plugins."""
         js_code = ""
         
-        # Check if debug mode is enabled
         debug = any(
             hasattr(plugin, 'config') and plugin.config.get('debug', False)
             for plugin in self.plugins.values()
         )
         
-        # Create debug directory if needed
         if debug:
             tmp_js_dir = Path(__file__).parent / 'core' / 'tmp_js'
             tmp_js_dir.mkdir(exist_ok=True)
@@ -451,11 +462,9 @@ class PluginManager:
                     if callable(func) and getattr(func, '_js_export', False):
                         js_params = getattr(func, '_js_params', None)
                         
-                        # Get function signature and parameters
                         sig = inspect.signature(func)
                         if js_params and len(js_params) > 0:
                             param_list = ", ".join(js_params)
-                            # Get default values for parameters
                             bound_args = []
                             for p in js_params:
                                 if p in sig.parameters and sig.parameters[p].default != inspect.Parameter.empty:
@@ -464,7 +473,7 @@ class PluginManager:
                                     bound_args.append('')
                             js_body = func(*bound_args)
                         else:
-                            params = list(sig.parameters.keys())[1:]  # skip 'self'
+                            params = list(sig.parameters.keys())[1:]
                             param_list = ", ".join(params) if params else ""
                             bound_args = []
                             for p in params:
@@ -475,12 +484,10 @@ class PluginManager:
                                     bound_args.append('')
                             js_body = func(*bound_args)
                         
-                        js_name = attr_name[:-3]  # Remove '_js' suffix
+                        js_name = attr_name[:-3]
                         
-                        # Wrap JS body with game ready check
                         wrapped_js_body = f"""
                         try {{
-                            // Wait for game to be ready before executing plugin function
                             await window.__idleon_wait_for_game_ready();
                             
                             {js_body}
@@ -494,7 +501,6 @@ class PluginManager:
                         js_code += js_func_code
                         plugin_js += js_func_code
             
-            # Save plugin-specific JS if debug enabled
             if debug and plugin_js:
                 plugin_file = tmp_js_dir / f"{plugin.__class__.__name__}_js_dump.js"
                 with open(plugin_file, 'w') as f:
@@ -504,10 +510,8 @@ class PluginManager:
 
     def reload_configs_from_file(self) -> None:
         """Reload all plugin configs using ConfigManager."""
-        # Reload config from file
         config_manager.reload()
         
-        # Get updated plugin configs
         plugin_configs = config_manager.get_all_plugin_configs()
         
         for plugin_name, plugin in self.plugins.items():
@@ -515,25 +519,21 @@ class PluginManager:
                 old_config = plugin.config.copy()
                 plugin.config.update(plugin_configs[plugin_name])
                 
-                # Update config in browser if injector is available
                 if hasattr(plugin, 'injector') and plugin.injector:
                     plugin.set_config(plugin.config)
                 
-                # Notify plugin about config change
                 try:
                     asyncio.create_task(plugin.on_config_changed(plugin.config))
                 except RuntimeError:
-                    # If no event loop, run synchronously
                     try:
                         asyncio.run(plugin.on_config_changed(plugin.config))
                     except:
-                        pass  # Ignore if already running
+                        pass
                 
                 console.print(f"[green]Reloaded config for plugin: {plugin_name}[/green]")
             else:
                 console.print(f"[yellow]No config found for plugin: {plugin_name}[/yellow]")
 
-# --- Utility Functions ---
 def parse_plugin_args(params_meta: List[Dict[str, Any]], args: List[str]) -> Dict[str, Any]:
     """
     Parse CLI arguments based on parameter metadata.
@@ -550,7 +550,6 @@ def parse_plugin_args(params_meta: List[Dict[str, Any]], args: List[str]) -> Dic
     """
     result = {}
     
-    # Special case: single string parameter, join all args
     if len(params_meta) == 1 and params_meta[0].get("type", str) == str:
         name = params_meta[0]["name"]
         if args:
@@ -562,7 +561,6 @@ def parse_plugin_args(params_meta: List[Dict[str, Any]], args: List[str]) -> Dic
             raise ValueError(f"Missing required argument: {name}")
         return result
     
-    # Parse multiple parameters
     i = 0
     for meta in params_meta:
         name = meta["name"]
@@ -571,7 +569,6 @@ def parse_plugin_args(params_meta: List[Dict[str, Any]], args: List[str]) -> Dic
         if i < len(args):
             try:
                 if typ == bool:
-                    # Handle boolean conversion properly
                     arg_value = args[i].lower().strip()
                     if arg_value in ('true', '1', 'yes', 'on'):
                         value = True
@@ -614,7 +611,6 @@ def execute_plugin_command(func: Callable, call_kwargs: Dict[str, Any],
     """
     sig = inspect.signature(func)
     
-    # Add injector and plugin_manager if needed
     if 'injector' in sig.parameters:
         if injector is None:
             if console:
@@ -631,11 +627,9 @@ def execute_plugin_command(func: Callable, call_kwargs: Dict[str, Any],
         else:
             result = func(**call_kwargs)
         
-        # Display result if available
         if result is not None and console:
             console.print(f"[JS return] {result}")
         
-        # Notify plugins if this might have changed config
         if plugin_manager and hasattr(func, '__self__') and hasattr(func.__self__, 'config'):
             command_name = func.__name__.lower()
             config_changing_keywords = ['toggle', 'set', 'config', 'save', 'update']
@@ -652,7 +646,7 @@ def execute_plugin_command(func: Callable, call_kwargs: Dict[str, Any],
                     else:
                         asyncio.run(plugin_manager.notify_config_changed(func.__self__.config, plugin_name))
                 except Exception:
-                    pass  # Ignore if already running
+                    pass
         
         return result
     except Exception as e:

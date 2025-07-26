@@ -1,20 +1,21 @@
-// core.js - Ensures Idleon game is fully ready before plugins run
-// Compatible with cheats.js initialization pattern
-
 (function() {
-  // Global variables similar to cheats.js
-  let bEngine; // The Stencyl engine
-  let itemDefs; // The item definitions
+  let bEngine;
+  let itemDefs;
   let monsterDefs;
-  let CList; // The custom list definitions
-  let events; // function that returns actorEvent script by it's number
-  let behavior; // Stencyl behavior object
+  let CList;
+  let events;
+  let behavior;
   let setupDone = false;
+  let gameReadyPromise = null;
 
-  // Game readiness check similar to cheats.js
   async function gameReady() {
-    // Use 'this' context like in cheats.js
     const context = this || window.__idleon_cheats__;
+    
+    // Early return if already setup and variables are registered
+    if (setupDone && window.bEngine) {
+      console.log('[core.js] Game already ready, skipping wait');
+      return true;
+    }
     
     while (
       !context["com.stencyl.Engine"] ||
@@ -26,12 +27,11 @@
       console.log("[core.js] Waiting for game to be ready...", context);
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Extra wait like cheats.js
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     registerCommonVariables.call(context);
     return true;
   }
 
-  // Register common variables like in cheats.js
   function registerCommonVariables() {
     const context = this || window.__idleon_cheats__;
     
@@ -44,7 +44,6 @@
       return context["scripts.ActorEvents_" + num];
     }.bind(context);
 
-    // Make these available globally like in cheats.js
     if (typeof window !== 'undefined') {
       window.bEngine = bEngine;
       window.itemDefs = itemDefs;
@@ -57,12 +56,10 @@
     console.log('[core.js] Common variables registered successfully');
   }
 
-  // Main setup function similar to cheats.js setup()
   async function setup() {
-    if (setupDone) return "Core setup already complete";
+    if (setupDone && window.bEngine) return "Core setup already complete";
     
     console.log('[core.js] Starting setup...');
-    setupDone = true;
 
     try {
       const context = window.__idleon_cheats__;
@@ -70,8 +67,10 @@
         throw new Error("__idleon_cheats__ context not found");
       }
 
-      // Wait for game to be ready
       await gameReady.call(context);
+      
+      // Only set setupDone after gameReady completes successfully
+      setupDone = true;
       
       console.log('[core.js] Setup completed successfully');
       return "Core setup complete - game is ready";
@@ -82,18 +81,28 @@
     }
   }
 
-  // Expose the main setup function globally
   window.__idleon_core_setup = setup;
 
-  // Enhanced game ready check that returns a Promise
+  // Fixed version with proper caching and early returns
   window.__idleon_wait_for_game_ready = function() {
-    return new Promise(async (resolve, reject) => {
+    // Return cached promise if it exists
+    if (gameReadyPromise) {
+      console.log('[core.js] Returning cached game ready promise');
+      return gameReadyPromise;
+    }
+
+    // Early return if already setup AND variables are properly initialized
+    if (setupDone && window.bEngine) {
+      console.log('[core.js] Game already ready, returning resolved promise');
+      return Promise.resolve();
+    }
+
+    gameReadyPromise = new Promise(async (resolve, reject) => {
       try {
         console.log('[core.js] Starting game readiness check...');
         
         let context = window.__idleon_cheats__;
         if (!context) {
-          // Try to find context in iframe
           const iframe = window.document.querySelector('iframe');
           if (iframe && iframe.contentWindow && iframe.contentWindow.__idleon_cheats__) {
             context = iframe.contentWindow.__idleon_cheats__;
@@ -103,23 +112,35 @@
           }
         }
 
-        // Wait for game to be fully ready
         await gameReady.call(context);
+        
+        // Mark as done and clear the promise cache
+        setupDone = true;
+        gameReadyPromise = null;
         
         console.log('[core.js] Game is fully ready!');
         resolve();
       } catch (error) {
         console.error('[core.js] Game readiness check failed:', error);
+        
+        // Clear the promise cache on error so it can be retried
+        gameReadyPromise = null;
+        setupDone = false;
+        
         reject(error);
       }
     });
+
+    return gameReadyPromise;
   };
 
-  // Legacy compatibility - simple game ready check
   window.__idleon_is_game_ready = function() {
+    // Fast path - if setup is done AND variables are initialized, return true immediately
+    if (setupDone && window.bEngine) return true;
+
     try {
       const context = window.__idleon_cheats__;
-      return !!(
+      const isReady = !!(
         context &&
         context['com.stencyl.Engine'] &&
         context['com.stencyl.Engine'].engine &&
@@ -127,17 +148,23 @@
         context['com.stencyl.Engine'].engine.sceneInitialized &&
         context['com.stencyl.Engine'].engine.behaviors.behaviors[0].script._CloudLoadComplete === 1
       );
+      
+      // If game is ready but setup isn't done, we need to register variables first
+      if (isReady && !setupDone) {
+        console.log('[core.js] Game detected as ready via legacy check, but setup not complete');
+        // Don't auto-mark as done here since variables might not be registered
+      }
+      
+      return isReady && setupDone && window.bEngine;
     } catch (e) {
       return false;
     }
   };
 
-  // Initialize result collector for plugin communication
   if (!window.__plugin_results__) {
     window.__plugin_results__ = {};
   }
 
-  // Add postMessage handler for plugin function calls
   window.addEventListener('message', async function(event) {
     if (!event.data || event.data.type !== 'plugin_call') return;
     
@@ -151,10 +178,8 @@
         result = `Function '${func}' not found`;
       }
       
-      // Store result for polling
       window.__plugin_results__[callId] = { type: 'plugin_result', callId, result };
       
-      // Also post back for in-browser listeners
       window.postMessage({ type: 'plugin_result', callId, result }, '*');
     } catch (e) {
       const errorMsg = e && e.stack ? e.stack : e;
@@ -171,7 +196,6 @@
     }
   });
 
-  // Auto-initialize when context becomes available
   function checkForContext() {
     if (window.__idleon_cheats__ && !setupDone) {
       console.log('[core.js] Context detected, running auto-setup...');
@@ -179,12 +203,10 @@
         console.error('[core.js] Auto-setup failed:', error);
       });
     } else if (!window.__idleon_cheats__) {
-      // Check again in 1 second
       setTimeout(checkForContext, 1000);
     }
   }
 
-  // Start checking for context
   setTimeout(checkForContext, 100);
 
   console.log('[core.js] Core initialization script loaded');

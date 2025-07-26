@@ -21,7 +21,7 @@ class PyInjector:
                 raise RuntimeError("No tabs found in browser after waiting.")
             time.sleep(0.5)
 
-    def evaluate(self, expression):
+    def evaluate(self, expression, awaitPromise=False):
         if not self.tab:
             raise RuntimeError("No tab connected")
-        return self.tab.call_method("Runtime.evaluate", expression=expression) 
+        return self.tab.call_method("Runtime.evaluate", expression=expression, awaitPromise=awaitPromise) 

@@ -3,14 +3,14 @@
   "interactive": true,
   "plugins": [
     "spawn_item",
-    "mob_spawn_rate"
+    "instant_mob_respawn"
   ],
   "plugin_configs": {
     "spawn_item": {
-      "debug": false
+      "debug": true
     },
-    "mob_spawn_rate": {
-      "debug": false,
+    "instant_mob_respawn": {
+      "debug": true,
       "toggle": true
     }
   },
