@@ -1,0 +1,24 @@
+<div class="plugin-grid">
+    {% for plugin_name, schema in plugin_schemas.items() %}
+    <div class="plugin-card">
+        <div class="plugin-header">
+            <div class="plugin-title">{{ schema.plugin_info.get('name', plugin_name) }}</div>
+            <div class="plugin-description">{{ schema.plugin_info.get('description', 'No description') }}</div>
+            <div class="plugin-version">v{{ schema.plugin_info.get('version', '1.0.0') }}</div>
+        </div>
+        
+        {% for category_name, elements in schema.categories.items() %}
+        <div class="category-section">
+            <div class="category-title">
+                {{ category_name }}
+            </div>
+            
+            {% for element in elements %}
+            {% set plugin_name = plugin_name %}
+            {% include 'html/ui_elements.html' %}
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div> 

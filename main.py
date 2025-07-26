@@ -161,6 +161,7 @@ def cmd_inject(args=None, plugin_manager=None):
             )
             web_server_task.start()
             console.print("[green]Plugin UI web server started at http://localhost:8080[/green]")
+            console.print("[cyan]Plugin configuration interface available at http://localhost:8080[/cyan]")
             
     except Exception as e:
         console.print(f"[red]Failed to connect injector: {e}[/red]")

@@ -2,20 +2,34 @@
 
 import asyncio
 import json
+import os
+import sys
+from pathlib import Path
 from aiohttp import web, ClientSession
+from aiohttp_jinja2 import setup as setup_jinja2, render_template
+from jinja2 import FileSystemLoader
+
+sys.path.append(str(Path(__file__).parent.parent))
 from plugin_system import PluginManager
-from webui.web_ui_generator import WebUIGenerator
 
 class PluginWebAPI:
     def __init__(self, plugin_manager: PluginManager):
         self.plugin_manager = plugin_manager
         self.app = web.Application()
+        self.setup_templates()
         self.setup_routes()
+    
+    def setup_templates(self):
+        template_dir = Path(__file__).parent / 'templates'
+        setup_jinja2(self.app, loader=FileSystemLoader(str(template_dir)))
     
     def setup_routes(self):
         self.app.router.add_post('/api/plugin-ui-action', self.handle_ui_action)
         self.app.router.add_post('/api/autocomplete', self.handle_autocomplete)
         self.app.router.add_get('/', self.serve_ui)
+        
+        static_dir = Path(__file__).parent / 'templates'
+        self.app.router.add_static('/static', static_dir)
     
     async def handle_ui_action(self, request):
         try:
@@ -102,17 +116,19 @@ class PluginWebAPI:
             
             all_ui_elements = self.plugin_manager.get_all_ui_elements()
             
-            ui_schemas = {}
-            for plugin_name, plugin_data in all_ui_elements.items():
-                ui_schemas[plugin_name] = {
-                    "plugin_info": plugin_data.get("plugin_info", {}),
-                    "categories": plugin_data.get("categories", {})
-                }
+            use_tabs = len(all_ui_elements) > 1
             
-            generator = WebUIGenerator()
-            html_content = generator.generate_ui_html(ui_schemas)
+            context = {
+                'plugin_schemas': all_ui_elements,
+                'use_tabs': use_tabs
+            }
             
-            return web.Response(text=html_content, content_type='text/html')
+            if use_tabs:
+                response = render_template('html/tabbed_interface.html', request, context)
+            else:
+                response = render_template('html/plugin_cards.html', request, context)
+            
+            return response
             
         except Exception as e:
             return web.json_response({

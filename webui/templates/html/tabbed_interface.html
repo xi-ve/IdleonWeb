@@ -1,0 +1,39 @@
+<div class="tab-container">
+    <div class="tab-header">
+        {% for plugin_name, schema in plugin_schemas.items() %}
+        {% set total_elements = schema.categories.values() | sum(attribute='length') %}
+        <button class="tab-button" data-tab="{{ plugin_name }}">
+            <div class="plugin-info">
+                <span class="plugin-badge">{{ schema.plugin_info.get('name', plugin_name) }}</span>
+                <span class="plugin-count">{{ total_elements }} elements</span>
+            </div>
+        </button>
+        {% endfor %}
+    </div>
+    <div class="tab-contents">
+        {% for plugin_name, schema in plugin_schemas.items() %}
+        <div class="tab-content" data-tab-content="{{ plugin_name }}">
+            <div class="plugin-card">
+                <div class="plugin-header">
+                    <div class="plugin-title">{{ schema.plugin_info.get('name', plugin_name) }}</div>
+                    <div class="plugin-description">{{ schema.plugin_info.get('description', 'No description') }}</div>
+                    <div class="plugin-version">v{{ schema.plugin_info.get('version', '1.0.0') }}</div>
+                </div>
+                
+                {% for category_name, elements in schema.categories.items() %}
+                <div class="category-section">
+                    <div class="category-title">
+                        {{ category_name }}
+                    </div>
+                    
+                    {% for element in elements %}
+                    {% set plugin_name = plugin_name %}
+                    {% include 'html/ui_elements.html' %}
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div> 

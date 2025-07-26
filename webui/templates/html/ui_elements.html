@@ -1,0 +1,94 @@
+{% set element_type = element.get('type', 'button') %}
+{% set name = element.get('name', '') %}
+{% set label = element.get('label', name) %}
+{% set description = element.get('description', '') %}
+{% set config_key = element.get('config_key', name) %}
+{% set plugin_config = plugin_configs.get(plugin_name, {}) %}
+{% set current_value = plugin_config.get(config_key, element.get('default_value', '')) %}
+
+<div class="ui-element" data-plugin-name="{{ plugin_name }}" data-config-key="{{ config_key }}" data-element-name="{{ name }}">
+    <div class="element-label">{{ label }}</div>
+    {% if description %}
+    <div class="element-description">{{ description }}</div>
+    {% endif %}
+    
+    {% if element_type == 'toggle' %}
+    <div class="toggle-container">
+        <div class="toggle-switch{% if current_value %} active{% endif %}">
+            <div class="toggle-slider"></div>
+        </div>
+        <span>{% if current_value %}Enabled{% else %}Disabled{% endif %}</span>
+    </div>
+    
+    {% elif element_type == 'slider' %}
+    <div class="slider-container">
+        <input type="range" class="slider" 
+               min="{{ element.get('min_value', 0) }}" 
+               max="{{ element.get('max_value', 100) }}" 
+               step="{{ element.get('step', 1) }}" 
+               value="{{ current_value }}">
+        <div class="slider-value">{{ current_value }}</div>
+    </div>
+    
+    {% elif element_type == 'button' %}
+    <button class="btn" data-original-text="{{ label }}">{{ label }}</button>
+    
+    {% elif element_type == 'select' %}
+    <select class="select">
+        {% for option in element.get('options', []) %}
+        {% set option_label = option.get('label', option.get('value', '')) %}
+        {% set option_value = option.get('value', '') %}
+        {% set selected = 'selected' if option_value == current_value else '' %}
+        <option value="{{ option_value }}" {{ selected }}>{{ option_label }}</option>
+        {% endfor %}
+    </select>
+    
+    {% elif element_type == 'text_input' %}
+    <input type="text" class="input" 
+           value="{{ current_value }}" 
+           placeholder="{{ element.get('placeholder', '') }}"
+           {% if element.get('required', False) %}required{% endif %}>
+    
+    {% elif element_type == 'number_input' %}
+    {% set min_attr = 'min="' + element.get('min_value', '') + '"' if element.get('min_value') else '' %}
+    {% set max_attr = 'max="' + element.get('max_value', '') + '"' if element.get('max_value') else '' %}
+    <input type="number" class="input" 
+           value="{{ current_value }}" 
+           step="{{ element.get('step', 1) }}"
+           {{ min_attr }}
+           {{ max_attr }}>
+    
+    {% elif element_type == 'input_with_button' %}
+    <div class="input-with-button">
+        <input type="text" class="input" placeholder="{{ element.get('placeholder', '') }}">
+        <button class="btn" data-original-text="{{ element.get('button_text', 'Execute') }}">{{ element.get('button_text', 'Execute') }}</button>
+    </div>
+    
+    {% elif element_type == 'search_with_results' %}
+    <div class="search-with-results">
+        <div class="search-input">
+            <input type="text" class="input" placeholder="{{ element.get('placeholder', '') }}">
+            <button class="btn" data-original-text="{{ element.get('button_text', 'Search') }}">{{ element.get('button_text', 'Search') }}</button>
+        </div>
+        <div class="search-results" style="display: none;">
+            <div class="results-header">
+                <span class="results-title">Search Results</span>
+                <button class="close-btn" title="Close results">×</button>
+            </div>
+            <div class="results-content">
+                <div class="results-list"></div>
+            </div>
+        </div>
+    </div>
+    
+    {% elif element_type == 'autocomplete_input' %}
+    <div class="autocomplete-input">
+        <input type="text" class="input autocomplete-field" placeholder="{{ element.get('placeholder', '') }}" list="autocomplete-{{ name }}">
+        <datalist id="autocomplete-{{ name }}"></datalist>
+        <button class="btn" data-original-text="{{ element.get('button_text', 'Execute') }}">{{ element.get('button_text', 'Execute') }}</button>
+    </div>
+    
+    {% else %}
+    <button class="btn" data-original-text="{{ label }}">{{ label }}</button>
+    {% endif %}
+</div> 
