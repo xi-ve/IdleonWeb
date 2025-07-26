@@ -155,13 +155,14 @@ If you prefer manual setup:
 
 ### Plugin Lifecycle Hooks
 
-When creating a plugin, you can override the following methods from `PluginBase` to control its behavior. **Note: These methods are required to be defined in your plugin class, even if they are empty.**
+When creating a plugin, you can override the following methods from `PluginBase` to control its behavior. **Note: The following methods are required to be defined in your plugin class (they are abstract):**
 
-- `initialize(self, injector)`: Called when the plugin is loaded and the injector is available. Set up any state or browser context here.
 - `cleanup(self)`: Called when the plugin is unloaded or the application exits. Use this to clean up resources.
 - `update(self)`: Called periodically (every second) while the injector is running. Use for polling or background tasks.
 - `on_config_changed(self, config)`: Called whenever the plugin's configuration changes. Use to react to config updates.
 - `on_game_ready(self)`: Called when the Idleon game is fully loaded and ready. Use to perform actions that require the game context.
+
+You may also optionally override `initialize(self, injector)` to perform setup when the plugin is loaded, but it is not required.
 
 Example skeleton:
 ```python
@@ -176,35 +177,31 @@ class MyPlugin(PluginBase):
     def hello_js(self, name="Idleon"): 
         return f'console.log("Hello, {name}!");'
 
-    # Required lifecycle methods (must be defined):
+    # Optional: setup when plugin is loaded
     async def initialize(self, injector):
-        # Optional: setup when plugin is loaded
-        # Example: Set up initial state, register event handlers
         self.injector = injector
         if self.debug:
             console.print(f"[MyPlugin] Initialized with injector")
 
+    # Required lifecycle methods (must be defined):
     async def cleanup(self):
-        # Optional: cleanup when plugin is unloaded
         # Example: Remove event listeners, close connections
         if self.debug:
             console.print(f"[MyPlugin] Cleaning up resources")
 
     async def update(self):
-        # Optional: periodic update (called every second)
         # Example: Poll for changes, update status
         # if self.debug:
         #     console.print(f"[MyPlugin] Periodic update")
+        pass
 
     async def on_config_changed(self, config):
-        # Optional: react to config changes
         # Example: Update internal state, notify browser
         if self.debug:
             console.print(f"[MyPlugin] Config changed: {config}")
         self.set_config(config)
 
     async def on_game_ready(self):
-        # Optional: run code when game is ready
         # Example: Set up game-specific features, inject initial state
         if self.debug:
             console.print(f"[MyPlugin] Game is ready, setting up features")
