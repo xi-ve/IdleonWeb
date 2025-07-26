@@ -1,19 +1,26 @@
 {
-  "name": "core",
+  "name": "idleonweb-core",
   "version": "1.0.0",
-  "description": "",
+  "description": "Core Node.js dependencies for IdleonWeb injector",
   "main": "injector.js",
   "scripts": {
+    "start": "node injector.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
+  "keywords": [
+    "idleon",
+    "injector",
+    "chrome",
+    "cdp"
+  ],
+  "author": "IdleonWeb Team",
+  "license": "MIT",
   "dependencies": {
-    "chrome-remote-interface": "^0.33.3",
-    "enquirer": "^2.4.1",
-    "express": "^5.1.0",
+    "chrome-remote-interface": "^0.33.0",
     "lodash": "^4.17.21"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
   }
 }

@@ -17,6 +17,23 @@ A modern, extensible launcher and plugin system for automating and enhancing Leg
 
 ## 🛠️ Setup
 
+### Quick Setup (Recommended)
+Run the automated setup script:
+```sh
+./setup.sh
+```
+
+This script will:
+- ✅ Check for Python 3 and Node.js installations
+- ✅ Create and configure the Python virtual environment
+- ✅ Install all Python dependencies from `requirements.txt`
+- ✅ Install Node.js dependencies in the `core/` directory
+- ✅ Create necessary directories (`plugins/`, `core/tmp_js/`)
+- ✅ Generate initial configuration file (`core/conf.json`)
+
+### Manual Setup
+If you prefer manual setup:
+
 1. **Clone the repository and enter the directory:**
    ```sh
    git clone <repo-url>
@@ -28,11 +45,16 @@ A modern, extensible launcher and plugin system for automating and enhancing Leg
    source .venv/bin/activate
    pip install -r requirements.txt
    ```
-3. **Run the launcher:**
+3. **Install Node.js dependencies:**
+   ```sh
+   cd core
+   npm install
+   cd ..
+   ```
+4. **Run the launcher:**
    ```sh
    python main.py
    ```
-   - The first run will install Node.js dependencies in `core/` if needed.
 
 ---
 
