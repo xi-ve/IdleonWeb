@@ -120,7 +120,8 @@ class PluginWebAPI:
             
             context = {
                 'plugin_schemas': all_ui_elements,
-                'use_tabs': use_tabs
+                'use_tabs': use_tabs,
+                'plugin_configs': config_manager.get_all_plugin_configs()
             }
             
             if use_tabs:
