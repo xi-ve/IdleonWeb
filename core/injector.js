@@ -1,5 +1,3 @@
-// Idleon Injector - streamlined and organized
-
 const { spawn, exec } = require('child_process');
 const CDP = require('chrome-remote-interface');
 const fs = require('fs');
@@ -7,7 +5,6 @@ const os = require('os');
 const path = require('path');
 const _ = require('lodash');
 
-// --- Load Configuration ---
 const confPath = path.join(__dirname, 'conf.json');
 let config = {};
 if (fs.existsSync(confPath)) {
@@ -19,12 +16,10 @@ if (fs.existsSync(confPath)) {
   config = { injectFiles: ['test.js'], openDevTools: false, interactive: false };
 }
 
-// --- Constants ---
 const CDP_PORT = 32123;
 const NJS_PATTERN = '*N.js';
 const IDLEON_URL = 'https://www.legendsofidleon.com/ytGl5oc/';
 
-// --- Helper Functions ---
 function openUrl(url) {
   const platform = process.platform;
   if (platform === 'win32') {
@@ -58,7 +53,6 @@ function launchChromiumWithIdleon() {
     console.error("Could not find Chromium/Chrome executable. Please install Chromium or Google Chrome.");
     process.exit(1);
   }
-  // use cwd for userDataDir
   const userDataDir = path.join(process.cwd(), 'idleon-chromium-profile');
   const args = [
     `--remote-debugging-port=${CDP_PORT}`,
@@ -105,7 +99,6 @@ function waitForCDP(timeout = 60_000) {
   });
 }
 
-// --- Main Injector Logic ---
 (async () => {
   try {
     console.log('[Injector] Starting main logic...');
@@ -117,7 +110,6 @@ function waitForCDP(timeout = 60_000) {
     const client = await CDP({ target: tab, port: CDP_PORT });
     const { Network, Runtime, Page } = client;
 
-    // Open DevTools if requested
     if (config.openDevTools) {
       const devtoolsUrl = `http://localhost:${CDP_PORT}/devtools/inspector.html?ws=localhost:${CDP_PORT}/devtools/page/${tab.id}`;
       console.log(`[Injector] Opening DevTools: ${devtoolsUrl}`);
@@ -129,7 +121,6 @@ function waitForCDP(timeout = 60_000) {
     await Page.enable();
     await Page.setBypassCSP({ enabled: true });
 
-    // Enable console logging like main.js does
     Runtime.consoleAPICalled((entry) => {
       console.log('[Game Console]', entry.args.map(arg => arg.value).join(" "));
     });
@@ -153,7 +144,6 @@ function waitForCDP(timeout = 60_000) {
           const response = await Network.getResponseBodyForInterception({ interceptionId });
           const originalBody = Buffer.from(response.body, 'base64').toString();
           
-          // Inject global object using the same pattern as main.js
           const injreg = /\w+\.ApplicationMain\s*?=/;
           const match = injreg.exec(originalBody);
           if (!match) {
@@ -164,7 +154,6 @@ function waitForCDP(timeout = 60_000) {
           const varName = match[0].split('.')[0];
           let injected = originalBody.replace(match[0], `window.__idleon_cheats__=${varName};${match[0]}`);
 
-          // Prepend plugin JS code directly into N.js
           let pluginJsCode = '';
           const pluginJsPath = path.join(__dirname, 'plugins_combined.js');
           if (fs.existsSync(pluginJsPath)) {
@@ -172,7 +161,6 @@ function waitForCDP(timeout = 60_000) {
             console.log(`[Injector] Prepending plugin JS from: ${pluginJsPath}`);
           }
           
-          // Also prepend core.js for game readiness detection
           const corePath = path.join(__dirname, 'core.js');
           if (fs.existsSync(corePath)) {
             const coreCode = fs.readFileSync(corePath, 'utf-8');
@@ -182,7 +170,6 @@ function waitForCDP(timeout = 60_000) {
           
           injected = pluginJsCode + '\n' + injected;
 
-          // Serve modified JS
           const headers = [
             `Date: ${(new Date()).toUTCString()}`,
             "Connection: closed",
@@ -201,7 +188,6 @@ function waitForCDP(timeout = 60_000) {
           });
           console.log("[Injector] Served modified JS to game (with plugin JS prepended).");
         } else {
-          // Always continue all other requests
           await Network.continueInterceptedRequest({ interceptionId });
         }
       } catch (err) {
@@ -210,12 +196,10 @@ function waitForCDP(timeout = 60_000) {
       }
     });
 
-    // Wait for interception to complete
     while (!intercepted) {
       await new Promise(r => setTimeout(r, 500));
     }
 
-    // Wait for the page to be fully loaded - CRITICAL FIX
     let pageLoaded = false;
     Page.loadEventFired(async () => {
       console.log("[Injector] Page load event fired. Waiting for game context...");
@@ -223,7 +207,6 @@ function waitForCDP(timeout = 60_000) {
       let contextReady = false;
       let contextExpr = "window.__idleon_cheats__";
       
-      // Wait for context in main window first
       for (let i = 0; i < 60; ++i) {
         let res = await client.Runtime.evaluate({ expression: `typeof ${contextExpr} === 'object'`, returnByValue: true });
         if (res.result && res.result.value) {
@@ -232,7 +215,6 @@ function waitForCDP(timeout = 60_000) {
           break;
         }
         
-        // CRITICAL: Check iframe context like main.js does
         res = await client.Runtime.evaluate({ 
           expression: "typeof window.document.querySelector('iframe')?.contentWindow?.__idleon_cheats__ === 'object'", 
           returnByValue: true 
@@ -251,26 +233,21 @@ function waitForCDP(timeout = 60_000) {
         process.exit(1);
       }
 
-      // CRITICAL FIX: Wait for game to be ready using the same approach as main.js
       console.log("[Injector] Waiting for game to be fully ready...");
       try {
-        // Use the __idleon_wait_for_game_ready function from core.js
         await client.Runtime.evaluate({ 
           expression: `await window.__idleon_wait_for_game_ready()`, 
           awaitPromise: true 
         });
         console.log("[Injector] Game is ready!");
         
-        // Now inject plugins into the correct context
         const pluginJsPath = path.join(__dirname, 'plugins_combined.js');
         if (fs.existsSync(pluginJsPath)) {
           const code = fs.readFileSync(pluginJsPath, 'utf-8');
           console.log("[Injector] Injecting plugins into game context...");
           
-          // CRITICAL: Inject into the correct context (iframe if needed)
           let injectExpression;
           if (contextExpr.includes('iframe')) {
-            // Inject into iframe context
             injectExpression = `
               (function() {
                 const iframe = window.document.querySelector('iframe');
@@ -283,7 +260,6 @@ function waitForCDP(timeout = 60_000) {
               })()
             `;
           } else {
-            // Inject into main window context
             injectExpression = code;
           }
           
@@ -301,16 +277,12 @@ function waitForCDP(timeout = 60_000) {
       pageLoaded = true;
     });
     
-    // Wait for page load event
     while (!pageLoaded) {
       await new Promise(r => setTimeout(r, 500));
     }
 
     console.log('[Injector] Injection complete. Keeping process alive for interaction...');
-    
-    // Keep process alive instead of exiting immediately
        
-    // Give a moment for any final logging, then exit cleanly
     setTimeout(() => {
       process.exit(0);
     }, 2000);

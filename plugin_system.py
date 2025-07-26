@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Callable
 import traceback
 import json
-import os
 
 from rich.console import Console
 from config_manager import config_manager

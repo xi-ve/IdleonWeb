@@ -31,11 +31,6 @@ update_loop_task = None
 update_loop_stop = threading.Event()
 
 def ensure_node_dependencies(startup_msgs=None):
-    """
-    Ensure Node.js dependencies are installed in the core directory.
-    Args:
-        startup_msgs (list, optional): List to append status messages to.
-    """
     node_modules_path = CORE_DIR / 'node_modules'
     if not node_modules_path.exists():
         msg = "[bold yellow]Node.js dependencies not found. Installing...[/bold yellow]"
@@ -57,38 +52,18 @@ def ensure_node_dependencies(startup_msgs=None):
             startup_msgs.append(msg)
 
 def ensure_config(startup_msgs=None):
-    """
-    Ensure configuration file exists with defaults.
-    Args:
-        startup_msgs (list, optional): List to append status messages to.
-    """
     msg = f"[bold cyan]Config file ready at [white]{CONF_PATH}[/white][/bold cyan]"
     if startup_msgs:
         startup_msgs.append(msg)
 
 def load_config():
-    """
-    Load configuration using ConfigManager.
-    Returns:
-        dict: The full configuration dictionary.
-    """
     return config_manager.get_full_config()
 
 def save_config(config):
-    """
-    Save configuration using ConfigManager.
-    Args:
-        config (dict): The configuration to save.
-    """
     config_manager.set_full_config(config)
     console.print("[green]Config updated.[/green]")
 
 def run_injector(silent=True):
-    """
-    Run the Node.js injector script.
-    Args:
-        silent (bool): If True, suppress output. If False, print output.
-    """
     if silent:
         process = subprocess.Popen(
             [NODE_PATH, str(INJECTOR_PATH)],
@@ -110,11 +85,6 @@ def run_injector(silent=True):
     process.wait()
 
 def collect_plugin_js(plugin_manager):
-    """
-    Collect JavaScript code from all plugins and write to plugins_combined.js.
-    Args:
-        plugin_manager (PluginManager): The plugin manager instance.
-    """
     js_code = plugin_manager.collect_all_plugin_js()
     if config_manager.get_path('debug', False):
         console.print("[DEBUG] Generated plugin JS code length:", len(js_code))
@@ -134,20 +104,12 @@ def collect_plugin_js(plugin_manager):
     console.print(table)
 
 def update_inject_files():
-    """
-    Ensure plugins_combined.js is listed in the injectFiles config.
-    """
     inject_files = config_manager.get_path("injectFiles", [])
     if "plugins_combined.js" not in inject_files:
         inject_files.append("plugins_combined.js")
         config_manager.set_path("injectFiles", inject_files)
 
 async def start_update_loop(plugin_manager):
-    """
-    Main update loop for plugins. Calls update_all every second.
-    Args:
-        plugin_manager (PluginManager): The plugin manager instance.
-    """
     try:
         while not update_loop_stop.is_set():
             await plugin_manager.update_all()
@@ -158,11 +120,6 @@ async def start_update_loop(plugin_manager):
         await plugin_manager.cleanup_all()
 
 def run_update_loop(plugin_manager):
-    """
-    Run the update loop in a separate thread.
-    Args:
-        plugin_manager (PluginManager): The plugin manager instance.
-    """
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
@@ -171,12 +128,6 @@ def run_update_loop(plugin_manager):
         loop.close()
 
 def cmd_inject(args=None, plugin_manager=None):
-    """
-    Run the injector with current config and start plugin update loop.
-    Args:
-        args (list, optional): CLI arguments.
-        plugin_manager (PluginManager): The plugin manager instance.
-    """
     global injector, update_loop_task, update_loop_stop
     collect_plugin_js(plugin_manager)
     update_inject_files()
@@ -200,12 +151,6 @@ def cmd_inject(args=None, plugin_manager=None):
         injector = None
 
 def cmd_config(args=None, plugin_manager=None):
-    """
-    Show current injector config in a table.
-    Args:
-        args (list, optional): CLI arguments.
-        plugin_manager (PluginManager): The plugin manager instance.
-    """
     config = config_manager.get_full_config()
     table = Table(title="Current Injector Config")
     table.add_column("Key", style="bold cyan")
@@ -215,12 +160,6 @@ def cmd_config(args=None, plugin_manager=None):
     console.print(table)
 
 def cmd_plugins(args=None, plugin_manager=None):
-    """
-    List loaded plugins in a table.
-    Args:
-        args (list, optional): CLI arguments.
-        plugin_manager (PluginManager): The plugin manager instance.
-    """
     table = Table(title="Loaded Plugins")
     table.add_column("Plugin Name", style="bold green")
     table.add_column("Status", style="cyan")
@@ -231,24 +170,11 @@ def cmd_plugins(args=None, plugin_manager=None):
     console.print(table)
 
 def cmd_reload_config(args=None, plugin_manager=None):
-    """
-    Reload plugin configurations from conf.json.
-    Args:
-        args (list, optional): CLI arguments.
-        plugin_manager (PluginManager): The plugin manager instance.
-    """
     console.print("[cyan]Reloading plugin configurations from conf.json...[/cyan]")
     plugin_manager.reload_configs_from_file()
     console.print("[green]Configuration reload complete.[/green]")
 
 def cmd_help(args=None, plugin_manager=None, all_commands=None):
-    """
-    Show help for all commands in a table.
-    Args:
-        args (list, optional): CLI arguments.
-        plugin_manager (PluginManager): The plugin manager instance.
-        all_commands (dict): All available commands.
-    """
     table = Table(title="Available Commands")
     table.add_column("Command", style="bold green")
     table.add_column("Help", style="white")
@@ -258,12 +184,6 @@ def cmd_help(args=None, plugin_manager=None, all_commands=None):
     console.print("[cyan]Type a command and press [bold]Tab[/bold] for autocomplete.[/cyan]")
 
 def cmd_exit(args=None, plugin_manager=None):
-    """
-    Exit the CLI, stop update loop, and clean up plugins.
-    Args:
-        args (list, optional): CLI arguments.
-        plugin_manager (PluginManager): The plugin manager instance.
-    """
     global update_loop_stop, update_loop_task
     console.print("[bold green]Shutting down...[/bold green]")
     update_loop_stop.set()
@@ -275,24 +195,9 @@ def cmd_exit(args=None, plugin_manager=None):
     sys.exit(0)
 
 class HierarchicalCompleter:
-    """
-    Auto-completion for commands using prompt_toolkit.
-    """
     def __init__(self, get_commands_func):
-        """
-        Args:
-            get_commands_func (callable): Function returning all available commands.
-        """
         self.get_commands = get_commands_func
     def get_completions(self, document, complete_event):
-        """
-        Synchronous completion for prompt_toolkit.
-        Args:
-            document: prompt_toolkit Document
-            complete_event: prompt_toolkit CompleteEvent
-        Yields:
-            Completion objects
-        """
         text = document.text_before_cursor.strip()
         last_token = text.split()[-1] if text else ''
         all_commands = self.get_commands()
@@ -303,14 +208,6 @@ class HierarchicalCompleter:
         for comp in sorted(completions):
             yield Completion(comp, start_position=-len(last_token))
     async def get_completions_async(self, document, complete_event):
-        """
-        Asynchronous completion for prompt_toolkit.
-        Args:
-            document: prompt_toolkit Document
-            complete_event: prompt_toolkit CompleteEvent
-        Yields:
-            Completion objects
-        """
         text = document.text_before_cursor.strip()
         last_token = text.split()[-1] if text else ''
         all_commands = self.get_commands()
@@ -322,10 +219,6 @@ class HierarchicalCompleter:
             yield Completion(comp, start_position=-len(last_token))
 
 def main():
-    """
-    Main entry point for the Idleon Injector CLI.
-    Loads config, plugins, sets up CLI, and runs the main loop.
-    """
     startup_msgs = []
     ensure_node_dependencies(startup_msgs)
     ensure_config(startup_msgs)
@@ -358,11 +251,6 @@ def main():
         'exit': {'func': cmd_exit, 'help': 'Exit the CLI.'}
     }
     def get_all_commands():
-        """
-        Get all available commands (built-in + plugin).
-        Returns:
-            dict: All available commands.
-        """
         cmds = dict(builtin_commands)
         plugin_cmds = plugin_manager.get_all_commands()
         cmds.update(plugin_cmds)

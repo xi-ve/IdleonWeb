@@ -7,7 +7,6 @@ class PyInjector:
         self.tab = None
 
     def connect(self, wait_timeout=10):
-        # Wait for a tab to appear (browser may take a moment to launch)
         start = time.time()
         while True:
             tabs = self.browser.list_tab()
