@@ -1,3 +1,6 @@
+{% extends "html/base.html" %}
+
+{% block content %}
 <div class="plugin-grid">
     {% for plugin_name, schema in plugin_schemas.items() %}
     <div class="plugin-card">
@@ -21,4 +24,5 @@
         {% endfor %}
     </div>
     {% endfor %}
-</div> 
+</div>
+{% endblock %} 

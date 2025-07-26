@@ -11,6 +11,7 @@ from jinja2 import FileSystemLoader
 
 sys.path.append(str(Path(__file__).parent.parent))
 from plugin_system import PluginManager
+from config_manager import config_manager
 
 class PluginWebAPI:
     def __init__(self, plugin_manager: PluginManager):
@@ -18,6 +19,10 @@ class PluginWebAPI:
         self.app = web.Application()
         self.setup_templates()
         self.setup_routes()
+        
+        # Get debug setting from config
+        config_manager.reload()
+        self.debug = config_manager.get_path('debug', False)
     
     def setup_templates(self):
         template_dir = Path(__file__).parent / 'templates'
@@ -88,7 +93,8 @@ class PluginWebAPI:
                     return web.json_response([])
                     
         except Exception as e:
-            print(f"Error handling autocomplete request: {e}")
+            if self.debug:
+                print(f"Error handling autocomplete request: {e}")
             return web.json_response({'error': str(e)})
     
     async def get_ui_schemas(self, request):
@@ -111,12 +117,17 @@ class PluginWebAPI:
     
     async def serve_ui(self, request):
         try:
-            from config_manager import config_manager
             config_manager.reload()
             
             all_ui_elements = self.plugin_manager.get_all_ui_elements()
+            if self.debug:
+                print(f"DEBUG: Found {len(all_ui_elements)} plugins with UI elements")
+                for plugin_name, data in all_ui_elements.items():
+                    print(f"DEBUG: Plugin {plugin_name} has {len(data.get('categories', {}))} categories")
             
             use_tabs = len(all_ui_elements) > 1
+            if self.debug:
+                print(f"DEBUG: Using tabs: {use_tabs}")
             
             context = {
                 'plugin_schemas': all_ui_elements,
@@ -124,14 +135,34 @@ class PluginWebAPI:
                 'plugin_configs': config_manager.get_all_plugin_configs()
             }
             
-            if use_tabs:
-                response = render_template('html/tabbed_interface.html', request, context)
-            else:
-                response = render_template('html/plugin_cards.html', request, context)
-            
-            return response
+            try:
+                if use_tabs:
+                    if self.debug:
+                        print("DEBUG: Rendering tabbed interface template")
+                    response = render_template('html/tabbed_interface.html', request, context)
+                else:
+                    if self.debug:
+                        print("DEBUG: Rendering plugin cards template")
+                    response = render_template('html/plugin_cards.html', request, context)
+                
+                if self.debug:
+                    print(f"DEBUG: Response type: {type(response)}")
+                    print(f"DEBUG: Response content length: {len(str(response))}")
+                return response
+            except Exception as e:
+                if self.debug:
+                    print(f"DEBUG: Template rendering error: {e}")
+                    import traceback
+                    traceback.print_exc()
+                return web.json_response({
+                    'error': f'Template rendering error: {str(e)}'
+                }, status=500)
             
         except Exception as e:
+            if self.debug:
+                print(f"DEBUG: Error in serve_ui: {e}")
+                import traceback
+                traceback.print_exc()
             return web.json_response({
                 'error': f'Error generating UI: {str(e)}'
             }, status=500)
@@ -143,6 +174,8 @@ class PluginWebAPI:
         await site.start()
         
         print(f"Plugin UI server started at http://{host}:{port}")
+        if self.debug:
+            print("DEBUG: Web API integration debug mode enabled")
         print("Press Ctrl+C to stop the server")
         
         try:

@@ -417,7 +417,21 @@ body {
 }
 
 .result-item .item-name {
-    color: var(--text);
+    color: var(--text-secondary);
+}
+
+.result-item.error {
+    color: var(--error-color);
+    background: rgba(239, 68, 68, 0.1);
+    border-left: 3px solid var(--error-color);
+    padding-left: 1rem;
+}
+
+.result-item.success {
+    color: var(--success-color);
+    background: rgba(16, 185, 129, 0.1);
+    border-left: 3px solid var(--success-color);
+    padding-left: 1rem;
 }
 
 .autocomplete-input {

@@ -8,9 +8,9 @@
   "plugin_configs": {
     "spawn_item": {
       "debug": false,
-      "spawn_item_ui": "EquipmentHats10",
-      "search_items_ui": "Timecandy9",
-      "list_all_items_ui": "Timecandy"
+      "spawn_item_ui": "Timecandy9 5",
+      "search_items_ui": "crab",
+      "list_all_items_ui": "candy"
     },
     "instant_mob_respawn": {
       "debug": false,

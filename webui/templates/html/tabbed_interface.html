@@ -1,3 +1,6 @@
+{% extends "html/base.html" %}
+
+{% block content %}
 <div class="tab-container">
     <div class="tab-header">
         {% for plugin_name, schema in plugin_schemas.items() %}
@@ -36,4 +39,5 @@
         </div>
         {% endfor %}
     </div>
-</div> 
+</div>
+{% endblock %} 

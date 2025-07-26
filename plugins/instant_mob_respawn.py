@@ -4,7 +4,7 @@ from plugin_system import plugin_command, js_export, PluginBase, console, ui_tog
 from config_manager import config_manager
 
 class InstantMobRespawnPlugin(PluginBase):
-    VERSION = "1.0.1"
+    VERSION = "1.0.2"
     DESCRIPTION = "Change the rates of the game."
 
     def __init__(self, config=None):
@@ -29,7 +29,7 @@ class InstantMobRespawnPlugin(PluginBase):
 
     async def on_config_changed(self, config: Dict[str, Any]) -> None:
         self.debug = config_manager.get_path('plugin_configs.instant_mob_respawn.debug', True)
-        if GLOBAL_DEBUG:
+        if  self.debug:
             console.print(f"[instant_mob_respawn] Config changed: {config}")
         if hasattr(self, 'injector') and self.injector:
             self.set_config(config)

@@ -239,6 +239,14 @@ class PluginUI {
         const resultsContainer = element.querySelector('.search-results');
         const resultsList = element.querySelector('.results-list');
         
+        // Safety check: ensure required elements exist
+        if (!resultsContainer || !resultsList) {
+            console.error('Required search result elements not found');
+            this.showStatus(element, 'Error: Search results container not found', 'error');
+            this.executingActions.delete(actionId);
+            return;
+        }
+        
         btn.disabled = true;
         btn.innerHTML = '<span class="loading"></span> Searching...';
         
@@ -265,9 +273,20 @@ class PluginUI {
     }
 
     formatSearchResults(resultText) {
+        if (!resultText || typeof resultText !== 'string') {
+            return '<div class="result-item">No results found</div>';
+        }
+        
+        // Handle error messages
+        if (resultText.startsWith('ERROR:') || resultText.startsWith('Error:')) {
+            return `<div class="result-item error">${resultText}</div>`;
+        }
+        
+        // Handle "All Items" format
         if (resultText.includes('**All Items**')) {
             const lines = resultText.split('\n');
             let formattedHtml = '';
+            let itemCount = 0;
             
             for (const line of lines) {
                 if (line.trim() && line.includes('• **') && line.includes('** : ')) {
@@ -281,20 +300,56 @@ class PluginUI {
                                 <span class="item-name"> : ${itemName}</span>
                             </div>
                         `;
+                        itemCount++;
                     } else {
                         formattedHtml += `<div class="result-item">${line}</div>`;
                     }
-                } else if (line.trim() && !line.startsWith('**All Items**')) {
+                } else if (line.trim() && !line.startsWith('**All Items**') && !line.includes('items)')) {
+                    formattedHtml += `<div class="result-item">${line}</div>`;
+                }
+            }
+            
+            if (itemCount === 0) {
+                return '<div class="result-item">No items found</div>';
+            }
+            
+            return formattedHtml;
+        }
+        
+        // Handle regular search results (item_id : display_name format)
+        if (resultText.includes(' : ')) {
+            const lines = resultText.split('\n');
+            let formattedHtml = '';
+            
+            for (const line of lines) {
+                if (line.trim() && line.includes(' : ')) {
+                    const parts = line.split(' : ', 2);
+                    if (parts.length === 2) {
+                        const itemId = parts[0].trim();
+                        const itemName = parts[1].trim();
+                        formattedHtml += `
+                            <div class="result-item">
+                                <span class="item-id">${itemId}</span>
+                                <span class="item-name"> : ${itemName}</span>
+                            </div>
+                        `;
+                    } else {
+                        formattedHtml += `<div class="result-item">${line}</div>`;
+                    }
+                } else if (line.trim()) {
                     formattedHtml += `<div class="result-item">${line}</div>`;
                 }
             }
             
             return formattedHtml;
-        } else if (resultText.includes('No items found')) {
-            return `<div class="result-item">${resultText}</div>`;
-        } else {
+        }
+        
+        // Handle single line results
+        if (resultText.trim()) {
             return `<div class="result-item">${resultText}</div>`;
         }
+        
+        return '<div class="result-item">No results found</div>';
     }
 
     async handleAutocompleteInput(btn) {
@@ -410,8 +465,16 @@ class PluginUI {
     closeSearchResults(btn) {
         const element = btn.closest('.ui-element');
         const resultsContainer = element.querySelector('.search-results');
-        resultsContainer.style.display = 'none';
-        resultsContainer.innerHTML = '';
+        const resultsList = element.querySelector('.results-list');
+        
+        if (resultsContainer) {
+            resultsContainer.style.display = 'none';
+        }
+        
+        // Only clear the results list content, not the entire container
+        if (resultsList) {
+            resultsList.innerHTML = '';
+        }
     }
 }
 
