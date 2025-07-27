@@ -1,11 +1,14 @@
-name: Release on Commit
+# This workflow runs only after Integration Tests pass, and uses a PAT (GH_PAT) for release permissions
 
 on:
-  push:
-    branches: [ main ]
+  workflow_run:
+    workflows: ["Integration Tests"]
+    types:
+      - completed
 
 jobs:
   release:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -49,4 +52,4 @@ jobs:
             Automated release for commit ${{ github.sha }}
           files: IdleonWeb-${{ steps.version.outputs.version }}.zip
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }} 
