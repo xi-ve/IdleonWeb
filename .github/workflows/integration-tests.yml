@@ -25,7 +25,7 @@ jobs:
             echo "Running tests for user commit"
           fi
 
-jobs:
+  test-arch:
   test-arch:
     needs: check-commit
     if: needs.check-commit.outputs.should-run == 'true'
