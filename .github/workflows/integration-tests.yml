@@ -26,7 +26,6 @@ jobs:
           fi
 
   test-arch:
-  test-arch:
     needs: check-commit
     if: needs.check-commit.outputs.should-run == 'true'
     runs-on: ubuntu-latest
