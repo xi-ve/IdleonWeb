@@ -49,6 +49,8 @@ python main.py
 3. Open `http://localhost:8080` in another browser tab
 4. Configure your plugins using the web interface
 
+> **Note:** On first launch, if the game requires you to log in, the injection process may fail. Simply close the browser, then run the `inject` command again in the launcher after logging in. This is normal for the first run.
+
 ### Web Interface
 - **Plugin Configuration** - Toggle features on/off, adjust settings
 - **Real-Time Updates** - See changes immediately
