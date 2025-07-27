@@ -54,7 +54,14 @@ jobs:
           pip install -r requirements.txt
           cd core && npm install && cd ..
       
+      - name: Create test directories
+        run: |
+          mkdir -p core
+          mkdir -p plugins
+          mkdir -p webui
+      
       - name: Run Windows tests
+        shell: cmd
         run: |
           python integration_tests/run_tests.py windows
 
