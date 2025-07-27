@@ -6,8 +6,29 @@ on:
   pull_request:
     branches: [ main ]
 
+# Skip if the commit is from the GitHub Actions bot (to prevent infinite loops)
+jobs:
+  # Check if we should run tests
+  check-commit:
+    runs-on: ubuntu-latest
+    outputs:
+      should-run: ${{ steps.check.outputs.should-run }}
+    steps:
+      - name: Check commit author
+        id: check
+        run: |
+          if [[ "${{ github.actor }}" == "github-actions[bot]" ]] && [[ "${{ github.event.head_commit.message }}" == *"Bump version"* ]]; then
+            echo "should-run=false"
+            echo "Skipping tests for version bump commit by GitHub Actions bot"
+          else
+            echo "should-run=true"
+            echo "Running tests for user commit"
+          fi
+
 jobs:
   test-arch:
+    needs: check-commit
+    if: needs.check-commit.outputs.should-run == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,6 +47,8 @@ jobs:
           docker compose --profile arch-test up --build --force-recreate --exit-code-from test-arch
 
   test-ubuntu:
+    needs: check-commit
+    if: needs.check-commit.outputs.should-run == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,6 +67,8 @@ jobs:
           docker compose --profile ubuntu-test up --build --force-recreate --exit-code-from test-ubuntu
 
   test-windows:
+    needs: check-commit
+    if: needs.check-commit.outputs.should-run == 'true'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -78,8 +103,9 @@ jobs:
           python integration_tests/run_tests.py windows
 
   test-all-platforms:
+    needs: [check-commit, test-arch, test-ubuntu, test-windows]
+    if: needs.check-commit.outputs.should-run == 'true'
     runs-on: ubuntu-latest
-    needs: [test-arch, test-ubuntu, test-windows]
     steps:
       - uses: actions/checkout@v4
       
