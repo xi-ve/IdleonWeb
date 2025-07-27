@@ -71,14 +71,9 @@ python main.py
 ```
 
 #### Platform-Specific Setup
-**Linux/macOS:**
+**All Platforms:**
 ```bash
-./setup.sh
-```
-
-**Windows:**
-```cmd
-python setup_windows.py
+python setup.py
 ```
 
 ### Manual Setup (Advanced)
@@ -745,8 +740,7 @@ IdleonWeb/
 ├── main.py                     # CLI entry point
 ├── plugin_system.py            # Plugin management system
 ├── config_manager.py           # Configuration management
-├── setup.sh                    # Linux/macOS setup script
-├── setup.bat                   # Windows setup script
+├── setup.py                    # Universal setup script
 ├── requirements.txt            # Python dependencies
 └── README.md                   # User documentation
 ```

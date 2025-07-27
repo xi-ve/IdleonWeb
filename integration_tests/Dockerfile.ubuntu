@@ -29,6 +29,6 @@ RUN cd core && npm install
 
 COPY . .
 
-RUN chmod +x setup.sh
+RUN chmod +x setup.py
 
 CMD ["python", "integration_tests/run_tests.py", "ubuntu"] 

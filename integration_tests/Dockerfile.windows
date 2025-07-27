@@ -29,6 +29,6 @@ RUN cd core && npm install
 COPY . .
 
 # Make setup script executable (if needed)
-RUN icacls setup.bat /grant Everyone:F
+RUN icacls setup.py /grant Everyone:F
 
 CMD ["python", "integration_tests/run_tests.py", "windows"] 

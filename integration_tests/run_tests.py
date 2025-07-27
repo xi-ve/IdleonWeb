@@ -178,21 +178,17 @@ def test_main_script():
     return True
 
 def test_platform_specific_setup():
-    print_status("Testing platform-specific setup scripts...")
+    print_status("Testing universal setup script...")
     
-    if Path("setup.sh").exists():
-        success, output = run_command("bash -n setup.sh", "Testing setup.sh syntax")
+    if Path("setup.py").exists():
+        success, output = run_command("python -m py_compile setup.py", "Testing setup.py syntax")
         if success:
-            print_success("setup.sh syntax is valid")
+            print_success("setup.py syntax is valid")
         else:
-            print_warning("setup.sh syntax check failed")
-    
-    if Path("setup_windows.py").exists():
-        success, output = run_command("python -m py_compile setup_windows.py", "Testing setup_windows.py syntax")
-        if success:
-            print_success("setup_windows.py syntax is valid")
-        else:
-            print_warning("setup_windows.py syntax check failed")
+            print_warning("setup.py syntax check failed")
+    else:
+        print_error("setup.py not found")
+        return False
     
     return True
 
@@ -264,7 +260,7 @@ def run_all_tests():
         ("Setup Script", test_setup_script),
         ("Virtual Environment", test_virtual_environment),
         ("Configuration File", test_config_file),
-        ("Platform Setup Scripts", test_platform_specific_setup),
+        ("Universal Setup Script", test_platform_specific_setup),
         ("Main Script", test_main_script)
     ]
     

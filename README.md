@@ -26,11 +26,9 @@ A modern, user-friendly launcher and plugin system for enhancing Legends of Idle
 5. Open `http://localhost:8080` in your browser to configure plugins
 
 ### Platform-Specific Setup
-**Windows:**
-- Run `python setup_windows.py` or `python setup.py`
-
-**Linux/macOS:**
-- Run `./setup.sh` or `python setup.py`
+**All Platforms:**
+- Run `python setup.py` (recommended)
+- The universal setup script automatically detects your platform and installs the appropriate dependencies
 
 ---
 
@@ -76,8 +74,7 @@ IdleonWeb/
 ├── core/             # Core system files
 ├── webui/            # Web interface files
 ├── main.py           # Main launcher
-├── setup.sh          # Linux/macOS setup
-├── setup.bat         # Windows setup
+├── setup.py          # Universal setup script
 └── README.md         # This file
 ```
 

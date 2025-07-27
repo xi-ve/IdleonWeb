@@ -97,7 +97,6 @@ python integration_tests/run_tests.py windows
 
 ### Setup Tests
 - Universal setup script (`setup.py`)
-- Platform-specific setup scripts (`setup.sh`, `setup_windows.py`)
 - Virtual environment creation
 - Dependency installation (Python, Node.js, npm)
 
@@ -216,7 +215,7 @@ These tests can be integrated into CI/CD pipelines:
 
 ### Arch Linux
 - Uses `pacman` package manager
-- Tests `setup.sh` script functionality
+- Tests universal `setup.py` script functionality
 - Verifies Arch-specific dependency paths
 
 ### Ubuntu
@@ -226,7 +225,7 @@ These tests can be integrated into CI/CD pipelines:
 
 ### Windows
 - Uses `Chocolatey` package manager
-- Tests Windows-specific setup scripts
+- Tests universal `setup.py` script functionality
 - Verifies Windows path conventions and PowerShell execution
 - **Note**: Windows containers require Windows host. Use GitHub Actions for cross-platform testing.
 
