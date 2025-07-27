@@ -15,10 +15,15 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       
+      - name: Clean Docker cache
+        run: |
+          docker system prune -f
+          docker builder prune -f
+      
       - name: Run Arch Linux tests
         run: |
           cd integration_tests
-          docker compose --profile arch-test up --build --exit-code-from test-arch
+          docker compose --profile arch-test up --build --force-recreate --exit-code-from test-arch
 
   test-ubuntu:
     runs-on: ubuntu-latest
@@ -28,10 +33,15 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       
+      - name: Clean Docker cache
+        run: |
+          docker system prune -f
+          docker builder prune -f
+      
       - name: Run Ubuntu tests
         run: |
           cd integration_tests
-          docker compose --profile ubuntu-test up --build --exit-code-from test-ubuntu
+          docker compose --profile ubuntu-test up --build --force-recreate --exit-code-from test-ubuntu
 
   test-windows:
     runs-on: windows-latest

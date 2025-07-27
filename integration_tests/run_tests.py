@@ -104,6 +104,8 @@ def test_virtual_environment():
             print_success("Virtual environment exists")
             return True
     
+    # In CI environments, virtual environment might not be created
+    # This is expected behavior, so we don't fail the test
     print_warning("Virtual environment not found in test environment (this is expected in CI)")
     return True  # Don't fail the test in CI environment
 
