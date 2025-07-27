@@ -4,6 +4,55 @@
 
 This document contains technical documentation for developers who want to understand, extend, or contribute to the IdleonWeb project.
 
+## Table of Contents
+
+- [Architecture Overview](#architecture-overview)
+  - [Core Components](#core-components)
+  - [JavaScript Injection Process](#javascript-injection-process)
+- [Technical Setup](#technical-setup)
+  - [Prerequisites](#prerequisites)
+  - [Development Environment Setup](#development-environment-setup)
+  - [Manual Setup](#manual-setup-advanced)
+- [Plugin System](#plugin-system)
+  - [Plugin Architecture](#plugin-architecture)
+  - [Plugin Lifecycle](#plugin-lifecycle)
+  - [Required Methods](#required-methods)
+- [UI Decorators](#ui-decorators)
+  - [Available UI Decorators](#available-ui-decorators)
+  - [Autocomplete Naming Convention](#autocomplete-naming-convention)
+  - [UI Decorator Parameters](#ui-decorator-parameters)
+  - [Element-Specific Parameters](#element-specific-parameters)
+- [Complete Plugin Example](#complete-plugin-example)
+- [JavaScript Generation and Injection](#javascript-generation-and-injection)
+  - [JavaScript Generation Process](#javascript-generation-process)
+  - [Generated JavaScript Structure](#generated-javascript-structure)
+  - [Parameter Handling](#parameter-handling)
+  - [Debug Mode](#debug-mode)
+  - [Game Context Access](#game-context-access)
+  - [Common Patterns](#common-patterns)
+- [JavaScript Exports](#javascript-exports)
+- [Best Practices](#best-practices)
+- [Configuration System](#configuration-system)
+  - [Configuration Structure](#configuration-structure)
+  - [Configuration Management](#configuration-management)
+- [CLI Interface](#cli-interface)
+  - [Available Commands](#available-commands)
+  - [Plugin Commands](#plugin-commands)
+- [Web UI System](#web-ui-system)
+  - [Architecture](#architecture)
+  - [Template Structure](#template-structure)
+  - [API Endpoints](#api-endpoints)
+- [Troubleshooting](#troubleshooting)
+  - [Development Issues](#development-issues)
+  - [Common Error Messages](#common-error-messages)
+- [Project Structure](#project-structure)
+- [Contributing](#contributing)
+  - [Development Workflow](#development-workflow)
+  - [Code Style](#code-style)
+  - [Plugin Development](#plugin-development)
+- [License](#license)
+- [Credits](#credits)
+
 ---
 
 ## Architecture Overview
@@ -35,6 +84,16 @@ graph TD
 - **injector.js**: Node.js script that launches Chromium, intercepts the game's JS, and injects the combined plugin code.
 - **plugins_combined.js**: All plugin JS exports are merged here and injected into the game context.
 - **Web UI Server**: Serves a modern web interface for plugin configuration with real-time updates and dynamic UI elements.
+
+### JavaScript Injection Process
+
+1. **Plugin Loading**: Python plugins are loaded and their `@js_export` functions are discovered
+2. **Code Generation**: Each plugin's JavaScript is wrapped with game-ready checks and error handling
+3. **Combination**: All plugin JavaScript is merged into a single `plugins_combined.js` file
+4. **Browser Launch**: Chromium is launched with remote debugging enabled
+5. **Network Interception**: The injector intercepts requests for game JavaScript files
+6. **Code Injection**: The combined plugin JavaScript is prepended to the game's main JavaScript file
+7. **Game Integration**: Plugin functions become available in the game's JavaScript context
 
 ---
 
@@ -456,6 +515,103 @@ class ExamplePlugin(PluginBase):
         if self.debug:
             console.print(f"[ExamplePlugin] Executing command: {command}")
         return self.run_js_export('execute_command_js', injector, command=command)
+
+    # JavaScript Generation and Injection
+
+    The plugin system automatically generates and injects JavaScript code into the game. Here's how it works:
+
+    ## JavaScript Generation Process
+
+    1. **Function Discovery**: The system scans all plugin methods ending with `_js`
+    2. **Parameter Extraction**: Extracts parameter names from the `@js_export` decorator
+    3. **Code Generation**: Wraps your JavaScript with game-ready checks and error handling
+    4. **Combination**: All plugin JavaScript is merged into `core/plugins_combined.js`
+    5. **Injection**: The combined JavaScript is injected into the game context
+
+    ## Generated JavaScript Structure
+
+    Your JavaScript code gets automatically wrapped:
+
+    ```javascript
+    // Original function
+    window.spawn_item = async function(item, amount) {
+        try {
+            await window.__idleon_wait_for_game_ready();
+            
+            // Your JavaScript code here
+            const ctx = window.__idleon_cheats__;
+            const engine = ctx["com.stencyl.Engine"].engine;
+            
+            console.log("Spawning item: " + item);
+            
+            return "Item spawned successfully!";
+        } catch (e) {
+            console.error('[spawn_item] Error:', e);
+            return `Error: ${e.message}`;
+        }
+    }
+    ```
+
+    ## Parameter Handling
+
+    **Python to JavaScript parameter mapping:**
+
+    ```python
+    @js_export(params=["item", "amount"])
+    def spawn_item_js(self, item=None, amount=None):
+        return f"console.log('Item: {item}, Amount: {amount}');"
+    ```
+
+    **Becomes:**
+    ```javascript
+    window.spawn_item = async function(item, amount) {
+        // item and amount are passed from Python
+        console.log('Item: ' + item + ', Amount: ' + amount);
+    }
+    ```
+
+    ## Debug Mode
+
+    When any plugin has `debug: true` in its config, the system generates debug files:
+
+    ```
+    core/tmp_js/
+    ├── SpawnItemPlugin_js_dump.js
+    ├── InstantMobRespawnPlugin_js_dump.js
+    └── ...
+    ```
+
+    These files contain the raw JavaScript generated for each plugin.
+
+    ## Game Context Access
+
+    Always access the game through the `__idleon_cheats__` context:
+
+    ```javascript
+    const ctx = window.__idleon_cheats__;
+    const engine = ctx["com.stencyl.Engine"].engine;
+    const itemDefs = engine.getGameAttribute("ItemDefinitionsGET").h;
+    const character = engine.getGameAttribute("OtherPlayers").h[engine.getGameAttribute("UserInfo")[0]];
+    ```
+
+    ## Common Patterns
+
+    **Spawning Items:**
+    ```javascript
+    const dropFn = events(189);
+    dropFn._customBlock_DropSomething(itemId, amount, 0, 0, 2, y, 0, x, y);
+    ```
+
+    **Modifying Game Values:**
+    ```javascript
+    character.setValue("ActorEvents_20", "_PlayerSpeed", newSpeed);
+    ```
+
+    **Getting Game Data:**
+    ```javascript
+    const itemDefs = engine.getGameAttribute("ItemDefinitionsGET").h;
+    const monsterDefs = engine.getGameAttribute("MonsterDefinitionsGET").h;
+    ```
 
     # JavaScript Exports
     @js_export()

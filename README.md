@@ -1,17 +1,14 @@
 # IdleonWeb
 
-
-
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg?style=flat-square)](https://www.python.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-14+-green.svg?style=flat-square)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg?style=flat-square)](https://github.com/xi-ve/IdleonWeb)
-
 [![Integration Tests](https://github.com/xi-ve/IdleonWeb/actions/workflows/integration-tests.yml/badge.svg?style=flat-square)](https://github.com/xi-ve/IdleonWeb/actions/workflows/integration-tests.yml)
 
 A modern, user-friendly launcher and plugin system for enhancing Legends of Idleon with a beautiful web interface.
 
-> **For developers:** See [DEVELOPMENT.md](DEVELOPMENT.md) for technical documentation, plugin development guides, and architecture details.
+> **For developers:** See [PLUGIN_QUICKSTART.md](PLUGIN_QUICKSTART.md) for a quick guide to creating plugins, or [DEVELOPMENT.md](DEVELOPMENT.md) for detailed technical documentation.
 
 ## Features
 
@@ -115,6 +112,27 @@ IdleonWeb/
 - Ensure all dependencies are properly installed
 
 ---
+
+## Plugin Development
+
+Want to create your own plugins? It's easy!
+
+### Quick Start
+1. Copy the example plugin: `cp plugins/example_plugin.py plugins/my_plugin.py`
+2. Edit your plugin file
+3. Add UI elements with decorators like `@ui_toggle`, `@ui_button`, `@ui_slider`
+4. Add JavaScript code with `@js_export`
+5. Test your plugin in the web UI
+
+See [PLUGIN_QUICKSTART.md](PLUGIN_QUICKSTART.md) for a complete guide with examples!
+
+### Available UI Elements
+- **Toggles** - On/off switches
+- **Buttons** - Action buttons
+- **Sliders** - Range controls
+- **Text Inputs** - Text fields
+- **Search** - Search with results
+- **Autocomplete** - Input with suggestions
 
 ## Contributing
 

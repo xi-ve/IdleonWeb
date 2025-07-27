@@ -15,6 +15,9 @@
     "instant_mob_respawn": {
       "debug": false,
       "toggle": true
+    },
+    "example_plugin": {
+      "enabled": true
     }
   },
   "debug": false,
