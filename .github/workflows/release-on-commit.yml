@@ -1,0 +1,52 @@
+name: Release on Commit
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Get and bump version
+        id: version
+        run: |
+          VERSION_FILE=VERSION
+          if [ ! -f "$VERSION_FILE" ]; then echo "0.1.0" > $VERSION_FILE; fi
+          OLD_VERSION=$(cat $VERSION_FILE)
+          IFS='.' read -r major minor patch <<< "$OLD_VERSION"
+          patch=$((patch + 1))
+          NEW_VERSION="$major.$minor.$patch"
+          echo "$NEW_VERSION" > $VERSION_FILE
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Commit bumped version
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add VERSION
+          git commit -m "Bump version to ${{ steps.version.outputs.version }}" || echo "No changes to commit"
+          git push || echo "No changes to push"
+
+      - name: Create release zip (exclude .github and integration_tests)
+        run: |
+          zip -r IdleonWeb-${{ steps.version.outputs.version }}.zip . -x '*.git*' '.github/*' 'integration_tests/*'
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          body: |
+            Automated release for commit ${{ github.sha }}
+          files: IdleonWeb-${{ steps.version.outputs.version }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
