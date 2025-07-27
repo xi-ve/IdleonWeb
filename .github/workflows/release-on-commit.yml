@@ -46,6 +46,8 @@ jobs:
           git add VERSION
           git commit -m "Bump version to ${{ steps.version.outputs.version }}"
           git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
 
       - name: Create release zip (exclude .github and integration_tests)
         run: |

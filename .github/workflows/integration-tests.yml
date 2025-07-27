@@ -22,9 +22,13 @@ jobs:
           echo "Commit message: $COMMIT_MESSAGE"
           echo "Actor: ${{ github.actor }}"
           
+          # Check if this is a version bump commit by the bot
           if [[ "${{ github.actor }}" == "github-actions[bot]" ]] && [[ "$COMMIT_MESSAGE" == *"Bump version"* ]]; then
             echo "should-run=false"
             echo "Skipping tests for version bump commit by GitHub Actions bot"
+          elif [[ "$COMMIT_MESSAGE" == *"Bump version"* ]]; then
+            echo "should-run=false"
+            echo "Skipping tests for any version bump commit"
           else
             echo "should-run=true"
             echo "Running tests for user commit"
