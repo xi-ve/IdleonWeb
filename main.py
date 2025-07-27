@@ -23,14 +23,12 @@ from webui.web_api_integration import PluginWebAPI
 NODE_PATH = 'node'
 CORE_DIR = Path(__file__).parent / 'core'
 INJECTOR_PATH = CORE_DIR / 'injector.js'
-CONF_PATH = CORE_DIR / 'conf.json'
 PLUGINS_DIR = Path(__file__).parent / 'plugins'
 
 console = Console()
 injector = None
 update_loop_task = None
 update_loop_stop = threading.Event()
-web_server = None
 web_server_task = None
 
 def ensure_node_dependencies(startup_msgs=None):
@@ -55,39 +53,14 @@ def ensure_node_dependencies(startup_msgs=None):
         if startup_msgs:
             startup_msgs.append(msg)
 
-def ensure_config(startup_msgs=None):
-    msg = f"[bold cyan]Config file ready at [white]{CONF_PATH}[/white][/bold cyan]"
-    if startup_msgs:
-        startup_msgs.append(msg)
-
-def load_config():
-    return config_manager.get_full_config()
-
-def save_config(config):
-    config_manager.set_full_config(config)
-    console.print("[green]Config updated.[/green]")
-
-def run_injector(silent=True):
-    if silent:
-        process = subprocess.Popen(
-            [NODE_PATH, str(INJECTOR_PATH)],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            text=True,
-            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
-        )
-    else:
-        process = subprocess.Popen(
-            [NODE_PATH, str(INJECTOR_PATH)],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1,
-            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
-        )
-        if process.stdout:
-            for line in process.stdout:
-                print(line, end='')
+def run_injector():
+    process = subprocess.Popen(
+        [NODE_PATH, str(INJECTOR_PATH)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
+    )
     process.wait()
 
 def collect_plugin_js(plugin_manager):
@@ -109,10 +82,6 @@ def collect_plugin_js(plugin_manager):
         table.add_row(name, str(func_count), f"{js_size/1024:.2f}")
     console.print(table)
 
-def update_inject_files():
-    # plugins_combined.js is always injected, no configuration needed
-    pass
-
 async def start_update_loop(plugin_manager):
     try:
         while not update_loop_stop.is_set():
@@ -132,22 +101,21 @@ def run_update_loop(plugin_manager):
         loop.close()
 
 def cmd_inject(args=None, plugin_manager=None):
-    global injector, update_loop_task, update_loop_stop, web_server, web_server_task
+    global injector, update_loop_task, update_loop_stop, web_server_task
     collect_plugin_js(plugin_manager)
-    update_inject_files()
-    
+
     # Get injector configuration
     cdp_port = config_manager.get_cdp_port()
     idleon_url = config_manager.get_idleon_url()
     
     console.print(f"[cyan]Running injector.js with config from conf.json...[/cyan]")
     console.print(f"[cyan]CDP Port: {cdp_port}, Idleon URL: {idleon_url}[/cyan]")
-    run_injector(silent=True)
+    run_injector()
     injector = PyInjector()
     try:
         injector.connect()
         console.print("[green]Injector connected successfully.[/green]")
-        asyncio.run(plugin_manager.initialize_all(injector, load_config().get('plugin_configs', {})))
+        asyncio.run(plugin_manager.initialize_all(injector, config_manager.get_path('plugin_configs', {})))
         
         # Start update loop
         if update_loop_task is None or not update_loop_task.is_alive():
@@ -185,7 +153,6 @@ def cmd_config(args=None, plugin_manager=None):
 
 def cmd_injector_config(args=None, plugin_manager=None):
     """Show injector-specific configuration."""
-    injector_config = config_manager.get_injector_config()
     table = Table(title="Injector Configuration")
     table.add_column("Setting", style="bold cyan")
     table.add_column("Value", style="white")
@@ -222,7 +189,7 @@ def cmd_help(args=None, plugin_manager=None, all_commands=None):
     console.print("[cyan]Type a command and press [bold]Tab[/bold] for autocomplete.[/cyan]")
 
 def cmd_web_ui(args=None, plugin_manager=None):
-    global web_server, web_server_task
+    global web_server_task
     if web_server_task and web_server_task.is_alive():
         console.print("[yellow]Web server is already running at http://localhost:8080[/yellow]")
         return
@@ -266,6 +233,7 @@ class HierarchicalCompleter:
                 completions.append(cmd)
         for comp in sorted(completions):
             yield Completion(comp, start_position=-len(last_token))
+    
     async def get_completions_async(self, document, complete_event):
         text = document.text_before_cursor.strip()
         last_token = text.split()[-1] if text else ''
@@ -280,7 +248,6 @@ class HierarchicalCompleter:
 def main():
     startup_msgs = []
     ensure_node_dependencies(startup_msgs)
-    ensure_config(startup_msgs)
     log_level = logging.INFO if config_manager.get_path("debug", True) else logging.WARNING
     logging.basicConfig(level=log_level)
     import plugin_system
