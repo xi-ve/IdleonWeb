@@ -45,7 +45,7 @@ class GodlikePowersPlugin(PluginBase):
         config_key="enabled",
         default_value=False,
         category="General",
-        order=1
+        order=0
     )
     async def enable_godlike_powers_ui(self, value=None):
         if value is not None:
@@ -292,16 +292,18 @@ class GodlikePowersPlugin(PluginBase):
                 const originals = window.__godlike_powers_originals__;
                 
                 // Critical hit chance
-                if (originals.CritChance && pluginConfig.crit) {
+                if (originals.CritChance) {
                     events(12)._customBlock_CritChance = function(...argumentsList) {
-                        return 100;
+                        if (pluginConfig.crit) return 100;
+                        return originals.CritChance(...argumentsList);
                     };
                 }
                 
                 // Player reach
-                if (originals.PlayerReach && pluginConfig.reach) {
+                if (originals.PlayerReach) {
                     events(12)._customBlock_PlayerReach = function(...argumentsList) {
-                        return 666;
+                        if (pluginConfig.reach) return 666;
+                        return originals.PlayerReach(...argumentsList);
                     };
                 }
                 
@@ -316,46 +318,58 @@ class GodlikePowersPlugin(PluginBase):
                 }
                 
                 // HP invincibility
-                if (originals.PlayerHP && pluginConfig.hp) {
+                if (originals.PlayerHP) {
                     Object.defineProperty(engine.gameAttributes.h, "PlayerHP", {
                         get: function() {
                             return this._PlayerHP;
                         },
                         set: function(value) {
-                            return (this._PlayerHP = events(12)._customBlock_PlayerHPmax());
+                            if (pluginConfig.hp) {
+                                return (this._PlayerHP = events(12)._customBlock_PlayerHPmax());
+                            } else {
+                                return (this._PlayerHP = value);
+                            }
                         }
                     });
                 }
                 
                 // Monster respawn
-                if (originals.MonsterRespawnTime && pluginConfig.respawn) {
+                if (originals.MonsterRespawnTime) {
                     engine.setGameAttribute(
                         "MonsterRespawnTime",
                         new Proxy(engine.getGameAttribute("MonsterRespawnTime"), {
                             set: function(obj, prop, value) {
-                                return (obj[prop] = 0); // Instant respawn
+                                if (pluginConfig.respawn) {
+                                    return (obj[prop] = 0); // Instant respawn
+                                } else {
+                                    return (obj[prop] = value);
+                                }
                             }
                         })
                     );
                 }
                 
                 // Ability modifications
-                if (originals.atkMoveMap && pluginConfig.ability) {
+                if (originals.atkMoveMap) {
                     const CustomMaps = ctx["scripts.CustomMaps"];
-                    const atkMoveMap = JSON.parse(JSON.stringify(CustomMaps.atkMoveMap.h));
-                    for (const [key, value] of Object.entries(atkMoveMap)) {
-                        value.h["cooldown"] = 0;
-                        value.h["castTime"] = 0.1;
-                        value.h["manaCost"] = 0;
-                        atkMoveMap[key] = value;
-                    }
-                    const handler = {
-                        get: function(obj, prop) {
-                            return atkMoveMap[prop];
+                    if (pluginConfig.ability) {
+                        const atkMoveMap = JSON.parse(JSON.stringify(CustomMaps.atkMoveMap.h));
+                        for (const [key, value] of Object.entries(atkMoveMap)) {
+                            value.h["cooldown"] = 0;
+                            value.h["castTime"] = 0.1;
+                            value.h["manaCost"] = 0;
+                            atkMoveMap[key] = value;
                         }
-                    };
-                    const proxy = new Proxy(CustomMaps.atkMoveMap.h, handler);
-                    CustomMaps.atkMoveMap.h = proxy;
+                        const handler = {
+                            get: function(obj, prop) {
+                                return atkMoveMap[prop];
+                            }
+                        };
+                        const proxy = new Proxy(CustomMaps.atkMoveMap.h, handler);
+                        CustomMaps.atkMoveMap.h = proxy;
+                    } else {
+                        CustomMaps.atkMoveMap.h = originals.atkMoveMap;
+                    }
                 }
                 
                 // Weapon speed modifications
