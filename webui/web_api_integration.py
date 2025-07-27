@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import asyncio
 import json
@@ -20,7 +20,6 @@ class PluginWebAPI:
         self.setup_templates()
         self.setup_routes()
         
-        # Get debug setting from config
         config_manager.reload()
         self.debug = config_manager.get_path('debug', False)
     

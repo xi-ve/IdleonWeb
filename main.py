@@ -40,7 +40,8 @@ def ensure_node_dependencies(startup_msgs=None):
         if startup_msgs:
             startup_msgs.append(msg)
         try:
-            result = subprocess.run(['npm', 'install'], cwd=CORE_DIR, check=True)
+            result = subprocess.run(['npm', 'install'], cwd=CORE_DIR, check=True, 
+                                  creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0)
             msg = "[bold green]Node.js dependencies installed.[/bold green]"
         except subprocess.CalledProcessError:
             msg = "[bold red]Failed to install Node.js dependencies.[/bold red]"
@@ -72,7 +73,8 @@ def run_injector(silent=True):
             [NODE_PATH, str(INJECTOR_PATH)],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            text=True
+            text=True,
+            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
         )
     else:
         process = subprocess.Popen(
@@ -80,7 +82,8 @@ def run_injector(silent=True):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            bufsize=1
+            bufsize=1,
+            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
         )
         if process.stdout:
             for line in process.stdout:
@@ -107,10 +110,8 @@ def collect_plugin_js(plugin_manager):
     console.print(table)
 
 def update_inject_files():
-    inject_files = config_manager.get_path("injectFiles", [])
-    if "plugins_combined.js" not in inject_files:
-        inject_files.append("plugins_combined.js")
-        config_manager.set_path("injectFiles", inject_files)
+    # plugins_combined.js is always injected, no configuration needed
+    pass
 
 async def start_update_loop(plugin_manager):
     try:
@@ -134,7 +135,13 @@ def cmd_inject(args=None, plugin_manager=None):
     global injector, update_loop_task, update_loop_stop, web_server, web_server_task
     collect_plugin_js(plugin_manager)
     update_inject_files()
-    console.print("[cyan]Running injector.js with config from conf.json...[/cyan]")
+    
+    # Get injector configuration
+    cdp_port = config_manager.get_cdp_port()
+    idleon_url = config_manager.get_idleon_url()
+    
+    console.print(f"[cyan]Running injector.js with config from conf.json...[/cyan]")
+    console.print(f"[cyan]CDP Port: {cdp_port}, Idleon URL: {idleon_url}[/cyan]")
     run_injector(silent=True)
     injector = PyInjector()
     try:
@@ -174,6 +181,20 @@ def cmd_config(args=None, plugin_manager=None):
     table.add_column("Value", style="white")
     for k, v in config.items():
         table.add_row(str(k), str(v))
+    console.print(table)
+
+def cmd_injector_config(args=None, plugin_manager=None):
+    """Show injector-specific configuration."""
+    injector_config = config_manager.get_injector_config()
+    table = Table(title="Injector Configuration")
+    table.add_column("Setting", style="bold cyan")
+    table.add_column("Value", style="white")
+    table.add_column("Description", style="yellow")
+    
+    table.add_row("CDP Port", str(config_manager.get_cdp_port()), "Chrome DevTools Protocol port")
+    table.add_row("N.js Pattern", config_manager.get_njs_pattern(), "Pattern for intercepting game JS")
+    table.add_row("Idleon URL", config_manager.get_idleon_url(), "Game URL to launch")
+    
     console.print(table)
 
 def cmd_plugins(args=None, plugin_manager=None):
@@ -283,6 +304,7 @@ def main():
     builtin_commands = {
         'inject': {'func': cmd_inject, 'help': 'Run the injector with current config.'},
         'config': {'func': cmd_config, 'help': 'Show current injector config.'},
+        'injector_config': {'func': cmd_injector_config, 'help': 'Show injector-specific configuration.'},
         'plugins': {'func': cmd_plugins, 'help': 'List loaded plugins.'},
         'reload_config': {'func': cmd_reload_config, 'help': 'Reload plugin configurations from conf.json.'},
         'web_ui': {'func': cmd_web_ui, 'help': 'Start the plugin web UI server.'},

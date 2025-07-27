@@ -1,8 +1,12 @@
 import pychrome
 import time
+from config_manager import config_manager
 
 class PyInjector:
-    def __init__(self, port=32123):
+    def __init__(self, port=None):
+        # Get port from config or use default
+        if port is None:
+            port = config_manager.get_path('injector.cdp_port', 32123)
         self.browser = pychrome.Browser(url=f"http://127.0.0.1:{port}")
         self.tab = None
 

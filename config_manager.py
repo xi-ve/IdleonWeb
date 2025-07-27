@@ -50,7 +50,11 @@ class ConfigManager:
             "plugins": [],
             "plugin_configs": {},
             "debug": False,
-            "injectFiles": ["plugins_combined.js"]
+            "injector": {
+                "cdp_port": 32123,
+                "njs_pattern": "*N.js",
+                "idleon_url": "https://www.legendsofidleon.com/ytGl5oc/"
+            }
         }
 
     def _save_config(self) -> None:
@@ -141,5 +145,37 @@ class ConfigManager:
         d[keys[-1]] = value
         self._save_config()
         logger.info(f"Set config path '{path}' to {value}")
+
+    # Convenience methods for injector configuration
+    def get_injector_config(self) -> Dict[str, Any]:
+        """Get the injector configuration section."""
+        return self._config.get('injector', {})
+
+    def get_cdp_port(self) -> int:
+        """Get the Chrome DevTools Protocol port."""
+        return self.get_path('injector.cdp_port', 32123)
+
+    def get_njs_pattern(self) -> str:
+        """Get the N.js pattern for interception."""
+        return self.get_path('injector.njs_pattern', '*N.js')
+
+    def get_idleon_url(self) -> str:
+        """Get the Idleon game URL."""
+        return self.get_path('injector.idleon_url', 'https://www.legendsofidleon.com/ytGl5oc/')
+
+    def set_injector_config(self, cdp_port: int = None, njs_pattern: str = None, idleon_url: str = None) -> None:
+        """Set injector configuration values."""
+        injector_config = self.get_injector_config()
+        
+        if cdp_port is not None:
+            injector_config['cdp_port'] = cdp_port
+        if njs_pattern is not None:
+            injector_config['njs_pattern'] = njs_pattern
+        if idleon_url is not None:
+            injector_config['idleon_url'] = idleon_url
+        
+        self._config['injector'] = injector_config
+        self._save_config()
+        logger.info("Updated injector configuration")
 
 config_manager = ConfigManager() 
