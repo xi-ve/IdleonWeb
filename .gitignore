@@ -34,3 +34,6 @@ package-lock.json
 *.log
 *.tmpcore/idleon-chromium-profile
 **/idleon-chromium-profile/
+
+# Configuration files (user-specific)
+core/conf.json
