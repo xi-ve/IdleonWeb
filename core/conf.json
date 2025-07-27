@@ -17,7 +17,7 @@
       "toggle": true
     }
   },
-  "debug": true,
+  "debug": false,
   "injector": {
     "cdp_port": 32123,
     "njs_pattern": "*N.js",

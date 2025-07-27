@@ -673,5 +673,24 @@ IdleonWeb/
 
 ---
 
+## Credits
+
+This project was inspired by and builds upon the excellent work of the original [Idleon-Injector](https://github.com/MrJoiny/Idleon-Injector) project by [@MrJoiny](https://github.com/MrJoiny). The original injector demonstrated the core concepts of browser automation and script injection for Legends of Idleon, which served as the foundation for this Python-based plugin system.
+
+Key inspirations from the original project:
+- Browser automation using Chrome DevTools Protocol
+- Script interception and injection techniques
+- Game context detection and integration
+- Cross-platform compatibility approaches
+
+This project extends those concepts with:
+- Modern Python-based plugin architecture
+- Web UI for plugin configuration
+- Enhanced CLI with autocompletion
+- Centralized configuration management
+- Real-time plugin development workflow
+
+---
+
 ## License
 MIT 
