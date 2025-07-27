@@ -2,6 +2,7 @@ class PluginUI {
     constructor() {
         this.executingActions = new Set();
         this.initializeEventListeners();
+        this.initializeDarkMode();
     }
 
     initializeEventListeners() {
@@ -76,6 +77,71 @@ class PluginUI {
                 this.handleAutocompleteFieldInput(e.target);
             });
         });
+
+        // Dark mode toggle
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        if (darkModeToggle) {
+            darkModeToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleDarkMode();
+            });
+        }
+    }
+
+    initializeDarkMode() {
+        // Check if dark mode is enabled from server-side config
+        const bodyElement = document.body;
+        const isDarkMode = bodyElement.classList.contains('dark');
+        
+        // Store the current state
+        this.darkMode = isDarkMode;
+        
+        // Update toggle button state
+        this.updateDarkModeToggle();
+    }
+
+    toggleDarkMode() {
+        this.darkMode = !this.darkMode;
+        const bodyElement = document.body;
+        
+        if (this.darkMode) {
+            bodyElement.classList.add('dark');
+        } else {
+            bodyElement.classList.remove('dark');
+        }
+        
+        this.updateDarkModeToggle();
+        
+        // Save preference to server
+        this.saveDarkModePreference();
+    }
+
+    updateDarkModeToggle() {
+        const toggle = document.getElementById('dark-mode-toggle');
+        if (toggle) {
+            // The CSS handles the icon visibility based on the dark class
+            // No additional JavaScript needed for the visual state
+        }
+    }
+
+    async saveDarkModePreference() {
+        try {
+            const response = await fetch('/api/dark-mode', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    enabled: this.darkMode
+                })
+            });
+            
+            if (!response.ok) {
+                console.warn('Failed to save dark mode preference');
+            }
+        } catch (error) {
+            console.warn('Error saving dark mode preference:', error);
+        }
     }
 
     async handleToggle(element) {

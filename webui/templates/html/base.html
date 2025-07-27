@@ -6,10 +6,18 @@
     <title>Plugin Configuration</title>
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
-<body>
+<body{% if darkmode %} class="dark"{% endif %}>
     <div class="header">
         <div class="container">
-            <h1>Plugin Configuration</h1>
+            <div class="header-content">
+                <h1>Plugin Configuration</h1>
+                <div class="dark-mode-toggle">
+                    <button id="dark-mode-toggle" class="dark-mode-btn" title="Toggle dark mode">
+                        <span class="dark-mode-icon">🌙</span>
+                        <span class="dark-mode-icon">☀️</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
     

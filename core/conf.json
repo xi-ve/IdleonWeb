@@ -8,16 +8,13 @@
   "plugin_configs": {
     "spawn_item": {
       "debug": false,
-      "spawn_item_ui": "StoneA7 5",
+      "spawn_item_ui": "Timecandy9",
       "search_items_ui": "crab",
-      "list_all_items_ui": "Ninja"
+      "list_all_items_ui": "candy"
     },
     "instant_mob_respawn": {
       "debug": false,
       "toggle": true
-    },
-    "example_plugin": {
-      "enabled": true
     }
   },
   "debug": false,
@@ -25,5 +22,8 @@
     "cdp_port": 32123,
     "njs_pattern": "*N.js",
     "idleon_url": "https://www.legendsofidleon.com/ytGl5oc/"
+  },
+  "webui": {
+    "darkmode": true
   }
 }

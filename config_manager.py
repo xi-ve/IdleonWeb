@@ -50,6 +50,9 @@ class ConfigManager:
             "plugins": [],
             "plugin_configs": {},
             "debug": False,
+            "webui": {
+                "darkmode": False
+            },
             "injector": {
                 "cdp_port": 32123,
                 "njs_pattern": "*N.js",
@@ -177,5 +180,30 @@ class ConfigManager:
         self._config['injector'] = injector_config
         self._save_config()
         logger.info("Updated injector configuration")
+
+    # Convenience methods for webui configuration
+    def get_webui_config(self) -> Dict[str, Any]:
+        """Get the webui configuration section."""
+        return self._config.get('webui', {})
+
+    def get_darkmode(self) -> bool:
+        """Get the dark mode setting."""
+        return self.get_path('webui.darkmode', False)
+
+    def set_darkmode(self, enabled: bool) -> None:
+        """Set the dark mode setting."""
+        self.set_path('webui.darkmode', enabled)
+        logger.info(f"Updated dark mode setting: {enabled}")
+
+    def set_webui_config(self, darkmode: bool = None) -> None:
+        """Set webui configuration values."""
+        webui_config = self.get_webui_config()
+        
+        if darkmode is not None:
+            webui_config['darkmode'] = darkmode
+        
+        self._config['webui'] = webui_config
+        self._save_config()
+        logger.info("Updated webui configuration")
 
 config_manager = ConfigManager() 

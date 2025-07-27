@@ -171,6 +171,25 @@ def cmd_injector_config(args=None, plugin_manager=None):
     
     console.print(table)
 
+def cmd_darkmode(args=None, plugin_manager=None):
+    """Toggle or set dark mode for the web UI."""
+    if args:
+        if args[0].lower() in ['on', 'true', '1', 'yes']:
+            config_manager.set_darkmode(True)
+            console.print("[green]Dark mode enabled[/green]")
+        elif args[0].lower() in ['off', 'false', '0', 'no']:
+            config_manager.set_darkmode(False)
+            console.print("[green]Dark mode disabled[/green]")
+        else:
+            console.print("[red]Invalid argument. Use 'on' or 'off'[/red]")
+    else:
+        # Toggle current state
+        current = config_manager.get_darkmode()
+        new_state = not current
+        config_manager.set_darkmode(new_state)
+        status = "enabled" if new_state else "disabled"
+        console.print(f"[green]Dark mode {status}[/green]")
+
 def cmd_plugins(args=None, plugin_manager=None):
     table = Table(title="Loaded Plugins")
     table.add_column("Plugin Name", style="bold green")
@@ -285,6 +304,7 @@ def main():
         'inject': {'func': cmd_inject, 'help': 'Run the injector with current config.'},
         'config': {'func': cmd_config, 'help': 'Show current injector config.'},
         'injector_config': {'func': cmd_injector_config, 'help': 'Show injector-specific configuration.'},
+        'darkmode': {'func': cmd_darkmode, 'help': 'Toggle or set dark mode for web UI (on/off).'},
         'plugins': {'func': cmd_plugins, 'help': 'List loaded plugins.'},
         'reload_config': {'func': cmd_reload_config, 'help': 'Reload plugin configurations from conf.json.'},
         'web_ui': {'func': cmd_web_ui, 'help': 'Start the plugin web UI server.'},

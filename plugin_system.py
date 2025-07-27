@@ -475,14 +475,16 @@ class PluginManager:
         
         for plugin_name in self.plugin_names:
             try:
-                console.print(f"Loading plugin: {plugin_name}...")
+                if GLOBAL_DEBUG:
+                    console.print(f"Loading plugin: {plugin_name}...")
                 await self._load_plugin(
                     plugin_name, 
                     plugin_configs.get(plugin_name, {}), 
                     injector, 
                     global_debug=global_debug
                 )
-                console.print(f"Loaded plugin: {plugin_name}")
+                if GLOBAL_DEBUG:
+                    console.print(f"Loaded plugin: {plugin_name}")
             except Exception as e:
                 console.print(f"[red]Failed to load plugin '{plugin_name}': {e}[/red]")
                 logger.error(f"Failed to load plugin '{plugin_name}': {e}")
@@ -506,9 +508,11 @@ class PluginManager:
                             f"which is not loaded[/yellow]")
                 logger.warning(f"Plugin '{plugin_name}' requires '{dependency}' "
                              f"which is not loaded")
-        
+
         success = await plugin_instance.initialize(injector)
         if success:
+            if GLOBAL_DEBUG:
+                console.print(f"Initialized plugin: {plugin_name}")
             self.plugins[plugin_name] = plugin_instance
             logger.info(f"Loaded plugin: {plugin_name}")
         else:
@@ -741,7 +745,12 @@ class PluginManager:
                         logger.error(f"Error notifying plugin of config change: {e}")
 
     def collect_all_plugin_js(self) -> str:
+        js_code, _ = self.collect_all_plugin_js_with_sizes()
+        return js_code
+
+    def collect_all_plugin_js_with_sizes(self) -> tuple[str, dict[str, int]]:
         js_code = ""
+        plugin_sizes = {}
         
         debug = any(
             hasattr(plugin, 'config') and plugin.config.get('debug', False)
@@ -754,6 +763,7 @@ class PluginManager:
         
         for plugin in self.plugins.values():
             plugin_js = ""
+            plugin_name = getattr(plugin, 'name', plugin.__class__.__name__)
             
             for attr_name in dir(plugin):
                 if attr_name.endswith('_js'):
@@ -800,12 +810,15 @@ class PluginManager:
                         js_code += js_func_code
                         plugin_js += js_func_code
             
+            # Store individual plugin size
+            plugin_sizes[plugin_name] = len(plugin_js)
+            
             if debug and plugin_js:
                 plugin_file = tmp_js_dir / f"{plugin.__class__.__name__}_js_dump.js"
                 with open(plugin_file, 'w') as f:
                     f.write(plugin_js)
         
-        return js_code
+        return js_code, plugin_sizes
 
     def reload_configs_from_file(self) -> None:
         config_manager.reload()

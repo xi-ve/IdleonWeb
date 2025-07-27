@@ -14,6 +14,22 @@
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 
+body.dark {
+    --primary-color: #818cf8;
+    --primary-hover: #6366f1;
+    --secondary-color: #94a3b8;
+    --success-color: #34d399;
+    --warning-color: #fbbf24;
+    --error-color: #f87171;
+    --background: #1e293b;
+    --surface: #0f172a;
+    --border: #334155;
+    --text-primary: #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -25,6 +41,20 @@ body {
     background-color: var(--surface);
     color: var(--text-primary);
     line-height: 1.6;
+}
+
+body.dark .input,
+body.dark .select,
+body.dark textarea {
+    background-color: var(--surface);
+    color: var(--text-primary);
+    border-color: var(--border);
+}
+
+body.dark .input::placeholder,
+body.dark textarea::placeholder {
+    color: var(--text-secondary);
+    opacity: 1;
 }
 
 .container {
@@ -40,10 +70,72 @@ body {
     margin-bottom: 2rem;
 }
 
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
 .header h1 {
     color: var(--text-primary);
     font-size: 1.875rem;
     font-weight: 700;
+}
+
+.dark-mode-toggle {
+    display: flex;
+    align-items: center;
+}
+
+.dark-mode-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    position: relative; /* Added for icon centering */
+}
+
+.dark-mode-btn:hover {
+    background: var(--border);
+    transform: scale(1.05);
+}
+
+.dark-mode-btn:active {
+    transform: scale(0.95);
+}
+
+.dark-mode-icon {
+    font-size: 1.3rem;
+    transition: opacity 0.2s ease;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+/* Show moon in light mode, sun in dark mode */
+.dark-mode-icon:first-child {
+    opacity: 1;
+}
+
+.dark-mode-icon:last-child {
+    opacity: 0;
+}
+
+body.dark .dark-mode-icon:first-child {
+    opacity: 0;
+}
+
+body.dark .dark-mode-icon:last-child {
+    opacity: 1;
 }
 
 .plugin-grid {

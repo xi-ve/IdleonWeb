@@ -30,6 +30,7 @@ class PluginWebAPI:
     def setup_routes(self):
         self.app.router.add_post('/api/plugin-ui-action', self.handle_ui_action)
         self.app.router.add_post('/api/autocomplete', self.handle_autocomplete)
+        self.app.router.add_post('/api/dark-mode', self.handle_dark_mode)
         self.app.router.add_get('/', self.serve_ui)
         
         static_dir = Path(__file__).parent / 'templates'
@@ -96,6 +97,21 @@ class PluginWebAPI:
                 print(f"Error handling autocomplete request: {e}")
             return web.json_response({'error': str(e)})
     
+    async def handle_dark_mode(self, request):
+        try:
+            data = await request.json()
+            enabled = data.get('enabled', False)
+            
+            # Update the configuration
+            config_manager.set_darkmode(enabled)
+            
+            return web.json_response({'success': True, 'darkmode': enabled})
+            
+        except Exception as e:
+            if self.debug:
+                print(f"Error handling dark mode request: {e}")
+            return web.json_response({'error': str(e)}, status=500)
+    
     async def get_ui_schemas(self, request):
         try:
             schemas = self.plugin_manager.get_all_ui_schemas()
@@ -131,7 +147,8 @@ class PluginWebAPI:
             context = {
                 'plugin_schemas': all_ui_elements,
                 'use_tabs': use_tabs,
-                'plugin_configs': config_manager.get_all_plugin_configs()
+                'plugin_configs': config_manager.get_all_plugin_configs(),
+                'darkmode': config_manager.get_darkmode()
             }
             
             try:
@@ -172,10 +189,8 @@ class PluginWebAPI:
         site = web.TCPSite(runner, host, port)
         await site.start()
         
-        print(f"Plugin UI server started at http://{host}:{port}")
         if self.debug:
             print("DEBUG: Web API integration debug mode enabled")
-        print("Press Ctrl+C to stop the server")
         
         try:
             await asyncio.Future()
