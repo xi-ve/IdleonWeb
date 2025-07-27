@@ -1,0 +1,29 @@
+FROM archlinux:latest
+
+RUN pacman -Sy --noconfirm \
+    python \
+    python-pip \
+    python-virtualenv \
+    nodejs \
+    npm \
+    git \
+    base-devel \
+    && rm -rf /var/cache/pacman/pkg/*
+
+WORKDIR /workspace
+
+COPY requirements.txt .
+COPY core/package.json core/
+
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+RUN cd core && npm install
+
+COPY . .
+
+RUN chmod +x setup.sh
+
+CMD ["python", "integration_tests/run_tests.py", "arch"] 

@@ -2,4 +2,5 @@ aiohttp
 aiohttp-jinja2
 jinja2
 rich 
-pychrome 
+pychrome
+prompt_toolkit 

@@ -3,6 +3,7 @@ REM IdleonWeb Setup Script for Windows
 REM This script sets up the development environment for IdleonWeb on Windows
 
 echo Setting up IdleonWeb development environment for Windows...
+echo.
 
 REM Check if Python 3 is installed
 echo [INFO] Checking Python installation...
@@ -12,7 +13,7 @@ if errorlevel 1 (
     pause
     exit /b 1
 ) else (
-    for /f "tokens=2" %%i in ('python --version 2^>^&1') do echo [SUCCESS] Found Python: %%i
+    echo [SUCCESS] Found Python: installed
 )
 
 REM Check if Node.js is installed
@@ -23,9 +24,10 @@ if errorlevel 1 (
     pause
     exit /b 1
 ) else (
-    for /f "tokens=1" %%i in ('node --version 2^>^&1') do echo [SUCCESS] Found Node.js: %%i
+    echo [SUCCESS] Found Node.js: installed
 )
 
+REM Check if npm is installed
 echo [INFO] Checking npm installation...
 npm --version >nul 2>&1
 if errorlevel 1 (
@@ -33,8 +35,11 @@ if errorlevel 1 (
     pause
     exit /b 1
 ) else (
-    for /f "tokens=1" %%i in ('npm --version 2^>^&1') do echo [SUCCESS] Found npm: %%i
+    echo [SUCCESS] Found npm: installed
 )
+
+echo [INFO] All dependencies found successfully
+echo.
 
 REM Create virtual environment
 echo [INFO] Setting up Python virtual environment...
@@ -62,11 +67,23 @@ python -m pip install --upgrade pip
 if exist "requirements.txt" (
     echo [INFO] Installing requirements from requirements.txt...
     pip install -r requirements.txt
-    echo [SUCCESS] Python dependencies installed successfully
+    if errorlevel 1 (
+        echo [ERROR] Failed to install Python dependencies
+        pause
+        exit /b 1
+    ) else (
+        echo [SUCCESS] Python dependencies installed successfully
+    )
 ) else (
     echo [WARNING] requirements.txt not found. Installing basic dependencies...
     pip install prompt_toolkit rich pychrome
-    echo [SUCCESS] Basic Python dependencies installed
+    if errorlevel 1 (
+        echo [ERROR] Failed to install basic Python dependencies
+        pause
+        exit /b 1
+    ) else (
+        echo [SUCCESS] Basic Python dependencies installed
+    )
 )
 
 REM Install Node.js dependencies
@@ -76,7 +93,14 @@ if exist "core" (
     if exist "package.json" (
         echo [INFO] Installing npm dependencies from package.json...
         npm install
-        echo [SUCCESS] Node.js dependencies installed successfully
+        if errorlevel 1 (
+            echo [ERROR] Failed to install Node.js dependencies.
+            cd ..
+            pause
+            exit /b 1
+        ) else (
+            echo [SUCCESS] Node.js dependencies installed successfully
+        )
     ) else (
         echo [WARNING] package.json not found in core directory
     )
@@ -88,13 +112,9 @@ if exist "core" (
 REM Create necessary directories
 echo [INFO] Creating necessary directories...
 if not exist "plugins" mkdir plugins
-echo [SUCCESS] Created plugins directory
-
 if not exist "core" mkdir core
-echo [SUCCESS] Created core directory
-
 if not exist "core\tmp_js" mkdir core\tmp_js
-echo [SUCCESS] Created core\tmp_js directory
+echo [SUCCESS] Directories created successfully
 
 REM Generate initial config if it doesn't exist
 echo [INFO] Setting up initial configuration...
@@ -116,9 +136,11 @@ if not exist "core\conf.json" (
     echo     }>> core\conf.json
     echo   },>> core\conf.json
     echo   "debug": false,>> core\conf.json
-    echo   "injectFiles": [>> core\conf.json
-    echo     "plugins_combined.js">> core\conf.json
-    echo   ]>> core\conf.json
+    echo   "injector": {>> core\conf.json
+    echo     "cdp_port": 32123,>> core\conf.json
+    echo     "njs_pattern": "*N.js",>> core\conf.json
+    echo     "idleon_url": "https://www.legendsofidleon.com/ytGl5oc/">> core\conf.json
+    echo   }>> core\conf.json
     echo }>> core\conf.json
     echo [SUCCESS] Created initial conf.json
 ) else (

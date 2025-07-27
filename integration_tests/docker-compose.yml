@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  test-arch:
+    build:
+      context: ..
+      dockerfile: integration_tests/Dockerfile.arch
+    volumes:
+      - ../:/workspace
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    environment:
+      - DISPLAY=${DISPLAY}
+      - PYTHONUNBUFFERED=1
+    working_dir: /workspace
+    command: ["python", "integration_tests/run_tests.py", "arch"]
+    profiles:
+      - arch-test
+
+  test-ubuntu:
+    build:
+      context: ..
+      dockerfile: integration_tests/Dockerfile.ubuntu
+    volumes:
+      - ../:/workspace
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    environment:
+      - DISPLAY=${DISPLAY}
+      - PYTHONUNBUFFERED=1
+    working_dir: /workspace
+    command: ["python", "integration_tests/run_tests.py", "ubuntu"]
+    profiles:
+      - ubuntu-test
+
+  test-windows:
+    build:
+      context: ..
+      dockerfile: integration_tests/Dockerfile.windows
+    volumes:
+      - ../:C:\workspace
+    environment:
+      - PYTHONUNBUFFERED=1
+    working_dir: C:\workspace
+    command: ["python", "integration_tests/run_tests.py", "windows"]
+    profiles:
+      - windows-test
+
+  test-all:
+    build:
+      context: ..
+      dockerfile: integration_tests/Dockerfile.ubuntu
+    volumes:
+      - ../:/workspace
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    environment:
+      - DISPLAY=${DISPLAY}
+      - PYTHONUNBUFFERED=1
+    working_dir: /workspace
+    command: ["python", "integration_tests/run_tests.py", "all"]
+    profiles:
+      - all-test 

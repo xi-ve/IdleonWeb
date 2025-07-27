@@ -49,36 +49,36 @@ graph TD
 
 ### Development Environment Setup
 
-#### Linux/macOS
+#### Universal Setup (Recommended)
 ```bash
 # Clone the repository
 git clone <repo-url>
 cd IdleonWeb
 
-# Run automated setup
-./setup.sh
+# Run automated setup (works on all platforms)
+python setup.py
 
 # Activate virtual environment
+# Windows Command Prompt:
+.venv\Scripts\activate.bat
+# Windows PowerShell:
+.venv\Scripts\Activate.ps1
+# Linux/macOS:
 source .venv/bin/activate
 
 # Start development
 python main.py
 ```
 
-#### Windows
+#### Platform-Specific Setup
+**Linux/macOS:**
+```bash
+./setup.sh
+```
+
+**Windows:**
 ```cmd
-# Clone the repository
-git clone <repo-url>
-cd IdleonWeb
-
-# Run automated setup
-setup.bat
-
-# Activate virtual environment
-.venv\Scripts\activate
-
-# Start development
-python main.py
+python setup_windows.py
 ```
 
 ### Manual Setup (Advanced)

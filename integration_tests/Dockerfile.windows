@@ -1,0 +1,34 @@
+FROM mcr.microsoft.com/windows/servercore:ltsc2019
+
+# Install Chocolatey
+RUN powershell -Command \
+    Set-ExecutionPolicy Bypass -Scope Process -Force; \
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; \
+    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+# Install Python and Node.js
+RUN choco install python nodejs -y
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PATH="C:\Python39;C:\Python39\Scripts;C:\Program Files\nodejs;%PATH%"
+
+WORKDIR C:\workspace
+
+# Copy requirements
+COPY requirements.txt .
+COPY core/package.json core/
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install Node.js dependencies
+RUN cd core && npm install
+
+# Copy project files
+COPY . .
+
+# Make setup script executable (if needed)
+RUN icacls setup.bat /grant Everyone:F
+
+CMD ["python", "integration_tests/run_tests.py", "windows"] 

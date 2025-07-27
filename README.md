@@ -18,19 +18,19 @@ A modern, user-friendly launcher and plugin system for enhancing Legends of Idle
 
 ## Quick Start
 
-### Windows
+### Universal Setup (Recommended)
 1. Download and extract the files
-2. Double-click `setup.bat` to install dependencies
+2. Run `python setup.py` to install dependencies (works on all platforms)
 3. Run `python main.py` to start the launcher
 4. Type `inject` to launch the game with enhancements
 5. Open `http://localhost:8080` in your browser to configure plugins
 
-### Linux/macOS
-1. Download and extract the files
-2. Run `./setup.sh` to install dependencies
-3. Run `python main.py` to start the launcher
-4. Type `inject` to launch the game with enhancements
-5. Open `http://localhost:8080` in your browser to configure plugins
+### Platform-Specific Setup
+**Windows:**
+- Run `python setup_windows.py` or `python setup.py`
+
+**Linux/macOS:**
+- Run `./setup.sh` or `python setup.py`
 
 ---
 
@@ -101,7 +101,8 @@ IdleonWeb/
 
 **Setup fails?**
 - Make sure Python 3.8+ and Node.js are installed
-- Try running the setup script as administrator (Windows)
+- Try running `python setup.py` - it can automatically install missing dependencies using package managers
+- Run as administrator if needed (Windows)
 
 ### Getting Help
 
@@ -130,4 +131,17 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Credits
 
-This project was inspired by the excellent work of the original [Idleon-Injector](https://github.com/MrJoiny/Idleon-Injector) project by [@MrJoiny](https://github.com/MrJoiny). 
+This project was inspired by and builds upon the excellent work of the original [Idleon-Injector](https://github.com/MrJoiny/Idleon-Injector) project by [@MrJoiny](https://github.com/MrJoiny). The original injector demonstrated the core concepts of browser automation and script injection for Legends of Idleon, which served as the foundation for this Python-based plugin system.
+
+Key inspirations from the original project:
+- Browser automation using Chrome DevTools Protocol
+- Script interception and injection techniques
+- Game context detection and integration
+- Cross-platform compatibility approaches
+
+This project extends those concepts with:
+- Modern Python-based plugin architecture
+- Web UI for plugin configuration
+- Enhanced CLI with autocompletion
+- Centralized configuration management
+- Real-time plugin development workflow 
