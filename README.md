@@ -11,9 +11,10 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg?style=flat-square)](https://github.com/xi-ve/IdleonWeb)
 
-[![Integration Tests - Arch Linux](https://github.com/xi-ve/IdleonWeb/workflows/test-arch/badge.svg?style=flat-square)](https://github.com/xi-ve/IdleonWeb/actions/workflows/integration-tests.yml)
-[![Integration Tests - Ubuntu](https://github.com/xi-ve/IdleonWeb/workflows/test-ubuntu/badge.svg?style=flat-square)](https://github.com/xi-ve/IdleonWeb/actions/workflows/integration-tests.yml)
-[![Integration Tests - Windows](https://github.com/xi-ve/IdleonWeb/workflows/test-windows/badge.svg?style=flat-square)](https://github.com/xi-ve/IdleonWeb/actions/workflows/integration-tests.yml)
+[![Integration Tests - Arch Linux](https://github.com/xi-ve/IdleonWeb/actions/workflows/integration-tests.yml/badge.svg?job=test-arch&style=flat-square)](https://github.com/xi-ve/IdleonWeb/actions/workflows/integration-tests.yml)
+[![Integration Tests - Ubuntu](https://github.com/xi-ve/IdleonWeb/actions/workflows/integration-tests.yml/badge.svg?job=test-ubuntu&style=flat-square)](https://github.com/xi-ve/IdleonWeb/actions/workflows/integration-tests.yml)
+[![Integration Tests - Windows](https://github.com/xi-ve/IdleonWeb/actions/workflows/integration-tests.yml/badge.svg?job=test-windows&style=flat-square)](https://github.com/xi-ve/IdleonWeb/actions/workflows/integration-tests.yml)
+[![Integration Tests - All Platforms](https://github.com/xi-ve/IdleonWeb/actions/workflows/integration-tests.yml/badge.svg?job=test-all-platforms&style=flat-square)](https://github.com/xi-ve/IdleonWeb/actions/workflows/integration-tests.yml)
 
 A modern, user-friendly launcher and plugin system for enhancing Legends of Idleon with a beautiful web interface.
 
