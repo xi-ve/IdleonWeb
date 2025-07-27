@@ -6,7 +6,12 @@
     "instant_mob_respawn",
     "global_storage",
     "stats_multiplier",
-    "godlike_powers"
+    "godlike_powers",
+    "package_toggle",
+    "inventory_storage",
+    "candy_unlock",
+    "quest_helper",
+    "vault_unlocker"
   ],
   "plugin_configs": {
     "spawn_item": {
@@ -20,15 +25,15 @@
       "toggle": true
     },
     "global_storage": {
-      "enabled": true
+      "enabled": false
     },
     "stats_multiplier": {
       "enabled": true,
       "debug": false,
-      "damage_multiplier": 15.8,
+      "damage_multiplier": 18,
       "efficiency_multiplier": 1,
       "afk_multiplier": 5,
-      "drop_multiplier": 13.1,
+      "drop_multiplier": 1,
       "monster_multiplier": 1,
       "printer_multiplier": 17.9
     },
@@ -37,14 +42,48 @@
       "debug": false,
       "reach": true,
       "crit": false,
-      "ability": false,
+      "ability": true,
       "food": false,
       "hitchance": true,
       "intervention": false,
       "weapon_speed": 14,
       "card": true,
-      "poison": true,
+      "poison": false,
       "hp": false
+    },
+    "package_toggle": {
+      "list_bought_packages_ui": "",
+      "toggle_package_ui": "bun_i",
+      "debug": false
+    },
+    "inventory_storage": {
+      "check_storage_status_ui": "",
+      "complete_storage_list_ui": "",
+      "max_inventory_slots": false,
+      "max_chest_slots": false,
+      "unlock_storage_boxes": false,
+      "unlock_inventory_bags": false,
+      "debug": false,
+      "auto_unlock_packages": false
+    },
+    "CandyUnlockPlugin": {
+      "unlock_candy": true
+    },
+    "quest_helper": {
+      "quest_helper_ui": "",
+      "auto_complete_all": false,
+      "fix_character_ui": false,
+      "reset_quests_ui": false
+    },
+    "candy_unlock": {
+      "unlock_candy": false
+    },
+    "vault_unlocker": {
+      "vault_status_ui": "Wick",
+      "set_vault_item_level_ui": "Wicked Smart 500",
+      "unlock_all_categories": false,
+      "max_level_all_categories": false,
+      "debug": true
     }
   },
   "debug": false,

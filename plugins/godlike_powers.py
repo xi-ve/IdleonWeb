@@ -45,7 +45,7 @@ class GodlikePowersPlugin(PluginBase):
         config_key="enabled",
         default_value=False,
         category="General",
-        order=0
+        order=-999
     )
     async def enable_godlike_powers_ui(self, value=None):
         if value is not None:
@@ -220,22 +220,6 @@ class GodlikePowersPlugin(PluginBase):
         return f"Poison power {'enabled' if self.config.get('poison', False) else 'disabled'}"
 
     @ui_toggle(
-        label="Respawn Power",
-        description="Instant mob respawn",
-        config_key="respawn",
-        default_value=False,
-        category="Combat",
-        order=7
-    )
-    async def respawn_power_ui(self, value=None):
-        if value is not None:
-            self.config['respawn'] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector:
-                self.run_js_export('godlike_powers_js', self.injector, enabled=self.config.get('enabled', False))
-        return f"Respawn power {'enabled' if self.config.get('respawn', False) else 'disabled'}"
-
-    @ui_toggle(
         label="Invincibility",
         description="Never lose HP, become invincible",
         config_key="hp",
@@ -282,7 +266,6 @@ class GodlikePowersPlugin(PluginBase):
                     PlayerReach: events(12)._customBlock_PlayerReach,
                     ArbitraryCode: events(12)._customBlock_ArbitraryCode,
                     PlayerHP: engine.gameAttributes.h.PlayerHP,
-                    MonsterRespawnTime: engine.getGameAttribute("MonsterRespawnTime"),
                     atkMoveMap: ctx["scripts.CustomMaps"].atkMoveMap.h
                 };
             }
@@ -332,23 +315,7 @@ class GodlikePowersPlugin(PluginBase):
                         }
                     });
                 }
-                
-                // Monster respawn
-                if (originals.MonsterRespawnTime) {
-                    engine.setGameAttribute(
-                        "MonsterRespawnTime",
-                        new Proxy(engine.getGameAttribute("MonsterRespawnTime"), {
-                            set: function(obj, prop, value) {
-                                if (pluginConfig.respawn) {
-                                    return (obj[prop] = 0); // Instant respawn
-                                } else {
-                                    return (obj[prop] = value);
-                                }
-                            }
-                        })
-                    );
-                }
-                
+
                 // Ability modifications
                 if (originals.atkMoveMap) {
                     const CustomMaps = ctx["scripts.CustomMaps"];

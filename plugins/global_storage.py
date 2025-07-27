@@ -74,7 +74,7 @@ class GlobalStoragePlugin(PluginBase):
                 Object.defineProperty(optionsListAccount, 34, {
                     get: function() {
                         if (window.pluginConfigs && window.pluginConfigs['global_storage'] && window.pluginConfigs['global_storage'].enabled)
-                            return 0;
+                            return 450;
                         return this._34;
                     },
                     set: function(value) {
@@ -86,7 +86,7 @@ class GlobalStoragePlugin(PluginBase):
                     enumerable: true
                 });
             }
-            return "Quickref unlock property set.";
+            return "Storage limit increased to 450.";
         } catch (e) {
             return `Error: ${e.message}`;
         }

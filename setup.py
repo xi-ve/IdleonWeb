@@ -261,7 +261,12 @@ def create_initial_config():
         "interactive": True,
         "plugins": [
             "spawn_item",
-            "instant_mob_respawn"
+            "instant_mob_respawn",
+            "package_toggle",
+            "inventory_storage",
+            "candy_unlock",
+            "quest_helper",
+            "vault_unlocker"
         ],
         "plugin_configs": {
             "spawn_item": {
@@ -270,6 +275,22 @@ def create_initial_config():
             "instant_mob_respawn": {
                 "debug": False,
                 "toggle": False
+            },
+            "package_toggle": {
+                "debug": False
+            },
+            "inventory_storage": {
+                "debug": False
+            },
+            "candy_unlock": {
+                "debug": False,
+                "unlock_candy": True
+            },
+            "quest_helper": {
+                "debug": False
+            },
+            "vault_unlocker": {
+                "debug": False
             }
         },
         "debug": False,
