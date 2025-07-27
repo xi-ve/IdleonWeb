@@ -54,29 +54,29 @@ If you prefer to run Docker commands directly:
 
 ```bash
 # Test Arch Linux
-docker-compose --profile arch-test up --build
+docker compose --profile arch-test up --build
 
 # Test Ubuntu
-docker-compose --profile ubuntu-test up --build
+docker compose --profile ubuntu-test up --build
 
 # Test Windows
-docker-compose --profile windows-test up --build
+docker compose --profile windows-test up --build
 
 # Test all platforms
-docker-compose --profile all-test up --build
+docker compose --profile all-test up --build
 ```
 
 ### Individual Platform Tests
 
 ```bash
 # Arch Linux only
-docker-compose run --rm test-arch
+docker compose run --rm test-arch
 
 # Ubuntu only
-docker-compose run --rm test-ubuntu
+docker compose run --rm test-ubuntu
 
 # Windows only
-docker-compose run --rm test-windows
+docker compose run --rm test-windows
 ```
 
 ### Local Testing
@@ -205,10 +205,10 @@ These tests can be integrated into CI/CD pipelines:
 ```yaml
 # Example GitHub Actions
 - name: Test Arch Linux
-  run: docker-compose --profile arch-test up --build --exit-code-from test-arch
+  run: docker compose --profile arch-test up --build --exit-code-from test-arch
 
 - name: Test Ubuntu
-  run: docker-compose --profile ubuntu-test up --build --exit-code-from test-ubuntu
+  run: docker compose --profile ubuntu-test up --build --exit-code-from test-ubuntu
 ```
 
 ## Platform-Specific Notes

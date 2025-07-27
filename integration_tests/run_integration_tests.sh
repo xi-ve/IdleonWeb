@@ -77,7 +77,7 @@ cleanup_docker() {
     print_status "Cleaning up Docker resources..."
     
     # Stop and remove containers
-    docker-compose down --remove-orphans 2>/dev/null || true
+    docker compose down --remove-orphans 2>/dev/null || true
     
     # Remove test images
     docker rmi integration_tests-test-arch integration_tests-test-ubuntu 2>/dev/null || true
@@ -93,7 +93,7 @@ run_platform_tests() {
     print_subheader "Running tests for $platform..."
     
     # Build and run tests
-    if docker-compose --profile "$profile_name" up --build --exit-code-from "test-${platform}"; then
+    if docker compose --profile "$profile_name" up --build --exit-code-from "test-${platform}"; then
         print_success "$platform tests completed successfully"
         return 0
     else
@@ -107,7 +107,7 @@ run_all_tests() {
     print_subheader "Running tests for all platforms..."
     
     # Build and run all tests
-    if docker-compose --profile all-test up --build --exit-code-from test-all; then
+    if docker compose --profile all-test up --build --exit-code-from test-all; then
         print_success "All platform tests completed successfully"
         return 0
     else
@@ -159,21 +159,21 @@ show_error_details() {
     if [ $arch_result -ne 0 ]; then
         print_subheader "Arch Linux Test Errors:"
         echo "To see detailed Arch Linux test output, run:"
-        echo "  docker-compose --profile arch-test up --build"
+        echo "  docker compose --profile arch-test up --build"
         echo ""
     fi
     
     if [ $ubuntu_result -ne 0 ]; then
         print_subheader "Ubuntu Test Errors:"
         echo "To see detailed Ubuntu test output, run:"
-        echo "  docker-compose --profile ubuntu-test up --build"
+        echo "  docker compose --profile ubuntu-test up --build"
         echo ""
     fi
     
     if [ $windows_result -ne 0 ]; then
         print_subheader "Windows Test Errors:"
         echo "To see detailed Windows test output, run:"
-        echo "  docker-compose --profile windows-test up --build"
+        echo "  docker compose --profile windows-test up --build"
         echo ""
     elif [[ "$OSTYPE" != "msys" && "$OSTYPE" != "cygwin" && "$OSTYPE" != "win32" ]]; then
         print_subheader "Windows Test Information:"
