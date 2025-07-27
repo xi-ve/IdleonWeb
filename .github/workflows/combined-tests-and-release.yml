@@ -1,0 +1,160 @@
+name: Integration Tests and Release
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # Integration Tests
+  test-arch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Clean Docker cache
+        run: |
+          docker system prune -f
+          docker builder prune -f
+      
+      - name: Run Arch Linux tests
+        run: |
+          cd integration_tests
+          docker compose --profile arch-test up --build --force-recreate --exit-code-from test-arch
+
+  test-ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Clean Docker cache
+        run: |
+          docker system prune -f
+          docker builder prune -f
+      
+      - name: Run Ubuntu tests
+        run: |
+          cd integration_tests
+          docker compose --profile ubuntu-test up --build --force-recreate --exit-code-from test-ubuntu
+
+  test-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          cd core && npm install && cd ..
+      
+      - name: Create test directories
+        shell: cmd
+        run: |
+          if not exist core mkdir core
+          if not exist plugins mkdir plugins
+          if not exist webui mkdir webui
+          echo "Test directories ready"
+      
+      - name: Run Windows tests
+        shell: cmd
+        run: |
+          python integration_tests/run_tests.py windows
+
+  test-all-platforms:
+    needs: [test-arch, test-ubuntu, test-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Show test summary
+        run: |
+          echo "=================================================="
+          echo "Integration Tests Summary"
+          echo "=================================================="
+          echo "All platform tests completed successfully!"
+          echo ""
+          echo "Test Results:"
+          echo "- Arch Linux: ✅ PASS"
+          echo "- Ubuntu: ✅ PASS" 
+          echo "- Windows: ✅ PASS"
+          echo ""
+          echo "All integration tests passed across all platforms!"
+
+  # Release (only runs after successful tests and only on main branch)
+  release:
+    needs: test-all-platforms
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Get and bump version
+        id: version
+        run: |
+          VERSION_FILE=VERSION
+          if [ ! -f "$VERSION_FILE" ]; then echo "0.1.0" > $VERSION_FILE; fi
+          OLD_VERSION=$(cat $VERSION_FILE)
+          echo "Current version: $OLD_VERSION"
+          
+          # Bump version after successful integration tests
+          echo "Bumping version after successful integration tests..."
+          IFS='.' read -r major minor patch <<< "$OLD_VERSION"
+          patch=$((patch + 1))
+          NEW_VERSION="$major.$minor.$patch"
+          echo "New version: $NEW_VERSION"
+          echo "$NEW_VERSION" > $VERSION_FILE
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Commit and push bumped version
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }}.git
+          git add VERSION
+          git commit -m "Bump version to ${{ steps.version.outputs.version }}"
+          git push origin main
+
+      - name: Create release zip (exclude .github and integration_tests)
+        run: |
+          zip -r IdleonWeb-${{ steps.version.outputs.version }}.zip . -x '*.git*' '.github/*' 'integration_tests/*'
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          body: |
+            Automated release for version ${{ steps.version.outputs.version }}
+            
+            Changes in this release:
+            - Automated version bump
+            - Integration tests passed
+          files: IdleonWeb-${{ steps.version.outputs.version }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }} 
