@@ -64,22 +64,30 @@ def run_injector():
     process.wait()
 
 def collect_plugin_js(plugin_manager):
-    js_code = plugin_manager.collect_all_plugin_js()
+    js_code, plugin_sizes = plugin_manager.collect_all_plugin_js_with_sizes()
     if config_manager.get_path('debug', False):
         console.print("[DEBUG] Generated plugin JS code length:", len(js_code))
     js_path = CORE_DIR / "plugins_combined.js"
     with open(js_path, "w") as f:
         f.write(js_code)
-    plugins = list(plugin_manager.plugins.values())
+    
     table = Table(title="Plugin System Details", show_lines=True)
     table.add_column("Plugin Name", style="bold green")
     table.add_column("Function Count", style="cyan")
     table.add_column("JS KB Size", style="magenta")
-    for plugin in plugins:
+    
+    total_size = 0
+    for plugin in plugin_manager.plugins.values():
         name = getattr(plugin, 'name', plugin.__class__.__name__)
         func_count = len(plugin.get_commands())
-        js_size = len(js_code) / len(plugins) if plugins else 0
+        js_size = plugin_sizes.get(name, 0)
+        total_size += js_size
         table.add_row(name, str(func_count), f"{js_size/1024:.2f}")
+    
+    # Add total row
+    table.add_row("", "", "")
+    table.add_row("TOTAL", str(sum(len(p.get_commands()) for p in plugin_manager.plugins.values())), f"{total_size/1024:.2f}", style="bold")
+    
     console.print(table)
 
 async def start_update_loop(plugin_manager):
@@ -136,7 +144,6 @@ def cmd_inject(args=None, plugin_manager=None):
             )
             web_server_task.start()
             console.print("[green]Plugin UI web server started at http://localhost:8080[/green]")
-            console.print("[cyan]Plugin configuration interface available at http://localhost:8080[/cyan]")
             
     except Exception as e:
         console.print(f"[red]Failed to connect injector: {e}[/red]")
@@ -248,6 +255,11 @@ class HierarchicalCompleter:
 def main():
     startup_msgs = []
     ensure_node_dependencies(startup_msgs)
+    
+    # Add basic startup information
+    startup_msgs.append(f"[cyan]Configuration loaded from [white]{config_manager.conf_path}[/white][/cyan]")
+    startup_msgs.append(f"[cyan]Plugins directory: [white]{PLUGINS_DIR}[/white][/cyan]")
+    
     log_level = logging.INFO if config_manager.get_path("debug", True) else logging.WARNING
     logging.basicConfig(level=log_level)
     import plugin_system
@@ -261,6 +273,7 @@ def main():
             plugin_configs=plugin_configs, 
             global_debug=config_manager.get_path('debug', True)
         ))
+        startup_msgs.append(f"[green]Successfully loaded {len(plugin_manager.plugins)} plugins[/green]")
     except Exception as e:
         startup_msgs.append(f"[red]Error loading plugins: {e}[/red]")
     startup_text = Text()
