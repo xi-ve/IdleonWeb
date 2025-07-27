@@ -2,8 +2,8 @@ from plugin_system import PluginBase, ui_toggle, plugin_command, js_export
 from config_manager import config_manager
 
 class GlobalStoragePlugin(PluginBase):
-    VERSION = "1.0.0"
-    DESCRIPTION = "Provides global storage functionality for plugins."
+    VERSION = "1.0.1"
+    DESCRIPTION = "Provides global storage functionality."
 
     def __init__(self, config=None):
         super().__init__(config or {})
@@ -33,7 +33,7 @@ class GlobalStoragePlugin(PluginBase):
 
     @ui_toggle(
         label="Toggle Global Storage",
-        description="Toggle global storage functionality for plugins",
+        description="Toggle global storage",
         config_key="enabled",
         default_value=False,
         category="Storage",
