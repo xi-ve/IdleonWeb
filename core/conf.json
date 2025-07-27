@@ -3,18 +3,33 @@
   "interactive": true,
   "plugins": [
     "spawn_item",
-    "instant_mob_respawn"
+    "instant_mob_respawn",
+    "global_storage",
+    "stats_multiplier"
   ],
   "plugin_configs": {
     "spawn_item": {
       "debug": false,
-      "spawn_item_ui": "Timecandy9",
+      "spawn_item_ui": "TalentPoint6",
       "search_items_ui": "crab",
-      "list_all_items_ui": "candy"
+      "list_all_items_ui": "book"
     },
     "instant_mob_respawn": {
       "debug": false,
       "toggle": true
+    },
+    "global_storage": {
+      "enabled": true
+    },
+    "stats_multiplier": {
+      "enabled": true,
+      "debug": false,
+      "damage_multiplier": 15.8,
+      "efficiency_multiplier": 1,
+      "afk_multiplier": 5,
+      "drop_multiplier": 13.1,
+      "monster_multiplier": 1,
+      "printer_multiplier": 17.9
     }
   },
   "debug": false,
