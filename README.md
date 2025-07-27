@@ -1,15 +1,20 @@
 # IdleonWeb
 
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/xi-ve/IdleonWeb)](https://github.com/xi-ve/IdleonWeb/releases)
-[![GitHub license](https://img.shields.io/github/license/xi-ve/IdleonWeb)](https://github.com/xi-ve/IdleonWeb/blob/main/LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/xi-ve/IdleonWeb)](https://github.com/xi-ve/IdleonWeb/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/xi-ve/IdleonWeb)](https://github.com/xi-ve/IdleonWeb/network)
-[![GitHub issues](https://img.shields.io/github/issues/xi-ve/IdleonWeb)](https://github.com/xi-ve/IdleonWeb/issues)
-[![GitHub pull requests](https://img.shields.io/github/issues-pr/xi-ve/IdleonWeb)](https://github.com/xi-ve/IdleonWeb/pulls)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/xi-ve/IdleonWeb?style=flat-square)](https://github.com/xi-ve/IdleonWeb/releases)
+[![GitHub license](https://img.shields.io/github/license/xi-ve/IdleonWeb?style=flat-square)](https://github.com/xi-ve/IdleonWeb/blob/main/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/xi-ve/IdleonWeb?style=flat-square)](https://github.com/xi-ve/IdleonWeb/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/xi-ve/IdleonWeb?style=flat-square)](https://github.com/xi-ve/IdleonWeb/network)
+[![GitHub issues](https://img.shields.io/github/issues/xi-ve/IdleonWeb?style=flat-square)](https://github.com/xi-ve/IdleonWeb/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/xi-ve/IdleonWeb?style=flat-square)](https://github.com/xi-ve/IdleonWeb/pulls)
 
-[![Integration Tests - Arch Linux](https://github.com/xi-ve/IdleonWeb/workflows/test-arch/badge.svg)](https://github.com/xi-ve/IdleonWeb/actions/workflows/integration-tests.yml)
-[![Integration Tests - Ubuntu](https://github.com/xi-ve/IdleonWeb/workflows/test-ubuntu/badge.svg)](https://github.com/xi-ve/IdleonWeb/actions/workflows/integration-tests.yml)
-[![Integration Tests - Windows](https://github.com/xi-ve/IdleonWeb/workflows/test-windows/badge.svg)](https://github.com/xi-ve/IdleonWeb/actions/workflows/integration-tests.yml)
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg?style=flat-square)](https://www.python.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-14+-green.svg?style=flat-square)](https://nodejs.org/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg?style=flat-square)](https://github.com/xi-ve/IdleonWeb)
+
+[![Integration Tests - Arch Linux](https://github.com/xi-ve/IdleonWeb/workflows/test-arch/badge.svg?style=flat-square)](https://github.com/xi-ve/IdleonWeb/actions/workflows/integration-tests.yml)
+[![Integration Tests - Ubuntu](https://github.com/xi-ve/IdleonWeb/workflows/test-ubuntu/badge.svg?style=flat-square)](https://github.com/xi-ve/IdleonWeb/actions/workflows/integration-tests.yml)
+[![Integration Tests - Windows](https://github.com/xi-ve/IdleonWeb/workflows/test-windows/badge.svg?style=flat-square)](https://github.com/xi-ve/IdleonWeb/actions/workflows/integration-tests.yml)
 
 A modern, user-friendly launcher and plugin system for enhancing Legends of Idleon with a beautiful web interface.
 
