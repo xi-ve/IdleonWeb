@@ -33,18 +33,17 @@
       "printer_multiplier": 17.9
     },
     "godlike_powers": {
-      "enabled": false,
+      "enabled": true,
       "debug": false,
-      "reach": false,
+      "reach": true,
       "crit": false,
       "ability": false,
       "food": false,
-      "hitchance": false,
+      "hitchance": true,
       "intervention": false,
-      "weapon_speed": 9,
-      "card": false,
-      "poison": false,
-      "respawn": false,
+      "weapon_speed": 14,
+      "card": true,
+      "poison": true,
       "hp": false
     }
   },
