@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -25,19 +27,25 @@ jobs:
           VERSION_FILE=VERSION
           if [ ! -f "$VERSION_FILE" ]; then echo "0.1.0" > $VERSION_FILE; fi
           OLD_VERSION=$(cat $VERSION_FILE)
+          echo "Current version: $OLD_VERSION"
+          
+          # Always bump version when this workflow runs (after successful integration tests)
+          echo "Bumping version after successful integration tests..."
           IFS='.' read -r major minor patch <<< "$OLD_VERSION"
           patch=$((patch + 1))
           NEW_VERSION="$major.$minor.$patch"
+          echo "New version: $NEW_VERSION"
           echo "$NEW_VERSION" > $VERSION_FILE
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
-      - name: Commit bumped version
+      - name: Commit and push bumped version
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }}.git
           git add VERSION
-          git commit -m "Bump version to ${{ steps.version.outputs.version }}" || echo "No changes to commit"
-          git push || echo "No changes to push"
+          git commit -m "Bump version to ${{ steps.version.outputs.version }}"
+          git push origin main
 
       - name: Create release zip (exclude .github and integration_tests)
         run: |
@@ -49,7 +57,11 @@ jobs:
           tag_name: v${{ steps.version.outputs.version }}
           name: Release v${{ steps.version.outputs.version }}
           body: |
-            Automated release for commit ${{ github.sha }}
+            Automated release for version ${{ steps.version.outputs.version }}
+            
+            Changes in this release:
+            - Automated version bump
+            - Integration tests passed
           files: IdleonWeb-${{ steps.version.outputs.version }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }} 
