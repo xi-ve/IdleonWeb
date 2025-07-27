@@ -65,10 +65,12 @@ jobs:
           cd core && npm install && cd ..
       
       - name: Create test directories
+        shell: cmd
         run: |
-          mkdir -p core
-          mkdir -p plugins
-          mkdir -p webui
+          if not exist core mkdir core
+          if not exist plugins mkdir plugins
+          if not exist webui mkdir webui
+          echo "Test directories ready"
       
       - name: Run Windows tests
         shell: cmd

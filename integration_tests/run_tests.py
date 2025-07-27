@@ -230,8 +230,12 @@ def test_file_structure():
     for dir_name in required_dirs:
         dir_path = Path(dir_name)
         if not dir_path.exists():
-            dir_path.mkdir(exist_ok=True)
-            print_status(f"Created directory: {dir_name}")
+            try:
+                dir_path.mkdir(exist_ok=True)
+                print_status(f"Created directory: {dir_name}")
+            except Exception as e:
+                print_warning(f"Could not create directory {dir_name}: {e}")
+                # Continue anyway, as the directory might already exist
     
     required_files = [
         "main.py",
