@@ -1,6 +1,5 @@
 # IdleonWeb
 
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/xi-ve/IdleonWeb?style=flat-square)](https://github.com/xi-ve/IdleonWeb/releases)
 [![GitHub license](https://img.shields.io/github/license/xi-ve/IdleonWeb?style=flat-square)](https://github.com/xi-ve/IdleonWeb/blob/main/LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/xi-ve/IdleonWeb?style=flat-square)](https://github.com/xi-ve/IdleonWeb/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/xi-ve/IdleonWeb?style=flat-square)](https://github.com/xi-ve/IdleonWeb/network)
@@ -19,32 +18,6 @@
 A modern, user-friendly launcher and plugin system for enhancing Legends of Idleon with a beautiful web interface.
 
 > **For developers:** See [DEVELOPMENT.md](DEVELOPMENT.md) for technical documentation, plugin development guides, and architecture details.
-
-## 📊 Project Status
-
-### 🧪 Latest Test Results
-- **Arch Linux**: ✅ All tests passing
-- **Ubuntu**: ✅ All tests passing  
-- **Windows**: ✅ All tests passing
-- **Cross-Platform Compatibility**: ✅ Verified
-
-### 📈 Repository Statistics
-- **Lines of Code**: ~3,500+ (Python, JavaScript, HTML/CSS)
-- **Test Coverage**: 10 comprehensive integration tests
-- **Supported Platforms**: Windows, Linux (Ubuntu/Arch), macOS
-- **Active Plugins**: 2 (Spawn Item, Instant Mob Respawn)
-- **UI Elements**: 9 different types supported
-- **Dependencies**: 6 Python packages, 2 Node.js packages
-
-### 🚀 Recent Updates
-- ✅ Universal setup script for all platforms
-- ✅ Cross-platform integration testing
-- ✅ Modern web UI with real-time updates
-- ✅ Plugin system with UI decorators
-- ✅ GitHub Actions CI/CD pipeline
-- ✅ Comprehensive documentation
-
----
 
 ## Features
 
