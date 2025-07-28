@@ -39,6 +39,7 @@ def ensure_node_dependencies(startup_msgs=None):
             startup_msgs.append(msg)
         try:
             result = subprocess.run(['npm', 'install'], cwd=CORE_DIR, check=True, 
+                                  encoding='utf-8', errors='replace',
                                   creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0)
             msg = "[bold green]Node.js dependencies installed.[/bold green]"
         except subprocess.CalledProcessError:
@@ -59,6 +60,8 @@ def run_injector():
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         text=True,
+        encoding='utf-8',
+        errors='replace',
         creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
     )
     process.wait()
@@ -68,7 +71,7 @@ def collect_plugin_js(plugin_manager):
     if config_manager.get_path('debug', False):
         console.print("[DEBUG] Generated plugin JS code length:", len(js_code))
     js_path = CORE_DIR / "plugins_combined.js"
-    with open(js_path, "w") as f:
+    with open(js_path, "w", encoding='utf-8') as f:
         f.write(js_code)
     
     table = Table(title="Plugin System Details", show_lines=True)

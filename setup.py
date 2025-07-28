@@ -267,7 +267,10 @@ def create_initial_config():
             "candy_unlock",
             "quest_helper",
             "vault_unlocker",
-            "grimoire_unlocker"
+            "grimoire_unlocker",
+            "sneaking_cheats",
+            "sneaking_items",
+            "anvil_cheats"
         ],
         "plugin_configs": {
             "spawn_item": {
@@ -294,6 +297,15 @@ def create_initial_config():
                 "debug": False
             },
             "grimoire_unlocker": {
+                "debug": False
+            },
+            "sneaking_cheats": {
+                "debug": False
+            },
+            "sneaking_items": {
+                "debug": False
+            },
+            "anvil_cheats": {
                 "debug": False
             }
         },

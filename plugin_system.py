@@ -815,7 +815,7 @@ class PluginManager:
             
             if debug and plugin_js:
                 plugin_file = tmp_js_dir / f"{plugin.__class__.__name__}_js_dump.js"
-                with open(plugin_file, 'w') as f:
+                with open(plugin_file, 'w', encoding='utf-8') as f:
                     f.write(plugin_js)
         
         return js_code, plugin_sizes
