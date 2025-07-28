@@ -11,7 +11,8 @@
     "inventory_storage",
     "candy_unlock",
     "quest_helper",
-    "vault_unlocker"
+    "vault_unlocker",
+    "grimoire_unlocker"
   ],
   "plugin_configs": {
     "spawn_item": {
@@ -79,11 +80,16 @@
       "unlock_candy": false
     },
     "vault_unlocker": {
-      "vault_status_ui": "Wick",
+      "vault_status_ui": "",
       "set_vault_item_level_ui": "Wicked Smart 500",
       "unlock_all_categories": false,
       "max_level_all_categories": false,
-      "debug": true
+      "debug": false
+    },
+    "grimoire_unlocker": {
+      "grimoire_status_ui": "",
+      "unlock_all_upgrades": false,
+      "set_grimoire_upgrade_level_ui": "Wraith Accuracy 500"
     }
   },
   "debug": false,
