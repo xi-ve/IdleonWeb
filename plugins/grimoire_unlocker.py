@@ -1,15 +1,15 @@
 from plugin_system import PluginBase, js_export, ui_toggle, ui_search_with_results, plugin_command, ui_autocomplete_input, console
 from config_manager import config_manager
 
-class VaultUnlockerPlugin(PluginBase):
+class GrimoireUnlockerPlugin(PluginBase):
     VERSION = "1.0.0"
-    DESCRIPTION = "Unlock and manage vault upgrades with category-based controls."
+    DESCRIPTION = "Unlock and manage grimoire upgrades for Death Bringer class."
 
     def __init__(self, config=None):
         super().__init__(config or {})
-        self.name = 'vault_unlocker'
+        self.name = 'grimoire_unlocker'
         self.debug = config.get('debug', False) if config else False
-        self._vault_cache = None
+        self._grimoire_cache = None
         self._cache_timestamp = 0
         self._cache_duration = 300
 
@@ -23,7 +23,7 @@ class VaultUnlockerPlugin(PluginBase):
 
     @ui_toggle(
         label="Debug Mode",
-        description="Enable debug logging for vault unlocker plugin",
+        description="Enable debug logging for grimoire unlocker plugin",
         config_key="debug",
         default_value=False,
         category="Debug Settings",
@@ -37,69 +37,69 @@ class VaultUnlockerPlugin(PluginBase):
         return f"Debug mode {'enabled' if self.config.get('debug', False) else 'disabled'}"
 
     @ui_search_with_results(
-        label="Vault Categories Status",
-        description="Show all vault categories with their unlock status and levels",
-        button_text="Show Vault Status",
+        label="Grimoire Upgrades Status",
+        description="Show all grimoire upgrades with their unlock status and levels",
+        button_text="Show Grimoire Status",
         placeholder="Enter filter term (leave empty to show all)",
-        category="Vault Management",
+        category="Grimoire Management",
         order=2
     )
-    async def vault_status_ui(self, value: str = None):
+    async def grimoire_status_ui(self, value: str = None):
         if hasattr(self, 'injector') and self.injector:
             try:
                 if self.debug:
-                    console.print(f"[vault_unlocker] Getting vault status, filter: {value}")
-                result = self.run_js_export('get_vault_status_js', self.injector, filter_query=value or "")
+                    console.print(f"[grimoire_unlocker] Getting grimoire status, filter: {value}")
+                result = self.run_js_export('get_grimoire_status_js', self.injector, filter_query=value or "")
                 return result
             except Exception as e:
                 if self.debug:
-                    console.print(f"[vault_unlocker] Error getting vault status: {e}")
-                return f"ERROR: Error getting vault status: {str(e)}"
+                    console.print(f"[grimoire_unlocker] Error getting grimoire status: {e}")
+                return f"ERROR: Error getting grimoire status: {str(e)}"
         else:
             return "ERROR: No injector available - run 'inject' first to connect to the game"
 
     @js_export(params=["filter_query"])
-    def get_vault_status_js(self, filter_query=None):
+    def get_grimoire_status_js(self, filter_query=None):
         return '''
         try {
             const ctx = window.__idleon_cheats__;
             if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
             
             const bEngine = ctx["com.stencyl.Engine"].engine;
-            const upgVault = bEngine.getGameAttribute("UpgVault");
-            const upgradeVault = bEngine.getGameAttribute("CustomLists").h.UpgradeVault;
+            const grimoire = bEngine.getGameAttribute("Grimoire");
+            const grimoireUpg = bEngine.getGameAttribute("CustomLists").h.GrimoireUpg;
             
-            if (!upgVault || !upgradeVault) {
-                return "Error: Vault data not found";
+            if (!grimoire || !grimoireUpg) {
+                return "Error: Grimoire data not found";
             }
             
             let output = "";
-            output += "<div style='font-weight: bold; font-size: 16px; margin-bottom: 10px;'>🏦 VAULT CATEGORIES STATUS</div>";
+            output += "<div style='font-weight: bold; font-size: 16px; margin-bottom: 10px;'>📚 GRIMOIRE UPGRADES STATUS</div>";
             
-            let total_categories = 0;
-            let unlocked_categories = 0;
-            let max_leveled_categories = 0;
+            let total_upgrades = 0;
+            let unlocked_upgrades = 0;
+            let max_leveled_upgrades = 0;
             
             const locked = [];
             const unlocked = [];
             const max_leveled = [];
             
-            for (let i = 0; i < upgradeVault.length; i++) {
-                const category = upgradeVault[i];
-                if (!category || !category[0]) continue;
+            for (let i = 0; i < grimoireUpg.length; i++) {
+                const upgrade = grimoireUpg[i];
+                if (!upgrade || !upgrade[0]) continue;
                 
-                total_categories++;
-                const categoryName = category[0].replace(/_/g, ' ');
-                const currentLevel = upgVault[i] || 0;
-                const maxLevel = category[4] || 0;
+                total_upgrades++;
+                const upgradeName = upgrade[0].replace(/_/g, ' ');
+                const currentLevel = grimoire[i] || 0;
+                const maxLevel = upgrade[4] || 0;
                 const isUnlocked = currentLevel > 0;
                 const isMaxLeveled = currentLevel >= maxLevel;
                 
-                if (isUnlocked) unlocked_categories++;
-                if (isMaxLeveled) max_leveled_categories++;
+                if (isUnlocked) unlocked_upgrades++;
+                if (isMaxLeveled) max_leveled_upgrades++;
                 
                 const item = {
-                    name: categoryName,
+                    name: upgradeName,
                     level: currentLevel,
                     maxLevel: maxLevel,
                     index: i
@@ -150,9 +150,9 @@ class VaultUnlockerPlugin(PluginBase):
             if (!filterQuery) {
                 output += "<div style='margin-top: 15px; padding: 10px; background: rgba(0, 0, 0, 0.1); border-radius: 5px;'>";
                 output += "<div style='font-weight: bold; margin-bottom: 5px;'>📊 SUMMARY</div>";
-                output += "<div>Total Categories: " + total_categories + "</div>";
-                output += "<div>Unlocked: " + unlocked_categories + "/" + total_categories + " (" + Math.round(unlocked_categories/total_categories*100) + "%)</div>";
-                output += "<div>Max Leveled: " + max_leveled_categories + "/" + total_categories + " (" + Math.round(max_leveled_categories/total_categories*100) + "%)</div>";
+                output += "<div>Total Upgrades: " + total_upgrades + "</div>";
+                output += "<div>Unlocked: " + unlocked_upgrades + "/" + total_upgrades + " (" + Math.round(unlocked_upgrades/total_upgrades*100) + "%)</div>";
+                output += "<div>Max Leveled: " + max_leveled_upgrades + "/" + total_upgrades + " (" + Math.round(max_leveled_upgrades/total_upgrades*100) + "%)</div>";
                 output += "</div>";
             }
             
@@ -163,31 +163,31 @@ class VaultUnlockerPlugin(PluginBase):
         '''
 
     @ui_autocomplete_input(
-        label="Set Vault Item Level",
-        description="Set a specific vault item to a specific level. Syntax: 'item_name level' (e.g., 'damage 100' or 'Bigger Damage 200')",
+        label="Set Grimoire Upgrade Level",
+        description="Set a specific grimoire upgrade to a specific level. Syntax: 'upgrade_name level' (e.g., 'Wraith Damage 100' or 'Wraith Accuracy 200')",
         button_text="Set Level",
-        placeholder="Enter: item_name level (e.g., 'damage 100')",
-        category="Vault Management",
+        placeholder="Enter: upgrade_name level (e.g., 'Wraith Damage 100')",
+        category="Grimoire Management",
         order=3
     )
-    async def set_vault_item_level_ui(self, value: str = None):
+    async def set_grimoire_upgrade_level_ui(self, value: str = None):
         if hasattr(self, 'injector') and self.injector:
             try:
                 if self.debug:
-                    console.print(f"[vault_unlocker] Setting vault item level, input: {value}")
+                    console.print(f"[grimoire_unlocker] Setting grimoire upgrade level, input: {value}")
                 
                 if not value or not value.strip():
-                    return "Please provide item name and level (e.g., 'damage 100')"
+                    return "Please provide upgrade name and level (e.g., 'Wraith Damage 100')"
                 
                 parts = value.strip().split()
                 if len(parts) < 2:
-                    return "Syntax: 'item_name level' (e.g., 'damage 100')"
+                    return "Syntax: 'upgrade_name level' (e.g., 'Wraith Damage 100')"
                 
                 level_str = parts[-1]
-                item_name = ' '.join(parts[:-1])
+                upgrade_name = ' '.join(parts[:-1])
                 
                 if self.debug:
-                    console.print(f"[vault_unlocker] Parsed - item_name: '{item_name}', level: {level_str}")
+                    console.print(f"[grimoire_unlocker] Parsed - upgrade_name: '{upgrade_name}', level: {level_str}")
                 
                 try:
                     level_int = int(level_str)
@@ -196,45 +196,45 @@ class VaultUnlockerPlugin(PluginBase):
                 except ValueError:
                     return "Level must be a valid number"
                 
-                result = await self.set_vault_item_level(item_name, level_int)
+                result = await self.set_grimoire_upgrade_level(upgrade_name, level_int)
                 if self.debug:
-                    console.print(f"[vault_unlocker] Result: {result}")
+                    console.print(f"[grimoire_unlocker] Result: {result}")
                 return f"SUCCESS: {result}"
             except Exception as e:
                 if self.debug:
-                    console.print(f"[vault_unlocker] Error setting vault item level: {e}")
-                return f"ERROR: Error setting vault item level: {str(e)}"
+                    console.print(f"[grimoire_unlocker] Error setting grimoire upgrade level: {e}")
+                return f"ERROR: Error setting grimoire upgrade level: {str(e)}"
         else:
             return "ERROR: No injector available - run 'inject' first to connect to the game"
 
-    async def get_cached_vault_list(self):
+    async def get_cached_grimoire_list(self):
         import time
-        if (not hasattr(self, '_vault_cache') or 
+        if (not hasattr(self, '_grimoire_cache') or 
             not hasattr(self, '_cache_timestamp') or 
             not hasattr(self, '_cache_duration') or
             time.time() - self._cache_timestamp > self._cache_duration):
             
             if self.debug:
-                console.print("[vault_unlocker] Cache expired or missing, fetching vault list...")
+                console.print("[grimoire_unlocker] Cache expired or missing, fetching grimoire list...")
             try:
                 if not hasattr(self, 'injector') or not self.injector:
                     if self.debug:
-                        console.print("[vault_unlocker] No injector available")
+                        console.print("[grimoire_unlocker] No injector available")
                     return []
                 
-                raw_result = self.run_js_export('get_vault_item_names_js', self.injector)
+                raw_result = self.run_js_export('get_grimoire_upgrade_names_js', self.injector)
                 if self.debug:
-                    console.print(f"[vault_unlocker] Raw JS result: {raw_result}")
+                    console.print(f"[grimoire_unlocker] Raw JS result: {raw_result}")
                 
                 if not raw_result or raw_result.startswith("Error:"):
                     if self.debug:
-                        console.print(f"[vault_unlocker] No valid result from JS: {raw_result}")
+                        console.print(f"[grimoire_unlocker] No valid result from JS: {raw_result}")
                     return []
                 
-                vault_items = []
+                grimoire_upgrades = []
                 lines = raw_result.strip().split('\n')
                 if self.debug:
-                    console.print(f"[vault_unlocker] Processing {len(lines)} lines")
+                    console.print(f"[grimoire_unlocker] Processing {len(lines)} lines")
                 
                 for line in lines:
                     line = line.strip()
@@ -242,160 +242,160 @@ class VaultUnlockerPlugin(PluginBase):
                         parts = line.split('|')
                         if len(parts) >= 2:
                             name = parts[0].strip()
-                            if name and name != "Category":
-                                vault_items.append(name)
+                            if name and name != "Upgrade":
+                                grimoire_upgrades.append(name)
                                 if self.debug:
-                                    console.print(f"[vault_unlocker] Added vault item: {name}")
+                                    console.print(f"[grimoire_unlocker] Added grimoire upgrade: {name}")
                 
-                self._vault_cache = vault_items
+                self._grimoire_cache = grimoire_upgrades
                 self._cache_timestamp = time.time()
                 self._cache_duration = 300
                 if self.debug:
-                    console.print(f"[vault_unlocker] Cached {len(vault_items)} vault items")
-                return vault_items
+                    console.print(f"[grimoire_unlocker] Cached {len(grimoire_upgrades)} grimoire upgrades")
+                return grimoire_upgrades
             except Exception as e:
                 if self.debug:
-                    console.print(f"[vault_unlocker] Error fetching vault list: {e}")
+                    console.print(f"[grimoire_unlocker] Error fetching grimoire list: {e}")
                 return []
         else:
             if self.debug:
-                console.print(f"[vault_unlocker] Using cached vault list ({len(self._vault_cache)} items)")
-            return self._vault_cache
+                console.print(f"[grimoire_unlocker] Using cached grimoire list ({len(self._grimoire_cache)} items)")
+            return self._grimoire_cache
 
-    async def get_set_vault_item_level_ui_autocomplete(self, query: str = ""):
+    async def get_set_grimoire_upgrade_level_ui_autocomplete(self, query: str = ""):
         if self.debug:
-            console.print(f"[vault_unlocker] get_set_vault_item_level_ui_autocomplete called with query: '{query}'")
+            console.print(f"[grimoire_unlocker] get_set_grimoire_upgrade_level_ui_autocomplete called with query: '{query}'")
         try:
             if not hasattr(self, 'injector') or not self.injector:
                 if self.debug:
-                    console.print("[vault_unlocker] No injector available for autocomplete")
+                    console.print("[grimoire_unlocker] No injector available for autocomplete")
                 return []
             
-            vault_items = await self.get_cached_vault_list()
+            grimoire_upgrades = await self.get_cached_grimoire_list()
             if self.debug:
-                console.print(f"[vault_unlocker] Got {len(vault_items)} vault items from cache")
+                console.print(f"[grimoire_unlocker] Got {len(grimoire_upgrades)} grimoire upgrades from cache")
             
-            if not vault_items:
+            if not grimoire_upgrades:
                 if self.debug:
-                    console.print("[vault_unlocker] No vault items found")
+                    console.print("[grimoire_unlocker] No grimoire upgrades found")
                 return []
             
             query_lower = query.lower()
             suggestions = []
             
-            for item in vault_items:
-                if query_lower in item.lower():
-                    suggestions.append(item)
+            for upgrade in grimoire_upgrades:
+                if query_lower in upgrade.lower():
+                    suggestions.append(upgrade)
                     if self.debug:
-                        console.print(f"[vault_unlocker] Added suggestion: {item}")
+                        console.print(f"[grimoire_unlocker] Added suggestion: {upgrade}")
             
             if self.debug:
-                console.print(f"[vault_unlocker] Returning {len(suggestions)} suggestions: {suggestions}")
+                console.print(f"[grimoire_unlocker] Returning {len(suggestions)} suggestions: {suggestions}")
             return suggestions[:10]
         except Exception as e:
             if self.debug:
-                console.print(f"[vault_unlocker] Error in get_set_vault_item_level_ui_autocomplete: {e}")
+                console.print(f"[grimoire_unlocker] Error in get_set_grimoire_upgrade_level_ui_autocomplete: {e}")
             return []
 
     @ui_toggle(
-        label="Unlock All Vault Categories",
-        description="Unlock all vault categories (does not level them up)",
-        config_key="unlock_all_categories",
+        label="Unlock All Grimoire Upgrades",
+        description="Unlock all grimoire upgrades (sets level to 1, does not max level)",
+        config_key="unlock_all_upgrades",
         default_value=False,
-        category="Vault Management",
+        category="Grimoire Management",
         order=4
     )
-    async def unlock_all_categories_ui(self, value: bool = None):
+    async def unlock_all_grimoire_upgrades_ui(self, value: bool = None):
         if value is not None:
-            self.config["unlock_all_categories"] = value
+            self.config["unlock_all_upgrades"] = value
             self.save_to_global_config()
             if hasattr(self, 'injector') and self.injector and value:
                 try:
-                    result = await self.unlock_all_vault_categories(self.injector)
+                    result = await self.unlock_all_grimoire_upgrades(self.injector)
                     return f"SUCCESS: {result}"
                 except Exception as e:
-                    return f"ERROR: Error unlocking vault categories: {str(e)}"
-        return f"Unlock all vault categories {'enabled' if self.config.get('unlock_all_categories', False) else 'disabled'}"
+                    return f"ERROR: Error unlocking grimoire upgrades: {str(e)}"
+        return f"Unlock all grimoire upgrades {'enabled' if self.config.get('unlock_all_upgrades', False) else 'disabled'}"
 
     @ui_toggle(
-        label="Max Level All Vault Categories",
-        description="Set all vault categories to maximum level",
-        config_key="max_level_all_categories",
+        label="Max Level All Grimoire Upgrades",
+        description="Set all grimoire upgrades to maximum level",
+        config_key="max_level_all_upgrades",
         default_value=False,
-        category="Vault Management",
+        category="Grimoire Management",
         order=5
     )
-    async def max_level_all_categories_ui(self, value: bool = None):
+    async def max_level_all_grimoire_upgrades_ui(self, value: bool = None):
         if value is not None:
-            self.config["max_level_all_categories"] = value
+            self.config["max_level_all_upgrades"] = value
             self.save_to_global_config()
             if hasattr(self, 'injector') and self.injector and value:
                 try:
-                    result = await self.max_level_all_vault_categories(self.injector)
+                    result = await self.max_level_all_grimoire_upgrades(self.injector)
                     return f"SUCCESS: {result}"
                 except Exception as e:
-                    return f"ERROR: Error max leveling vault categories: {str(e)}"
-        return f"Max level all vault categories {'enabled' if self.config.get('max_level_all_categories', False) else 'disabled'}"
+                    return f"ERROR: Error max leveling grimoire upgrades: {str(e)}"
+        return f"Max level all grimoire upgrades {'enabled' if self.config.get('max_level_all_upgrades', False) else 'disabled'}"
 
     @ui_toggle(
-        label="Reset All Vault Categories",
-        description="Reset all vault categories to level 0",
-        config_key="reset_all_categories",
+        label="Reset All Grimoire Upgrades",
+        description="Reset all grimoire upgrades to level 0",
+        config_key="reset_all_upgrades",
         default_value=False,
-        category="Vault Management",
+        category="Grimoire Management",
         order=6
     )
-    async def reset_all_categories_ui(self, value: bool = None):
+    async def reset_all_grimoire_upgrades_ui(self, value: bool = None):
         if value is not None:
-            self.config["reset_all_categories"] = value
+            self.config["reset_all_upgrades"] = value
             self.save_to_global_config()
             if hasattr(self, 'injector') and self.injector and value:
                 try:
-                    result = await self.reset_all_vault_categories(self.injector)
+                    result = await self.reset_all_grimoire_upgrades(self.injector)
                     return f"SUCCESS: {result}"
                 except Exception as e:
-                    return f"ERROR: Error resetting vault categories: {str(e)}"
-        return f"Reset all vault categories {'enabled' if self.config.get('reset_all_categories', False) else 'disabled'}"
+                    return f"ERROR: Error resetting grimoire upgrades: {str(e)}"
+        return f"Reset all grimoire upgrades {'enabled' if self.config.get('reset_all_upgrades', False) else 'disabled'}"
 
     @plugin_command(
-        help="Get vault status showing all categories and their levels.",
+        help="Get grimoire status showing all upgrades and their levels.",
         params=[],
     )
-    async def get_vault_status(self, injector=None, **kwargs):
-        result = self.run_js_export('get_vault_status_js', injector)
+    async def get_grimoire_status(self, injector=None, **kwargs):
+        result = self.run_js_export('get_grimoire_status_js', injector)
         return result
 
     @plugin_command(
-        help="Set a specific vault item to a specific level.",
+        help="Set a specific grimoire upgrade to a specific level.",
         params=[
-            {"name": "item_name", "type": str, "help": "Name of the vault item"},
+            {"name": "upgrade_name", "type": str, "help": "Name of the grimoire upgrade"},
             {"name": "level", "type": int, "help": "Level to set (0 or higher)"},
         ],
     )
-    async def set_vault_item_level(self, item_name: str, level: int, **kwargs):
+    async def set_grimoire_upgrade_level(self, upgrade_name: str, level: int, **kwargs):
         if hasattr(self, 'injector') and self.injector:
-            result = self.run_js_export('set_vault_item_level_js', self.injector, item_name=item_name, level=level)
+            result = self.run_js_export('set_grimoire_upgrade_level_js', self.injector, upgrade_name=upgrade_name, level=level)
             return result
         else:
             return "ERROR: No injector available - run 'inject' first to connect to the game"
 
-    @js_export(params=["item_name", "level"])
-    def set_vault_item_level_js(self, item_name=None, level=None):
+    @js_export(params=["upgrade_name", "level"])
+    def set_grimoire_upgrade_level_js(self, upgrade_name=None, level=None):
         return '''
         try {
             const ctx = window.__idleon_cheats__;
             if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
             
             const bEngine = ctx["com.stencyl.Engine"].engine;
-            const upgVault = bEngine.getGameAttribute("UpgVault");
-            const upgradeVault = bEngine.getGameAttribute("CustomLists").h.UpgradeVault;
+            const grimoire = bEngine.getGameAttribute("Grimoire");
+            const grimoireUpg = bEngine.getGameAttribute("CustomLists").h.GrimoireUpg;
             
-            if (!upgVault || !upgradeVault) {
-                return "Error: Vault data not found";
+            if (!grimoire || !grimoireUpg) {
+                return "Error: Grimoire data not found";
             }
             
-            if (!item_name || level === undefined || level === null) {
-                return "Error: Item name and level are required";
+            if (!upgrade_name || level === undefined || level === null) {
+                return "Error: Upgrade name and level are required";
             }
             
             if (level < 0) {
@@ -404,34 +404,34 @@ class VaultUnlockerPlugin(PluginBase):
             
             let found_index = -1;
             let found_name = "";
-            const search_name = item_name.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const search_name = upgrade_name.toLowerCase().replace(/[^a-z0-9]/g, '');
             
-            for (let i = 0; i < upgradeVault.length; i++) {
-                const category = upgradeVault[i];
-                if (!category || !category[0]) continue;
+            for (let i = 0; i < grimoireUpg.length; i++) {
+                const upgrade = grimoireUpg[i];
+                if (!upgrade || !upgrade[0]) continue;
                 
-                const categoryName = category[0].replace(/_/g, ' ');
-                const clean_name = categoryName.toLowerCase().replace(/[^a-z0-9]/g, '');
+                const upgradeName = upgrade[0].replace(/_/g, ' ');
+                const clean_name = upgradeName.toLowerCase().replace(/[^a-z0-9]/g, '');
                 
                 if (clean_name.includes(search_name) || search_name.includes(clean_name)) {
                     found_index = i;
-                    found_name = categoryName;
+                    found_name = upgradeName;
                     break;
                 }
             }
             
             if (found_index === -1) {
-                return `Error: Vault item '${item_name}' not found`;
+                return `Error: Grimoire upgrade '${upgrade_name}' not found`;
             }
             
-            const maxLevel = upgradeVault[found_index][4] || 0;
-            const oldLevel = upgVault[found_index] || 0;
+            const maxLevel = grimoireUpg[found_index][4] || 0;
+            const oldLevel = grimoire[found_index] || 0;
             
             if (level > maxLevel) {
                 return `Error: Level ${level} exceeds maximum level ${maxLevel} for '${found_name}'`;
             }
             
-            upgVault[found_index] = level;
+            grimoire[found_index] = level;
             
             if (level === 0) {
                 return `✅ Reset '${found_name}' to level 0 (was level ${oldLevel})`;
@@ -446,39 +446,38 @@ class VaultUnlockerPlugin(PluginBase):
         '''
 
     @plugin_command(
-        help="Get list of vault item names for autocomplete.",
+        help="Get list of grimoire upgrade names for autocomplete.",
         params=[],
     )
-    async def get_vault_item_names(self, injector=None, **kwargs):
-        result = self.run_js_export('get_vault_item_names_js', injector)
+    async def get_grimoire_upgrade_names(self, injector=None, **kwargs):
+        result = self.run_js_export('get_grimoire_upgrade_names_js', injector)
         return result
 
     @js_export()
-    def get_vault_item_names_js(self):
+    def get_grimoire_upgrade_names_js(self):
         return '''
         try {
             const ctx = window.__idleon_cheats__;
             if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
             
             const bEngine = ctx["com.stencyl.Engine"].engine;
-            const upgVault = bEngine.getGameAttribute("UpgVault");
-            const upgradeVault = bEngine.getGameAttribute("CustomLists").h.UpgradeVault;
+            const grimoire = bEngine.getGameAttribute("Grimoire");
+            const grimoireUpg = bEngine.getGameAttribute("CustomLists").h.GrimoireUpg;
             
-            if (!upgVault || !upgradeVault) {
-                return "Error: Vault data not found";
+            if (!grimoire || !grimoireUpg) {
+                return "Error: Grimoire data not found";
             }
             
-            let output = "Category | Level | Max Level | Status\\n";
+            let output = "Upgrade | Level | Max Level | Status\\n";
             output += "---------|-------|-----------|--------\\n";
             
-            let found_categories = 0;
-            for (let i = 0; i < upgradeVault.length; i++) {
-                const category = upgradeVault[i];
-                if (!category || !category[0]) continue;
+            for (let i = 0; i < grimoireUpg.length; i++) {
+                const upgrade = grimoireUpg[i];
+                if (!upgrade || !upgrade[0]) continue;
                 
-                const categoryName = category[0].replace(/_/g, ' ');
-                const currentLevel = upgVault[i] || 0;
-                const maxLevel = category[4] || 0;
+                const upgradeName = upgrade[0].replace(/_/g, ' ');
+                const currentLevel = grimoire[i] || 0;
+                const maxLevel = upgrade[4] || 0;
                 const isUnlocked = currentLevel > 0;
                 const isMaxLeveled = currentLevel >= maxLevel;
                 
@@ -489,8 +488,7 @@ class VaultUnlockerPlugin(PluginBase):
                     status = "🟡 UNLOCKED";
                 }
                 
-                output += categoryName + " | " + currentLevel + " | " + maxLevel + " | " + status + "\\n";
-                found_categories++;
+                output += upgradeName + " | " + currentLevel + " | " + maxLevel + " | " + status + "\\n";
             }
             
             return output;
@@ -500,40 +498,40 @@ class VaultUnlockerPlugin(PluginBase):
         '''
 
     @plugin_command(
-        help="Unlock all vault categories (sets level to 1, does not max level).",
+        help="Unlock all grimoire upgrades (sets level to 1, does not max level).",
         params=[],
     )
-    async def unlock_all_vault_categories(self, injector=None, **kwargs):
-        result = self.run_js_export('unlock_all_vault_categories_js', injector)
+    async def unlock_all_grimoire_upgrades(self, injector=None, **kwargs):
+        result = self.run_js_export('unlock_all_grimoire_upgrades_js', injector)
         return result
 
     @js_export()
-    def unlock_all_vault_categories_js(self):
+    def unlock_all_grimoire_upgrades_js(self):
         return '''
         try {
             const ctx = window.__idleon_cheats__;
             if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
             
             const bEngine = ctx["com.stencyl.Engine"].engine;
-            const upgVault = bEngine.getGameAttribute("UpgVault");
-            const upgradeVault = bEngine.getGameAttribute("CustomLists").h.UpgradeVault;
+            const grimoire = bEngine.getGameAttribute("Grimoire");
+            const grimoireUpg = bEngine.getGameAttribute("CustomLists").h.GrimoireUpg;
             
-            if (!upgVault || !upgradeVault) {
-                return "Error: Vault data not found";
+            if (!grimoire || !grimoireUpg) {
+                return "Error: Grimoire data not found";
             }
             
             let unlocked_count = 0;
             let already_unlocked = 0;
             
-            for (let i = 0; i < upgradeVault.length; i++) {
-                const category = upgradeVault[i];
-                if (!category || !category[0]) continue;
+            for (let i = 0; i < grimoireUpg.length; i++) {
+                const upgrade = grimoireUpg[i];
+                if (!upgrade || !upgrade[0]) continue;
                 
-                const categoryName = category[0].replace(/_/g, ' ');
-                const currentLevel = upgVault[i] || 0;
+                const upgradeName = upgrade[0].replace(/_/g, ' ');
+                const currentLevel = grimoire[i] || 0;
                 
                 if (currentLevel === 0) {
-                    upgVault[i] = 1;
+                    grimoire[i] = 1;
                     unlocked_count++;
                 } else {
                     already_unlocked++;
@@ -541,9 +539,9 @@ class VaultUnlockerPlugin(PluginBase):
             }
             
             if (unlocked_count === 0) {
-                return `✅ All vault categories are already unlocked! (${already_unlocked} categories)`;
+                return `✅ All grimoire upgrades are already unlocked! (${already_unlocked} upgrades)`;
             } else {
-                return `🔓 Unlocked ${unlocked_count} vault categories! (${already_unlocked} were already unlocked)`;
+                return `🔓 Unlocked ${unlocked_count} grimoire upgrades! (${already_unlocked} were already unlocked)`;
             }
         } catch (e) {
             return `Error: ${e.message}`;
@@ -551,41 +549,41 @@ class VaultUnlockerPlugin(PluginBase):
         '''
 
     @plugin_command(
-        help="Set all vault categories to maximum level.",
+        help="Set all grimoire upgrades to maximum level.",
         params=[],
     )
-    async def max_level_all_vault_categories(self, injector=None, **kwargs):
-        result = self.run_js_export('max_level_all_vault_categories_js', injector)
+    async def max_level_all_grimoire_upgrades(self, injector=None, **kwargs):
+        result = self.run_js_export('max_level_all_grimoire_upgrades_js', injector)
         return result
 
     @js_export()
-    def max_level_all_vault_categories_js(self):
+    def max_level_all_grimoire_upgrades_js(self):
         return '''
         try {
             const ctx = window.__idleon_cheats__;
             if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
             
             const bEngine = ctx["com.stencyl.Engine"].engine;
-            const upgVault = bEngine.getGameAttribute("UpgVault");
-            const upgradeVault = bEngine.getGameAttribute("CustomLists").h.UpgradeVault;
+            const grimoire = bEngine.getGameAttribute("Grimoire");
+            const grimoireUpg = bEngine.getGameAttribute("CustomLists").h.GrimoireUpg;
             
-            if (!upgVault || !upgradeVault) {
-                return "Error: Vault data not found";
+            if (!grimoire || !grimoireUpg) {
+                return "Error: Grimoire data not found";
             }
             
             let max_leveled_count = 0;
             let already_max_leveled = 0;
             
-            for (let i = 0; i < upgradeVault.length; i++) {
-                const category = upgradeVault[i];
-                if (!category || !category[0]) continue;
+            for (let i = 0; i < grimoireUpg.length; i++) {
+                const upgrade = grimoireUpg[i];
+                if (!upgrade || !upgrade[0]) continue;
                 
-                const categoryName = category[0].replace(/_/g, ' ');
-                const currentLevel = upgVault[i] || 0;
-                const maxLevel = category[4] || 0;
+                const upgradeName = upgrade[0].replace(/_/g, ' ');
+                const currentLevel = grimoire[i] || 0;
+                const maxLevel = upgrade[4] || 0;
                 
                 if (currentLevel < maxLevel) {
-                    upgVault[i] = maxLevel;
+                    grimoire[i] = maxLevel;
                     max_leveled_count++;
                 } else {
                     already_max_leveled++;
@@ -593,9 +591,9 @@ class VaultUnlockerPlugin(PluginBase):
             }
             
             if (max_leveled_count === 0) {
-                return `✅ All vault categories are already at maximum level! (${already_max_leveled} categories)`;
+                return `✅ All grimoire upgrades are already at maximum level! (${already_max_leveled} upgrades)`;
             } else {
-                return `🚀 Set ${max_leveled_count} vault categories to maximum level! (${already_max_leveled} were already max level)`;
+                return `🚀 Set ${max_leveled_count} grimoire upgrades to maximum level! (${already_max_leveled} were already max level)`;
             }
         } catch (e) {
             return `Error: ${e.message}`;
@@ -603,40 +601,40 @@ class VaultUnlockerPlugin(PluginBase):
         '''
 
     @plugin_command(
-        help="Reset all vault categories to level 0.",
+        help="Reset all grimoire upgrades to level 0.",
         params=[],
     )
-    async def reset_all_vault_categories(self, injector=None, **kwargs):
-        result = self.run_js_export('reset_all_vault_categories_js', injector)
+    async def reset_all_grimoire_upgrades(self, injector=None, **kwargs):
+        result = self.run_js_export('reset_all_grimoire_upgrades_js', injector)
         return result
 
     @js_export()
-    def reset_all_vault_categories_js(self):
+    def reset_all_grimoire_upgrades_js(self):
         return '''
         try {
             const ctx = window.__idleon_cheats__;
             if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
             
             const bEngine = ctx["com.stencyl.Engine"].engine;
-            const upgVault = bEngine.getGameAttribute("UpgVault");
-            const upgradeVault = bEngine.getGameAttribute("CustomLists").h.UpgradeVault;
+            const grimoire = bEngine.getGameAttribute("Grimoire");
+            const grimoireUpg = bEngine.getGameAttribute("CustomLists").h.GrimoireUpg;
             
-            if (!upgVault || !upgradeVault) {
-                return "Error: Vault data not found";
+            if (!grimoire || !grimoireUpg) {
+                return "Error: Grimoire data not found";
             }
             
             let reset_count = 0;
             let already_reset = 0;
             
-            for (let i = 0; i < upgradeVault.length; i++) {
-                const category = upgradeVault[i];
-                if (!category || !category[0]) continue;
+            for (let i = 0; i < grimoireUpg.length; i++) {
+                const upgrade = grimoireUpg[i];
+                if (!upgrade || !upgrade[0]) continue;
                 
-                const categoryName = category[0].replace(/_/g, ' ');
-                const currentLevel = upgVault[i] || 0;
+                const upgradeName = upgrade[0].replace(/_/g, ' ');
+                const currentLevel = grimoire[i] || 0;
                 
                 if (currentLevel > 0) {
-                    upgVault[i] = 0;
+                    grimoire[i] = 0;
                     reset_count++;
                 } else {
                     already_reset++;
@@ -644,16 +642,13 @@ class VaultUnlockerPlugin(PluginBase):
             }
             
             if (reset_count === 0) {
-                return `✅ All vault categories are already reset! (${already_reset} categories)`;
+                return `✅ All grimoire upgrades are already reset! (${already_reset} upgrades)`;
             } else {
-                return `🔄 Reset ${reset_count} vault categories to level 0! (${already_reset} were already reset)`;
+                return `🔄 Reset ${reset_count} grimoire upgrades to level 0! (${already_reset} were already reset)`;
             }
         } catch (e) {
             return `Error: ${e.message}`;
         }
         '''
 
-
-
-
-plugin_class = VaultUnlockerPlugin 
+plugin_class = GrimoireUnlockerPlugin 

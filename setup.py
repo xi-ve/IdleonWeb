@@ -266,7 +266,8 @@ def create_initial_config():
             "inventory_storage",
             "candy_unlock",
             "quest_helper",
-            "vault_unlocker"
+            "vault_unlocker",
+            "grimoire_unlocker"
         ],
         "plugin_configs": {
             "spawn_item": {
@@ -290,6 +291,9 @@ def create_initial_config():
                 "debug": False
             },
             "vault_unlocker": {
+                "debug": False
+            },
+            "grimoire_unlocker": {
                 "debug": False
             }
         },
