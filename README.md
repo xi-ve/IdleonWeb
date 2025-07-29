@@ -4,7 +4,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-14+-green.svg?style=flat-square)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg?style=flat-square)](https://github.com/xi-ve/IdleonWeb)
-[![Integration Tests](https://github.com/xi-ve/IdleonWeb/actions/workflows/integration-tests.yml/badge.svg?style=flat-square)](https://github.com/xi-ve/IdleonWeb/actions/workflows/integration-tests.yml)
+[![Integration Tests](https://github.com/xi-ve/IdleonWeb/actions/workflows/combined-tests-and-release.yml/badge.svg?style=flat-square)](https://github.com/xi-ve/IdleonWeb/actions/workflows/combined-tests-and-release.yml)
 
 A modern, user-friendly launcher and plugin system for enhancing Legends of Idleon with a beautiful web interface.
 
