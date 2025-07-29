@@ -158,7 +158,8 @@ def test_plugin_system():
         sys.path.insert(0, str(Path.cwd()))
         from plugin_system import PluginManager
         
-        plugin_manager = PluginManager(['spawn_item', 'instant_mob_respawn'], 'plugins')
+        # Test with new folderized plugin structure
+        plugin_manager = PluginManager(['character.spawn_item', 'character.instant_mob_respawn'], 'plugins')
         print_success("Plugin system imports successfully")
         return True
     except Exception as e:
@@ -226,12 +227,12 @@ def test_file_structure():
     print_status("Testing file structure...")
     
     # Create required directories if they don't exist (for CI environments)
-    required_dirs = ["core", "plugins", "webui"]
+    required_dirs = ["core", "plugins", "webui", "plugins/character", "plugins/qol", "plugins/unlocks", "plugins/world1"]
     for dir_name in required_dirs:
         dir_path = Path(dir_name)
         if not dir_path.exists():
             try:
-                dir_path.mkdir(exist_ok=True)
+                dir_path.mkdir(parents=True, exist_ok=True)
                 print_status(f"Created directory: {dir_name}")
             except Exception as e:
                 print_warning(f"Could not create directory {dir_name}: {e}")
@@ -245,9 +246,10 @@ def test_file_structure():
         "requirements.txt",
         "core/conf.json",
         "core/package.json",
-        "plugins/spawn_item.py",
-        "plugins/instant_mob_respawn.py",
-        "webui/web_api_integration.py"
+        "plugins/character/spawn_item.py",
+        "plugins/character/instant_mob_respawn.py",
+        "webui/web_api_integration.py",
+        "webui/templates/html/categorized_interface.html"
     ]
     
     missing_files = []
@@ -292,6 +294,32 @@ def test_imports():
     
     return True
 
+def test_plugin_structure():
+    print_status("Testing new plugin structure...")
+    
+    try:
+        # Test that the new folderized plugin structure works
+        sys.path.insert(0, str(Path.cwd()))
+        from plugin_system import PluginManager
+        
+        # Test loading plugins from subdirectories
+        test_plugins = [
+            'character.spawn_item',
+            'character.instant_mob_respawn',
+            'qol.global_storage',
+            'unlocks.candy_unlock',
+            'world1.anvil_cheats'
+        ]
+        
+        # This should not raise an exception even if plugins don't exist
+        # The PluginManager should handle missing plugins gracefully
+        plugin_manager = PluginManager(test_plugins, 'plugins')
+        print_success("Plugin structure test passed")
+        return True
+    except Exception as e:
+        print_error(f"Plugin structure test failed: {e}")
+        return False
+
 def run_all_tests():
     print_status("Running comprehensive integration tests...")
     print()
@@ -300,6 +328,7 @@ def run_all_tests():
         ("File Structure", test_file_structure),
         ("Python Imports", test_imports),
         ("Plugin System", test_plugin_system),
+        ("Plugin Structure", test_plugin_structure),
         ("Web UI System", test_web_ui_system),
         ("Dependencies", test_dependencies),
         ("Setup Script", test_setup_script),

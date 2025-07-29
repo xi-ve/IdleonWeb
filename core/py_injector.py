@@ -56,11 +56,13 @@ class PyInjector:
                 # Inject into iframe context
                 if debug_enabled:
                     print(f"[DEBUG] Injecting into iframe context...")
+                # Escape the JS code for iframe injection
+                escaped_js = js_code.replace('`', '\\`').replace('$', '\\$')
                 inject_expression = f"""
                 (function() {{
                     const iframe = window.document.querySelector('iframe');
                     if (iframe && iframe.contentWindow) {{
-                        iframe.contentWindow.eval(`{js_code.replace('`', '\\`').replace('$', '\\$')}`);
+                        iframe.contentWindow.eval(`{escaped_js}`);
                         return 'Injected into iframe context';
                     }} else {{
                         return 'Error: iframe not found';
