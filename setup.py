@@ -36,6 +36,19 @@ def get_shell_activate_cmd():
 
 def check_command(command, name):
     try:
+        # On Windows, try with .cmd extension if the original command fails
+        if is_windows() and not command.endswith('.cmd') and not command.endswith('.exe'):
+            try:
+                result = subprocess.run([command + '.cmd', '--version'], 
+                                      capture_output=True, text=True, timeout=10)
+                if result.returncode == 0:
+                    version = result.stdout.strip().split('\n')[0]
+                    print_success(f"Found {name}: {version}")
+                    return True
+            except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.CalledProcessError):
+                pass
+        
+        # Try the original command
         result = subprocess.run([command, '--version'], 
                               capture_output=True, text=True, timeout=10)
         if result.returncode == 0:
@@ -232,7 +245,10 @@ def install_node_deps():
         print_warning("package.json not found in core directory")
         return False
     
-    if run_command("npm install", "Installing npm dependencies", cwd="core"):
+    # Use npm.cmd on Windows if available
+    npm_command = "npm.cmd" if is_windows() else "npm"
+    
+    if run_command(f"{npm_command} install", "Installing npm dependencies", cwd="core"):
         print_success("Node.js dependencies installed successfully")
         return True
     else:
