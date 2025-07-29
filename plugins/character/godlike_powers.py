@@ -4,6 +4,8 @@ from config_manager import config_manager
 class GodlikePowersPlugin(PluginBase):
     VERSION = "1.0.0"
     DESCRIPTION = "Provides godlike powers and abilities for the game."
+    PLUGIN_ORDER = 1
+    CATEGORY = "Character"
 
     def __init__(self, config=None):
         super().__init__(config or {})
@@ -43,9 +45,7 @@ class GodlikePowersPlugin(PluginBase):
         label="Enable Godlike Powers",
         description="Enable all godlike power features",
         config_key="enabled",
-        default_value=False,
-        category="General",
-        order=-999
+        default_value=False
     )
     async def enable_godlike_powers_ui(self, value=None):
         if value is not None:
@@ -76,9 +76,7 @@ class GodlikePowersPlugin(PluginBase):
         label="Reach Power",
         description="Set player reach to 666",
         config_key="reach",
-        default_value=False,
-        category="Combat",
-        order=1
+        default_value=False
     )
     async def reach_power_ui(self, value=None):
         if value is not None:
@@ -92,9 +90,7 @@ class GodlikePowersPlugin(PluginBase):
         label="Critical Hit Power",
         description="Set critical hit chance to 100%",
         config_key="crit",
-        default_value=False,
-        category="Combat",
-        order=2
+        default_value=False
     )
     async def crit_power_ui(self, value=None):
         if value is not None:
@@ -108,9 +104,7 @@ class GodlikePowersPlugin(PluginBase):
         label="Ability Power",
         description="Zero ability cooldown, mana cost nullification and cast time 0.1s",
         config_key="ability",
-        default_value=False,
-        category="Combat",
-        order=3
+        default_value=False
     )
     async def ability_power_ui(self, value=None):
         if value is not None:
@@ -124,9 +118,7 @@ class GodlikePowersPlugin(PluginBase):
         label="Food Power",
         description="Food deduction nullification",
         config_key="food",
-        default_value=False,
-        category="Survival",
-        order=1
+        default_value=False
     )
     async def food_power_ui(self, value=None):
         if value is not None:
@@ -140,9 +132,7 @@ class GodlikePowersPlugin(PluginBase):
         label="Hit Chance Power",
         description="Set hit chance to 100%",
         config_key="hitchance",
-        default_value=False,
-        category="Combat",
-        order=4
+        default_value=False
     )
     async def hitchance_power_ui(self, value=None):
         if value is not None:
@@ -156,9 +146,7 @@ class GodlikePowersPlugin(PluginBase):
         label="Divine Intervention",
         description="Instant divine intervention",
         config_key="intervention",
-        default_value=False,
-        category="Divine",
-        order=1
+        default_value=False
     )
     async def intervention_power_ui(self, value=None):
         if value is not None:
@@ -176,8 +164,6 @@ class GodlikePowersPlugin(PluginBase):
         min_value=1,
         max_value=14,
         step=1,
-        category="Combat",
-        order=5
     )
     async def weapon_speed_ui(self, value=None):
         if value is not None:
@@ -191,9 +177,7 @@ class GodlikePowersPlugin(PluginBase):
         label="Card Power",
         description="Alter Efaunt, Chaotic Efaunt, Dr Defecaus, Oak Tree and Copper with insane stats",
         config_key="card",
-        default_value=False,
-        category="Cards",
-        order=1
+        default_value=False
     )
     async def card_power_ui(self, value=None):
         if value is not None:
@@ -207,9 +191,7 @@ class GodlikePowersPlugin(PluginBase):
         label="Poison Power",
         description="Instant bubo poison",
         config_key="poison",
-        default_value=False,
-        category="Combat",
-        order=6
+        default_value=False
     )
     async def poison_power_ui(self, value=None):
         if value is not None:
@@ -223,9 +205,7 @@ class GodlikePowersPlugin(PluginBase):
         label="Invincibility",
         description="Never lose HP, become invincible",
         config_key="hp",
-        default_value=False,
-        category="Survival",
-        order=2
+        default_value=False
     )
     async def hp_power_ui(self, value=None):
         if value is not None:

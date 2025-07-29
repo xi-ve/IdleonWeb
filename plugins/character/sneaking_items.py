@@ -4,14 +4,16 @@ from config_manager import config_manager
 class SneakingItemsPlugin(PluginBase):
     VERSION = "1.0.0"
     DESCRIPTION = "Comprehensive item cheats for the sneaking game including hats, weapons, gloves, and charms."
+    PLUGIN_ORDER = 8
+    CATEGORY = "Character"
 
     def __init__(self, config=None):
-        super().__init__(config or {})
-        self.name = 'sneaking_items'
+        super().__init__(config or {})        
         self.debug = config.get('debug', False) if config else False
         self._item_cache = None
         self._cache_timestamp = 0
         self._cache_duration = 300
+        self.name = 'sneaking_items'
 
     async def cleanup(self): pass
     async def update(self): pass
@@ -25,9 +27,7 @@ class SneakingItemsPlugin(PluginBase):
         label="Debug Mode",
         description="Enable debug logging for sneaking items plugin",
         config_key="debug",
-        default_value=False,
-        category="Debug Settings",
-        order=1
+        default_value=False
     )
     async def enable_debug(self, value: bool = None):
         if value is not None:
@@ -40,9 +40,7 @@ class SneakingItemsPlugin(PluginBase):
         label="Unlock All Sneaking Items",
         description="Unlock all sneaking items (hats, weapons, gloves, charms)",
         config_key="unlock_all_items",
-        default_value=False,
-        category="Item Unlocks",
-        order=2
+        default_value=False
     )
     async def unlock_all_items_ui(self, value: bool = None):
         if value is not None:
@@ -60,9 +58,7 @@ class SneakingItemsPlugin(PluginBase):
         label="Max All Item Levels",
         description="Set all sneaking items to maximum level",
         config_key="max_item_levels",
-        default_value=False,
-        category="Item Levels",
-        order=3
+        default_value=False
     )
     async def max_item_levels_ui(self, value: bool = None):
         if value is not None:
@@ -80,9 +76,7 @@ class SneakingItemsPlugin(PluginBase):
         label="Sneaking Items Status",
         description="Show current sneaking items status including hats, weapons, gloves, and charms",
         button_text="Show Items",
-        placeholder="Enter filter term (leave empty to show all)",
-        category="Item Status",
-        order=4
+        placeholder="Enter filter term (leave empty to show all)"
     )
     async def sneaking_items_status_ui(self, value: str = None):
         if hasattr(self, 'injector') and self.injector:
@@ -102,9 +96,7 @@ class SneakingItemsPlugin(PluginBase):
         label="Give Sneaking Item",
         description="Give a specific sneaking item to your inventory",
         button_text="Give Item",
-        placeholder="Enter item name (e.g., 'Straw Hat', 'Wood Nunchaku')",
-        category="Item Giving",
-        order=5
+        placeholder="Enter item name (e.g., 'Straw Hat', 'Wood Nunchaku')"
     )
     async def give_sneaking_item_ui(self, value: str = None):
         if hasattr(self, 'injector') and self.injector:
@@ -189,9 +181,7 @@ class SneakingItemsPlugin(PluginBase):
         label="Clear All Items",
         description="Remove all sneaking items from inventory",
         config_key="clear_all_items",
-        default_value=False,
-        category="Item Management",
-        order=6
+        default_value=False
     )
     async def clear_all_items_ui(self, value: bool = None):
         if value is not None:

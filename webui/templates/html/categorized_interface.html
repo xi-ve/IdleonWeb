@@ -1,0 +1,337 @@
+{% extends "html/base.html" %}
+
+{% block content %}
+<div class="tab-container">
+    <div class="category-header">
+        <div class="category-buttons">
+            <div class="category-dropdown-container">
+                <button class="category-btn active" data-category="all">
+                    <span class="category-checkmark">✓</span>
+                    <span class="category-name">All Plugins</span>
+                    <span class="plugin-count">{{ plugin_schemas|length }}</span>
+                    <span class="dropdown-arrow">▼</span>
+                </button>
+                <div class="category-dropdown">
+                    {% for plugin_name, schema in (sorted_plugin_schemas or plugin_schemas).items() %}
+                    {% set plugin_order = schema.plugin_info.get('order', 0) %}
+                    <div class="plugin-option" data-plugin="{{ plugin_name }}">
+                        {% if plugin_order > 0 %}
+                        <span class="plugin-order">#{{ plugin_order }}</span>
+                        {% endif %}
+                        <span class="plugin-name">{{ schema.plugin_info.get('name', plugin_name) }}</span>
+                        <span class="plugin-version">v{{ schema.plugin_info.get('version', '1.0.0') }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            {% for category_name, plugins in plugin_categories.items() %}
+            <div class="category-dropdown-container">
+                <button class="category-btn" data-category="{{ category_name }}">
+                    <span class="category-checkmark"></span>
+                    <span class="category-name">{{ category_name }}</span>
+                    <span class="plugin-count">{{ plugins|length }}</span>
+                    <span class="dropdown-arrow">▼</span>
+                </button>
+                <div class="category-dropdown">
+                    {% for plugin_name in plugins %}
+                    {% set schema = plugin_schemas[plugin_name] %}
+                    {% set plugin_order = schema.plugin_info.get('order', 0) %}
+                    <div class="plugin-option" data-plugin="{{ plugin_name }}">
+                        {% if plugin_order > 0 %}
+                        <span class="plugin-order">#{{ plugin_order }}</span>
+                        {% endif %}
+                        <span class="plugin-name">{{ schema.plugin_info.get('name', plugin_name) }}</span>
+                        <span class="plugin-version">v{{ schema.plugin_info.get('version', '1.0.0') }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="tab-contents">
+        {% for plugin_name, schema in (sorted_plugin_schemas or plugin_schemas).items() %}
+        {% set plugin_category = schema.plugin_info.get('category', 'General') %}
+        <div class="tab-content" data-tab-content="{{ plugin_name }}">
+            <div class="plugin-card" data-category="{{ plugin_category }}">
+                <div class="plugin-header">
+                    <div class="plugin-title">{{ schema.plugin_info.get('name', plugin_name) }}</div>
+                    <div class="plugin-description">{{ schema.plugin_info.get('description', 'No description') }}</div>
+                    <div class="plugin-version">v{{ schema.plugin_info.get('version', '1.0.0') }}</div>
+                </div>
+                
+                {% for category_name, elements in schema.categories.items() %}
+                <div class="category-section">
+                    <div class="category-title">
+                        {{ category_name }}
+                    </div>
+                    
+                    {% for element in elements %}
+                    {% set plugin_name = plugin_name %}
+                    {% include 'html/ui_elements.html' %}
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const categoryButtons = document.querySelectorAll('.category-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    const categoryDropdowns = document.querySelectorAll('.category-dropdown');
+    
+    // Function to restore saved selection
+    function restoreSavedSelection() {
+        const savedSelection = localStorage.getItem('lastPluginSelection');
+        
+        if (savedSelection) {
+            if (savedSelection === 'all') {
+                // Show all content
+                tabContents.forEach(content => {
+                    content.style.display = 'block';
+                });
+                
+                // Update active category button
+                categoryButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.querySelector('.category-checkmark').textContent = '';
+                });
+                const allPluginsButton = document.querySelector('[data-category="all"]');
+                if (allPluginsButton) {
+                    allPluginsButton.classList.add('active');
+                    allPluginsButton.querySelector('.category-checkmark').textContent = '✓';
+                }
+                
+                // Update selected plugin in dropdown
+                updateSelectedPluginInDropdown(null);
+            } else {
+                // Show only the saved plugin
+                const content = document.querySelector(`[data-tab-content="${savedSelection}"]`);
+                if (content) {
+                    // Hide all content
+                    tabContents.forEach(content => {
+                        content.style.display = 'none';
+                    });
+                    
+                    // Show only the selected plugin
+                    content.style.display = 'block';
+                    
+                    // Update active category button based on the selected plugin's category
+                    const pluginCard = content.querySelector('.plugin-card');
+                    const pluginCategory = pluginCard ? pluginCard.dataset.category : 'General';
+                    
+                    categoryButtons.forEach(btn => {
+                        btn.classList.remove('active');
+                        btn.querySelector('.category-checkmark').textContent = '';
+                    });
+                    
+                    // Find and activate the category button for this plugin
+                    const categoryButton = document.querySelector(`[data-category="${pluginCategory}"]`);
+                    if (categoryButton) {
+                        categoryButton.classList.add('active');
+                        categoryButton.querySelector('.category-checkmark').textContent = '✓';
+                    } else {
+                        // Category button not found - fallback to "All Plugins"
+                        console.log(`Category button for "${pluginCategory}" not found, falling back to "All Plugins"`);
+                        const allPluginsButton = document.querySelector('[data-category="all"]');
+                        if (allPluginsButton) {
+                            allPluginsButton.classList.add('active');
+                            allPluginsButton.querySelector('.category-checkmark').textContent = '✓';
+                        }
+                    }
+                    
+                    // Update selected plugin in dropdown
+                    updateSelectedPluginInDropdown(savedSelection);
+                } else {
+                    fallbackToFirstPlugin();
+                }
+            }
+        } else {
+            // Default: show all content
+            tabContents.forEach(content => {
+                content.style.display = 'block';
+            });
+        }
+    }
+    
+    // Function to update selected plugin in dropdown
+    function updateSelectedPluginInDropdown(pluginName) {
+        // Remove selected class from all plugin options
+        document.querySelectorAll('.plugin-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        
+        // Add selected class to the current plugin in ALL dropdowns where it appears
+        if (pluginName) {
+            const selectedOptions = document.querySelectorAll(`[data-plugin="${pluginName}"]`);
+            selectedOptions.forEach(option => {
+                option.classList.add('selected');
+            });
+        }
+    }
+    
+    // Function to fallback to first available plugin
+    function fallbackToFirstPlugin() {
+        // Clear the invalid saved selection
+        localStorage.removeItem('lastPluginSelection');
+        
+        // Show all content first
+        tabContents.forEach(content => {
+            content.style.display = 'block';
+        });
+        
+        // Find the first available plugin and show it
+        const firstContent = tabContents[0];
+        if (firstContent) {
+            // Hide all content
+            tabContents.forEach(content => {
+                content.style.display = 'none';
+            });
+            
+            // Show the first plugin
+            firstContent.style.display = 'block';
+            
+            // Update active category button based on the first plugin's category
+            const pluginCard = firstContent.querySelector('.plugin-card');
+            const pluginCategory = pluginCard ? pluginCard.dataset.category : 'General';
+            
+            categoryButtons.forEach(btn => {
+                btn.classList.remove('active');
+                btn.querySelector('.category-checkmark').textContent = '';
+            });
+            
+            // Find and activate the category button for this plugin
+            const categoryButton = document.querySelector(`[data-category="${pluginCategory}"]`);
+            if (categoryButton) {
+                categoryButton.classList.add('active');
+                categoryButton.querySelector('.category-checkmark').textContent = '✓';
+            } else {
+                const allPluginsButton = document.querySelector('[data-category="all"]');
+                if (allPluginsButton) {
+                    allPluginsButton.classList.add('active');
+                    allPluginsButton.querySelector('.category-checkmark').textContent = '✓';
+                }
+            }
+            
+            // Update selected plugin in dropdown
+            const firstPluginName = firstContent.dataset.tabContent;
+            updateSelectedPluginInDropdown(firstPluginName);
+        }
+    }
+    
+    // Handle category button clicks
+    categoryButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const dropdown = this.parentElement.querySelector('.category-dropdown');
+            
+            // Close all other dropdowns
+            categoryDropdowns.forEach(dd => {
+                if (dd !== dropdown) {
+                    dd.classList.remove('show');
+                }
+            });
+            
+            // Toggle current dropdown
+            dropdown.classList.toggle('show');
+        });
+    });
+    
+    // Handle plugin option clicks in dropdowns using event delegation
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.plugin-option')) {
+            e.stopPropagation();
+            const option = e.target.closest('.plugin-option');
+            const pluginName = option.dataset.plugin;
+            const content = document.querySelector(`[data-tab-content="${pluginName}"]`);
+            const dropdown = option.closest('.category-dropdown');
+            const categoryButton = dropdown.previousElementSibling;
+            
+            // If this is in the "All Plugins" dropdown, show all content
+            if (categoryButton.dataset.category === 'all') {
+                // Show all content
+                tabContents.forEach(content => {
+                    content.style.display = 'block';
+                });
+                
+                // Update active category button
+                categoryButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.querySelector('.category-checkmark').textContent = '';
+                });
+                categoryButton.classList.add('active');
+                categoryButton.querySelector('.category-checkmark').textContent = '✓';
+                
+                // Update selected plugin in dropdown
+                updateSelectedPluginInDropdown(null);
+                
+                // Save selection
+                localStorage.setItem('lastPluginSelection', 'all');
+            } else {
+                // Show only the selected plugin
+                const pluginCard = content.querySelector('.plugin-card');
+                const pluginCategory = pluginCard ? pluginCard.dataset.category : 'General';
+                
+                // Hide all content
+                tabContents.forEach(content => {
+                    content.style.display = 'none';
+                });
+                
+                // Show only the selected plugin
+                if (content) {
+                    content.style.display = 'block';
+                }
+                
+                // Update active category button based on the selected plugin's category
+                categoryButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.querySelector('.category-checkmark').textContent = '';
+                });
+                
+                // Find and activate the category button for this plugin
+                const categoryButton = document.querySelector(`[data-category="${pluginCategory}"]`);
+                if (categoryButton) {
+                    categoryButton.classList.add('active');
+                    categoryButton.querySelector('.category-checkmark').textContent = '✓';
+                } else {
+                    const allPluginsButton = document.querySelector('[data-category="all"]');
+                    if (allPluginsButton) {
+                        allPluginsButton.classList.add('active');
+                        allPluginsButton.querySelector('.category-checkmark').textContent = '✓';
+                    }
+                }
+                
+                // Update selected plugin in dropdown
+                updateSelectedPluginInDropdown(pluginName);
+                
+                // Save selection
+                localStorage.setItem('lastPluginSelection', pluginName);
+            }
+            
+            // Close all dropdowns
+            categoryDropdowns.forEach(dd => {
+                dd.classList.remove('show');
+            });
+        }
+    });
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.category-dropdown-container')) {
+            categoryDropdowns.forEach(dd => {
+                dd.classList.remove('show');
+            });
+        }
+    });
+    
+    // Restore saved selection on page load
+    restoreSavedSelection();
+});
+</script>
+{% endblock %} 

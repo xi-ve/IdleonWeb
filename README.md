@@ -17,6 +17,8 @@ A modern, user-friendly launcher and plugin system for enhancing Legends of Idle
 - **Real-Time Updates** - See changes instantly as you configure plugins
 - **Cross-Platform** - Works on Windows, Linux, and macOS
 - **One-Click Setup** - Automated installation scripts for all platforms
+- **Plugin Categories** - Organized plugin management with categories like Character, QoL, Unlocks, and World-specific
+- **Folderized Plugins** - Support for organizing plugins in subdirectories for better organization
 
 ---
 
@@ -56,19 +58,38 @@ python main.py
 - **Real-Time Updates** - See changes immediately
 - **Search & Filter** - Find items and manage game data
 - **Mobile Friendly** - Works on phones and tablets
+- **Categorized Interface** - Browse plugins by category (Character, QoL, Unlocks, World-specific)
+- **Visual Feedback** - Shimmer effects and visual indicators for selected plugins
 
 ---
 
 ## Available Plugins
 
-### Spawn Item Plugin
-- **Spawn Items** - Drop any item in the game with autocomplete
-- **List All Items** - Browse the complete item database
-- **Search Items** - Find items by name or ID
+### Character Plugins
+- **Godlike Powers** - Comprehensive character enhancements (reach, crit, abilities, invincibility)
+- **Instant AFK Time** - Set instant AFK time and trigger character selection
+- **Instant Mob Respawn** - Toggle instant mob respawning
+- **Inventory Storage** - Unlock all inventory packages and storage spaces
+- **Quest Helper** - List and complete quests instantly
+- **Spawn Item** - Drop any item in the game with autocomplete
+- **Stats Multiplier** - Multiply various game stats by configurable amounts
 
-### Instant Mob Respawn Plugin
-- **Toggle Respawn** - Enable/disable instant mob respawning
-- **Debug Mode** - Enable detailed logging
+### QoL (Quality of Life) Plugins
+- **Global Storage** - Provides global storage functionality
+
+### Unlocks Plugins
+- **Candy Unlock** - Use Time Candy anywhere, bypassing map restrictions
+- **Card Cheats** - Comprehensive card system cheats (set levels, add/remove cards)
+- **Grimoire Unlocker** - Unlock and manage grimoire upgrades for Death Bringer class
+- **Package Toggle** - Toggle bought packages and bundles
+- **Vault Unlocker** - Unlock and manage vault upgrades with category-based controls
+
+### World-Specific Plugins
+- **Anvil Cheats** (World 1) - Cheats for anvil and smithing related features
+
+### Sneaking Game Plugins
+- **Sneaking Cheats** - Comprehensive cheats for the sneaking game
+- **Sneaking Items** - Item cheats for the sneaking game
 
 ---
 
@@ -77,6 +98,11 @@ python main.py
 ```
 IdleonWeb/
 ├── plugins/           # Plugin files (add your own here)
+│   ├── character/     # Character-related plugins
+│   ├── qol/          # Quality of Life plugins
+│   ├── unlocks/      # Unlock-related plugins
+│   ├── world1/       # World 1 specific plugins
+│   └── ...           # Additional plugin categories
 ├── core/             # Core system files
 ├── webui/            # Web interface files
 ├── main.py           # Main launcher
@@ -136,6 +162,16 @@ See [PLUGIN_QUICKSTART.md](PLUGIN_QUICKSTART.md) for a complete guide with examp
 - **Search** - Search with results
 - **Autocomplete** - Input with suggestions
 
+### Plugin Categories
+Plugins can be organized into categories by setting the `CATEGORY` attribute:
+- `"Character"` - Character-related features
+- `"QoL"` - Quality of Life improvements
+- `"Unlocks"` - Unlock-related features
+- `"World 1"`, `"World 2"`, etc. - World-specific features
+
+### Plugin Ordering
+Set the `PLUGIN_ORDER` attribute to control the display order in the UI (lower numbers appear first).
+
 ## Contributing
 
 Want to add new features or fix bugs? See [DEVELOPMENT.md](DEVELOPMENT.md) for:
@@ -168,4 +204,6 @@ This project extends those concepts with:
 - Web UI for plugin configuration
 - Enhanced CLI with autocompletion
 - Centralized configuration management
-- Real-time plugin development workflow 
+- Real-time plugin development workflow
+- Categorized plugin organization
+- Folderized plugin structure 

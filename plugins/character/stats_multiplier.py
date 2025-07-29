@@ -2,8 +2,10 @@ from plugin_system import PluginBase, ui_toggle, ui_slider, plugin_command, js_e
 from config_manager import config_manager
 
 class StatsMultiplierPlugin(PluginBase):
-    VERSION = "1.0.0"
+    VERSION = "1.0.1"
     DESCRIPTION = "Multiplies various game stats by configurable amounts."
+    PLUGIN_ORDER = 7
+    CATEGORY = "Character"
 
     def __init__(self, config=None):
         super().__init__(config or {})
@@ -50,9 +52,7 @@ class StatsMultiplierPlugin(PluginBase):
         label="Enable Stats Multiplier",
         description="Enable all stats multiplier features",
         config_key="enabled",
-        default_value=False,
-        category="General",
-        order=1
+        default_value=False
     )
     async def enable_stats_multiplier_ui(self, value=None):
         if value is not None:
@@ -67,9 +67,7 @@ class StatsMultiplierPlugin(PluginBase):
         label="Debug Mode",
         description="Enable debug logging for stats multiplier plugin",
         config_key="debug",
-        default_value=False,
-        category="Debug Settings",
-        order=1
+        default_value=False
     )
     async def enable_debug(self, value=None):
         if value is not None:
@@ -85,8 +83,6 @@ class StatsMultiplierPlugin(PluginBase):
         min_value=1.0,
         max_value=50.0,
         step=0.1,
-        category="Combat",
-        order=1
     )
     async def damage_multiplier_ui(self, value=None):
         if value is not None:
@@ -104,8 +100,6 @@ class StatsMultiplierPlugin(PluginBase):
         min_value=1.0,
         max_value=50.0,
         step=0.1,
-        category="Skills",
-        order=1
     )
     async def efficiency_multiplier_ui(self, value=None):
         if value is not None:
@@ -123,8 +117,6 @@ class StatsMultiplierPlugin(PluginBase):
         min_value=1.0,
         max_value=50.0,
         step=0.1,
-        category="AFK",
-        order=1
     )
     async def afk_multiplier_ui(self, value=None):
         if value is not None:
@@ -142,8 +134,6 @@ class StatsMultiplierPlugin(PluginBase):
         min_value=1.0,
         max_value=50.0,
         step=0.1,
-        category="Drops",
-        order=1
     )
     async def drop_multiplier_ui(self, value=None):
         if value is not None:
@@ -161,8 +151,6 @@ class StatsMultiplierPlugin(PluginBase):
         min_value=1.0,
         max_value=50.0,
         step=0.1,
-        category="Combat",
-        order=2
     )
     async def monster_multiplier_ui(self, value=None):
         if value is not None:
@@ -180,8 +168,6 @@ class StatsMultiplierPlugin(PluginBase):
         min_value=1.0,
         max_value=50.0,
         step=0.1,
-        category="Lab",
-        order=1
     )
     async def printer_multiplier_ui(self, value=None):
         if value is not None:

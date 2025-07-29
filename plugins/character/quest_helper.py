@@ -4,13 +4,14 @@ from config_manager import config_manager
 class QuestHelperPlugin(PluginBase):
     VERSION = "1.0.0"
     DESCRIPTION = "Lists all ongoing quests and allows instant completion by clicking quest names."
+    PLUGIN_ORDER = 5
+    CATEGORY = "Character"
 
     def __init__(self, config=None):
         super().__init__(config or {})
         self.name = 'quest_helper'
         self.debug = config.get('debug', False) if config else False
 
-    # Required methods (minimal implementation)
     async def cleanup(self): pass
     async def update(self): pass
     async def on_config_changed(self, config): 
@@ -24,7 +25,7 @@ class QuestHelperPlugin(PluginBase):
         description="List all ongoing quests and complete them instantly",
         button_text="Refresh Quest List",
         placeholder="Search quests (leave empty to show all)",
-        category="Quest Management",
+        category="Gameplay Enhancements",
         order=0
     )
     async def quest_helper_ui(self, value: str = None):
@@ -51,9 +52,7 @@ class QuestHelperPlugin(PluginBase):
         label="Auto-Complete All Quests",
         description="Instantly complete all ongoing quests",
         config_key="auto_complete_all",
-        default_value=False,
-        category="Quest Management",
-        order=1
+        default_value=False
     )
     async def auto_complete_all_ui(self, value: bool = None):
         if value is not None:
@@ -369,7 +368,7 @@ class QuestHelperPlugin(PluginBase):
                     if (isCompleted === 0) {
                         const questName = questKey.replace(/_/g, ' ');
                         results.push(`<div style="margin: 5px 0; padding: 5px; border-left: 3px solid #ffa500;">`);
-                        results.push(`🟡 <strong>${questName}</strong> | <a href="#" onclick="window.complete_quest_js('${questKey}'); return false;">[CLICK TO COMPLETE]</a>`);
+                        results.push(`🟡 <strong>${questName}</strong> | <a href="#" onclick="window.complete_quest('${questKey}'); return false;">[CLICK TO COMPLETE]</a>`);
                         results.push(`</div>`);
                     }
                 }
@@ -385,7 +384,7 @@ class QuestHelperPlugin(PluginBase):
                 if (isCompleted === 1 && completed_shown < 15) {
                     const questName = questKey.replace(/_/g, ' ');
                     results.push(`<div style="margin: 3px 0; padding: 3px;">`);
-                    results.push(`✅ ${questName} | <a href="#" onclick="window.complete_quest_js('${questKey}'); return false;">[CLICK TO COMPLETE]</a>`);
+                    results.push(`✅ ${questName} | <a href="#" onclick="window.complete_quest('${questKey}'); return false;">[CLICK TO COMPLETE]</a>`);
                     results.push(`</div>`);
                     completed_shown++;
                 }
@@ -405,7 +404,7 @@ class QuestHelperPlugin(PluginBase):
                 if (isCompleted !== 0 && isCompleted !== 1 && locked_shown < 15) {
                     const questName = questKey.replace(/_/g, ' ');
                     results.push(`<div style="margin: 3px 0; padding: 3px;">`);
-                    results.push(`🔒 ${questName} | <a href="#" onclick="window.complete_quest_js('${questKey}'); return false;">[CLICK TO COMPLETE]</a>`);
+                    results.push(`🔒 ${questName} | <a href="#" onclick="window.complete_quest('${questKey}'); return false;">[CLICK TO COMPLETE]</a>`);
                     results.push(`</div>`);
                     locked_shown++;
                 }

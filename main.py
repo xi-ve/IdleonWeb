@@ -73,25 +73,6 @@ def collect_plugin_js(plugin_manager):
     js_path = CORE_DIR / "plugins_combined.js"
     with open(js_path, "w", encoding='utf-8') as f:
         f.write(js_code)
-    
-    table = Table(title="Plugin System Details", show_lines=True)
-    table.add_column("Plugin Name", style="bold green")
-    table.add_column("Function Count", style="cyan")
-    table.add_column("JS KB Size", style="magenta")
-    
-    total_size = 0
-    for plugin in plugin_manager.plugins.values():
-        name = getattr(plugin, 'name', plugin.__class__.__name__)
-        func_count = len(plugin.get_commands())
-        js_size = plugin_sizes.get(name, 0)
-        total_size += js_size
-        table.add_row(name, str(func_count), f"{js_size/1024:.2f}")
-    
-    # Add total row
-    table.add_row("", "", "")
-    table.add_row("TOTAL", str(sum(len(p.get_commands()) for p in plugin_manager.plugins.values())), f"{total_size/1024:.2f}", style="bold")
-    
-    console.print(table)
 
 async def start_update_loop(plugin_manager):
     try:
@@ -113,7 +94,25 @@ def run_update_loop(plugin_manager):
 
 def cmd_inject(args=None, plugin_manager=None):
     global injector, update_loop_task, update_loop_stop, web_server_task
+    
+    console.print("[cyan]Performing full reload before injection...[/cyan]")
+    
+    # 0. Reload main configuration from conf.json
+    config_manager.reload()
+    console.print("[green]Main configuration reloaded from conf.json.[/green]")
+    
+    # Update global debug setting
+    import plugin_system
+    plugin_system.GLOBAL_DEBUG = config_manager.get_path('debug', False)
+    console.print(f"[green]Debug mode: {'enabled' if plugin_system.GLOBAL_DEBUG else 'disabled'}[/green]")
+
+    # 1. Reload plugin Python modules and re-instantiate them
+    asyncio.run(plugin_manager.reload_plugins())
+    console.print("[green]Python plugins reloaded.[/green]")
+
+    # 2. Regenerate and reload the combined plugin JS
     collect_plugin_js(plugin_manager)
+    console.print("[green]Plugin JS regenerated.[/green]")
 
     # Get injector configuration
     cdp_port = config_manager.get_cdp_port()
@@ -126,7 +125,18 @@ def cmd_inject(args=None, plugin_manager=None):
     try:
         injector.connect()
         console.print("[green]Injector connected successfully.[/green]")
+        
+        # Inject the fresh JS into the browser
+        try:
+            console.print("[cyan]Injecting fresh JS into browser...[/cyan]")
+            injector.reload_js()
+            console.print("[green]Plugin JS injected into browser.[/green]")
+        except Exception as e:
+            console.print(f"[yellow]Could not inject JS into browser: {e}[/yellow]")
+            console.print(f"[yellow]JS will be injected when the game loads[/yellow]")
+        
         asyncio.run(plugin_manager.initialize_all(injector, config_manager.get_path('plugin_configs', {})))
+        console.print("[green]Plugins initialized in injector session.[/green]")
         
         # Start update loop
         if update_loop_task is None or not update_loop_task.is_alive():
@@ -208,6 +218,49 @@ def cmd_reload_config(args=None, plugin_manager=None):
     plugin_manager.reload_configs_from_file()
     console.print("[green]Configuration reload complete.[/green]")
 
+def cmd_reload(args=None, plugin_manager=None):
+    global injector
+    console.print("[cyan]Hot reloading all plugins, JS, and main configuration...[/cyan]")
+    try:
+        # 0. Reload main configuration from conf.json
+        config_manager.reload()
+        console.print("[green]Main configuration reloaded from conf.json.[/green]")
+        
+        # Update global debug setting
+        import plugin_system
+        plugin_system.GLOBAL_DEBUG = config_manager.get_path('debug', False)
+        console.print(f"[green]Debug mode: {'enabled' if plugin_system.GLOBAL_DEBUG else 'disabled'}[/green]")
+
+        # 1. Reload plugin Python modules and re-instantiate them
+        asyncio.run(plugin_manager.reload_plugins())
+        console.print("[green]Python plugins reloaded.[/green]")
+
+        # 2. Regenerate and reload the combined plugin JS
+        collect_plugin_js(plugin_manager)
+        console.print("[green]Plugin JS regenerated.[/green]")
+        if injector:
+            try:
+                # Re-inject the new JS into the running injector session
+                console.print("[cyan]Attempting to reload JS into injector...[/cyan]")
+                injector.reload_js()
+                console.print("[green]Plugin JS reloaded into injector.[/green]")
+            except Exception as e:
+                console.print(f"[yellow]Could not reload JS into injector: {e}[/yellow]")
+                console.print(f"[yellow]This might be normal if the injector is not fully connected[/yellow]")
+        else:
+            console.print("[yellow]No injector connected - JS will be loaded on next 'inject' command[/yellow]")
+
+        # 3. Re-initialize plugins in the active injector session
+        if injector:
+            asyncio.run(plugin_manager.initialize_all(injector, config_manager.get_path('plugin_configs', {})))
+            console.print("[green]Plugins re-initialized in injector session.[/green]")
+        else:
+            console.print("[yellow]Injector not connected; plugins not re-initialized.[/yellow]")
+
+        console.print("[bold green]Hot reload complete![/bold green]")
+    except Exception as e:
+        console.print(f"[red]Hot reload failed: {e}[/red]")
+
 def cmd_help(args=None, plugin_manager=None, all_commands=None):
     table = Table(title="Available Commands")
     table.add_column("Command", style="bold green")
@@ -248,6 +301,120 @@ def cmd_exit(args=None, plugin_manager=None):
         asyncio.run(plugin_manager.cleanup_all())
     console.print("[bold green]Goodbye![/bold green]")
     sys.exit(0)
+
+def check_unused_plugins(plugin_manager, startup_msgs):
+    """Check for plugins in the plugins folder that are not in the config and recommend enabling them."""
+    try:
+        # Get list of plugins in the config
+        configured_plugins = set(config_manager.get_path('plugins', []))
+        
+        # Get list of all plugin files in the plugins directory (including subdirectories)
+        plugin_files = []
+        
+        # First, check for plugins in the root plugins directory
+        for plugin_file in PLUGINS_DIR.glob("*.py"):
+            if plugin_file.name != "__init__.py" and plugin_file.name != "example_plugin.py":
+                plugin_name = plugin_file.stem
+                plugin_files.append(plugin_name)
+        
+        # Then, check for plugins in subdirectories
+        for subdir in PLUGINS_DIR.iterdir():
+            if subdir.is_dir() and not subdir.name.startswith('.'):
+                for plugin_file in subdir.glob("*.py"):
+                    if plugin_file.name != "__init__.py" and plugin_file.name != "example_plugin.py":
+                        # Use the subdirectory name as prefix for the plugin name
+                        plugin_name = f"{subdir.name}.{plugin_file.stem}"
+                        plugin_files.append(plugin_name)
+        
+        # Find unused plugins
+        unused_plugins = [name for name in plugin_files if name not in configured_plugins]
+        
+        if unused_plugins:
+            startup_msgs.append(f"[yellow]Found {len(unused_plugins)} unused plugins: {', '.join(unused_plugins)}[/yellow]")
+            
+            # Ask user if they want to enable any unused plugins
+            console.print(f"[cyan]Found {len(unused_plugins)} unused plugins:[/cyan]")
+            for plugin_name in unused_plugins:
+                console.print(f"  [yellow]• {plugin_name}[/yellow]")
+            
+            console.print(f"\n[cyan]Would you like to enable any of these plugins?[/cyan]")
+            console.print(f"[cyan]Type 'all' to enable all, 'none' to skip, or enter plugin names separated by spaces:[/cyan]")
+            
+            try:
+                user_input = input("> ").strip().lower()
+                
+                if user_input == 'all':
+                    # Enable all unused plugins
+                    current_plugins = config_manager.get_path('plugins', [])
+                    for plugin_name in unused_plugins:
+                        if plugin_name not in current_plugins:
+                            current_plugins.append(plugin_name)
+                            config_manager.add_plugin(plugin_name, {})
+                    config_manager.set_plugins_list(current_plugins)
+                    startup_msgs.append(f"[green]Enabled all unused plugins: {', '.join(unused_plugins)}[/green]")
+                    console.print(f"[green]Enabled all unused plugins![/green]")
+                    
+                    # Reload plugin manager with new plugins
+                    console.print(f"[cyan]Reloading plugin manager with new plugins...[/cyan]")
+                    plugin_manager.plugin_names = current_plugins
+                    try:
+                        asyncio.run(plugin_manager.load_plugins(
+                            None, 
+                            plugin_configs=config_manager.get_all_plugin_configs(), 
+                            global_debug=config_manager.get_path('debug', True)
+                        ))
+                        startup_msgs.append(f"[green]Successfully loaded {len(plugin_manager.plugins)} plugins (including newly enabled ones)[/green]")
+                        console.print(f"[green]Successfully loaded {len(plugin_manager.plugins)} plugins![/green]")
+                    except Exception as e:
+                        startup_msgs.append(f"[red]Error loading new plugins: {e}[/red]")
+                        console.print(f"[red]Error loading new plugins: {e}[/red]")
+                    
+                elif user_input == 'none':
+                    startup_msgs.append(f"[yellow]Skipped enabling unused plugins[/yellow]")
+                    console.print(f"[yellow]Skipped enabling unused plugins[/yellow]")
+                    
+                elif user_input:
+                    # Enable specific plugins
+                    selected_plugins = user_input.split()
+                    current_plugins = config_manager.get_path('plugins', [])
+                    enabled_plugins = []
+                    
+                    for plugin_name in selected_plugins:
+                        if plugin_name in unused_plugins and plugin_name not in current_plugins:
+                            current_plugins.append(plugin_name)
+                            config_manager.add_plugin(plugin_name, {})
+                            enabled_plugins.append(plugin_name)
+                    
+                    if enabled_plugins:
+                        config_manager.set_plugins_list(current_plugins)
+                        startup_msgs.append(f"[green]Enabled plugins: {', '.join(enabled_plugins)}[/green]")
+                        console.print(f"[green]Enabled plugins: {', '.join(enabled_plugins)}[/green]")
+                        
+                        # Reload plugin manager with new plugins
+                        console.print(f"[cyan]Reloading plugin manager with new plugins...[/cyan]")
+                        plugin_manager.plugin_names = current_plugins
+                        try:
+                            asyncio.run(plugin_manager.load_plugins(
+                                None, 
+                                plugin_configs=config_manager.get_all_plugin_configs(), 
+                                global_debug=config_manager.get_path('debug', True)
+                            ))
+                            startup_msgs.append(f"[green]Successfully loaded {len(plugin_manager.plugins)} plugins (including newly enabled ones)[/green]")
+                            console.print(f"[green]Successfully loaded {len(plugin_manager.plugins)} plugins![/green]")
+                        except Exception as e:
+                            startup_msgs.append(f"[red]Error loading new plugins: {e}[/red]")
+                            console.print(f"[red]Error loading new plugins: {e}[/red]")
+                    else:
+                        startup_msgs.append(f"[yellow]No valid plugins selected[/yellow]")
+                        console.print(f"[yellow]No valid plugins selected[/yellow]")
+                        
+            except (KeyboardInterrupt, EOFError):
+                startup_msgs.append(f"[yellow]Plugin selection cancelled[/yellow]")
+                console.print(f"[yellow]Plugin selection cancelled[/yellow]")
+                
+    except Exception as e:
+        startup_msgs.append(f"[red]Error checking unused plugins: {e}[/red]")
+        console.print(f"[red]Error checking unused plugins: {e}[/red]")
 
 class HierarchicalCompleter:
     def __init__(self, get_commands_func):
@@ -298,6 +465,9 @@ def main():
         startup_msgs.append(f"[green]Successfully loaded {len(plugin_manager.plugins)} plugins[/green]")
     except Exception as e:
         startup_msgs.append(f"[red]Error loading plugins: {e}[/red]")
+    
+    # Check for unused plugins and recommend enabling them
+    check_unused_plugins(plugin_manager, startup_msgs)
     startup_text = Text()
     for msg in startup_msgs:
         startup_text.append(Text.from_markup(msg))
@@ -312,7 +482,8 @@ def main():
         'reload_config': {'func': cmd_reload_config, 'help': 'Reload plugin configurations from conf.json.'},
         'web_ui': {'func': cmd_web_ui, 'help': 'Start the plugin web UI server.'},
         'help': {'func': cmd_help, 'help': 'Show this help menu.'},
-        'exit': {'func': cmd_exit, 'help': 'Exit the CLI.'}
+        'exit': {'func': cmd_exit, 'help': 'Exit the CLI.'},
+        'reload': {'func': cmd_reload, 'help': 'Hot reload all plugins, JS, and web UI into the active injector session.'}
     }
     def get_all_commands():
         cmds = dict(builtin_commands)

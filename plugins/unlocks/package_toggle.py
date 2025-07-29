@@ -3,8 +3,10 @@ from plugin_system import plugin_command, js_export, PluginBase, console, ui_tog
 from config_manager import config_manager
 
 class PackageTogglePlugin(PluginBase):
-    VERSION = "1.0.0"
+    VERSION = "1.0.1"
     DESCRIPTION = "Toggle bought packages / bundles"
+    PLUGIN_ORDER = 5
+    CATEGORY = "Unlocks"
 
     def __init__(self, config=None):
         super().__init__(config or {})
@@ -35,9 +37,7 @@ class PackageTogglePlugin(PluginBase):
         label="Debug Mode",
         description="Enable debug logging for package toggle plugin",
         config_key="debug",
-        default_value=True,
-        category="Debug Settings",
-        order=1
+        default_value=True
     )
     async def enable_debug(self, value: bool = None):
         if value is not None:
@@ -50,8 +50,6 @@ class PackageTogglePlugin(PluginBase):
         description="List all bought packages with their status",
         button_text="List Bought",
         placeholder="Enter filter term (leave empty to list all)",
-        category="Package Management",
-        order=1
     )
     async def list_bought_packages_ui(self, value: str = None):
         if hasattr(self, 'injector') and self.injector:
@@ -77,9 +75,7 @@ class PackageTogglePlugin(PluginBase):
         label="Toggle Package",
         description="Enter package code to toggle (with autocomplete)",
         button_text="Toggle",
-        placeholder="Package code (e.g. bun_a, bun_b)",
-        category="Package Management",
-        order=2
+        placeholder="Package code (e.g. bun_a, bun_b)"
     )
     async def toggle_package_ui(self, value: str = None):
         if value:

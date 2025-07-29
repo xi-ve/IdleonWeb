@@ -4,11 +4,13 @@ from config_manager import config_manager
 class GrimoireUnlockerPlugin(PluginBase):
     VERSION = "1.0.0"
     DESCRIPTION = "Unlock and manage grimoire upgrades for Death Bringer class."
+    PLUGIN_ORDER = 2
+    CATEGORY = "Unlocks"
 
     def __init__(self, config=None):
-        super().__init__(config or {})
-        self.name = 'grimoire_unlocker'
+        super().__init__(config or {})        
         self.debug = config.get('debug', False) if config else False
+        self.name = 'grimoire_unlocker'
         self._grimoire_cache = None
         self._cache_timestamp = 0
         self._cache_duration = 300
@@ -25,9 +27,7 @@ class GrimoireUnlockerPlugin(PluginBase):
         label="Debug Mode",
         description="Enable debug logging for grimoire unlocker plugin",
         config_key="debug",
-        default_value=False,
-        category="Debug Settings",
-        order=1
+        default_value=False
     )
     async def enable_debug(self, value: bool = None):
         if value is not None:
@@ -41,8 +41,6 @@ class GrimoireUnlockerPlugin(PluginBase):
         description="Show all grimoire upgrades with their unlock status and levels",
         button_text="Show Grimoire Status",
         placeholder="Enter filter term (leave empty to show all)",
-        category="Grimoire Management",
-        order=2
     )
     async def grimoire_status_ui(self, value: str = None):
         if hasattr(self, 'injector') and self.injector:
@@ -158,7 +156,7 @@ class GrimoireUnlockerPlugin(PluginBase):
             
             return output;
         } catch (e) {
-            return `Error: ${e.message}`;
+            return "Error: " + e.message;
         }
         '''
 
@@ -167,8 +165,6 @@ class GrimoireUnlockerPlugin(PluginBase):
         description="Set a specific grimoire upgrade to a specific level. Syntax: 'upgrade_name level' (e.g., 'Wraith Damage 100' or 'Wraith Accuracy 200')",
         button_text="Set Level",
         placeholder="Enter: upgrade_name level (e.g., 'Wraith Damage 100')",
-        category="Grimoire Management",
-        order=3
     )
     async def set_grimoire_upgrade_level_ui(self, value: str = None):
         if hasattr(self, 'injector') and self.injector:
@@ -301,9 +297,7 @@ class GrimoireUnlockerPlugin(PluginBase):
         label="Unlock All Grimoire Upgrades",
         description="Unlock all grimoire upgrades (sets level to 1, does not max level)",
         config_key="unlock_all_upgrades",
-        default_value=False,
-        category="Grimoire Management",
-        order=4
+        default_value=False
     )
     async def unlock_all_grimoire_upgrades_ui(self, value: bool = None):
         if value is not None:
@@ -321,9 +315,7 @@ class GrimoireUnlockerPlugin(PluginBase):
         label="Max Level All Grimoire Upgrades",
         description="Set all grimoire upgrades to maximum level",
         config_key="max_level_all_upgrades",
-        default_value=False,
-        category="Grimoire Management",
-        order=5
+        default_value=False
     )
     async def max_level_all_grimoire_upgrades_ui(self, value: bool = None):
         if value is not None:
@@ -341,9 +333,7 @@ class GrimoireUnlockerPlugin(PluginBase):
         label="Reset All Grimoire Upgrades",
         description="Reset all grimoire upgrades to level 0",
         config_key="reset_all_upgrades",
-        default_value=False,
-        category="Grimoire Management",
-        order=6
+        default_value=False
     )
     async def reset_all_grimoire_upgrades_ui(self, value: bool = None):
         if value is not None:
@@ -421,27 +411,27 @@ class GrimoireUnlockerPlugin(PluginBase):
             }
             
             if (found_index === -1) {
-                return `Error: Grimoire upgrade '${upgrade_name}' not found`;
+                return "Error: Grimoire upgrade '" + upgrade_name + "' not found";
             }
             
             const maxLevel = grimoireUpg[found_index][4] || 0;
             const oldLevel = grimoire[found_index] || 0;
             
             if (level > maxLevel) {
-                return `Error: Level ${level} exceeds maximum level ${maxLevel} for '${found_name}'`;
+                return "Error: Level " + level + " exceeds maximum level " + maxLevel + " for '" + found_name + "'";
             }
             
             grimoire[found_index] = level;
             
             if (level === 0) {
-                return `✅ Reset '${found_name}' to level 0 (was level ${oldLevel})`;
+                return "✅ Reset '" + found_name + "' to level 0 (was level " + oldLevel + ")";
             } else if (level === maxLevel) {
-                return `🚀 Set '${found_name}' to maximum level ${maxLevel} (was level ${oldLevel})`;
+                return "🚀 Set '" + found_name + "' to maximum level " + maxLevel + " (was level " + oldLevel + ")";
             } else {
-                return `📈 Set '${found_name}' to level ${level} (was level ${oldLevel}, max is ${maxLevel})`;
+                return "📈 Set '" + found_name + "' to level " + level + " (was level " + oldLevel + ", max is " + maxLevel + ")";
             }
         } catch (e) {
-            return `Error: ${e.message}`;
+            return "Error: " + e.message;
         }
         '''
 
@@ -539,12 +529,12 @@ class GrimoireUnlockerPlugin(PluginBase):
             }
             
             if (unlocked_count === 0) {
-                return `✅ All grimoire upgrades are already unlocked! (${already_unlocked} upgrades)`;
+                return "✅ All grimoire upgrades are already unlocked! (" + already_unlocked + " upgrades)";
             } else {
-                return `🔓 Unlocked ${unlocked_count} grimoire upgrades! (${already_unlocked} were already unlocked)`;
+                return "🔓 Unlocked " + unlocked_count + " grimoire upgrades! (" + already_unlocked + " were already unlocked)";
             }
         } catch (e) {
-            return `Error: ${e.message}`;
+            return "Error: " + e.message;
         }
         '''
 
@@ -591,12 +581,12 @@ class GrimoireUnlockerPlugin(PluginBase):
             }
             
             if (max_leveled_count === 0) {
-                return `✅ All grimoire upgrades are already at maximum level! (${already_max_leveled} upgrades)`;
+                return "✅ All grimoire upgrades are already at maximum level! (" + already_max_leveled + " upgrades)";
             } else {
-                return `🚀 Set ${max_leveled_count} grimoire upgrades to maximum level! (${already_max_leveled} were already max level)`;
+                return "🚀 Set " + max_leveled_count + " grimoire upgrades to maximum level! (" + already_max_leveled + " were already max level)";
             }
         } catch (e) {
-            return `Error: ${e.message}`;
+            return "Error: " + e.message;
         }
         '''
 
@@ -642,12 +632,124 @@ class GrimoireUnlockerPlugin(PluginBase):
             }
             
             if (reset_count === 0) {
-                return `✅ All grimoire upgrades are already reset! (${already_reset} upgrades)`;
+                return "✅ All grimoire upgrades are already reset! (" + already_reset + " upgrades)";
             } else {
-                return `🔄 Reset ${reset_count} grimoire upgrades to level 0! (${already_reset} were already reset)`;
+                return "🔄 Reset " + reset_count + " grimoire upgrades to level 0! (" + already_reset + " were already reset)";
             }
         } catch (e) {
-            return `Error: ${e.message}`;
+            return "Error: " + e.message;
+        }
+        '''
+
+    @ui_autocomplete_input(
+        label="Set All Grimoire Upgrades to % of Max",
+        description="Set all grimoire upgrades to a percentage of their maximum level (capped at 999999). Enter a number 0-100 for percentage.",
+        button_text="Set Percentage",
+        placeholder="Enter percentage (0-100, e.g., '50' for 50%)",
+    )
+    async def set_all_grimoire_upgrades_percentage_ui(self, value: str = None):
+        if hasattr(self, 'injector') and self.injector:
+            try:
+                if self.debug:
+                    console.print(f"[grimoire_unlocker] Setting grimoire upgrades to percentage, input: {value}")
+                
+                if not value or not value.strip():
+                    return "Please provide a percentage value (0-100)"
+                
+                try:
+                    percentage = float(value.strip())
+                    if percentage < 0 or percentage > 100:
+                        return "Percentage must be between 0 and 100"
+                except ValueError:
+                    return "Percentage must be a valid number"
+                
+                result = await self.set_all_grimoire_upgrades_percentage(percentage)
+                if self.debug:
+                    console.print(f"[grimoire_unlocker] Result: {result}")
+                return f"SUCCESS: {result}"
+            except Exception as e:
+                if self.debug:
+                    console.print(f"[grimoire_unlocker] Error setting grimoire upgrades percentage: {e}")
+                return f"ERROR: Error setting grimoire upgrades percentage: {str(e)}"
+        else:
+            return "ERROR: No injector available - run 'inject' first to connect to the game"
+
+    @plugin_command(
+        help="Set all grimoire upgrades to a percentage of their maximum level (capped at 999999).",
+        params=[
+            {"name": "percentage", "type": float, "help": "Percentage of max level (0-100)"},
+        ],
+    )
+    async def set_all_grimoire_upgrades_percentage(self, percentage: float, **kwargs):
+        if hasattr(self, 'injector') and self.injector:
+            result = self.run_js_export('set_all_grimoire_upgrades_percentage_js', self.injector, percentage=percentage)
+            return result
+        else:
+            return "ERROR: No injector available - run 'inject' first to connect to the game"
+
+    @js_export(params=["percentage"])
+    def set_all_grimoire_upgrades_percentage_js(self, percentage=None):
+        return '''
+        try {
+            const ctx = window.__idleon_cheats__;
+            if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
+            
+            const bEngine = ctx["com.stencyl.Engine"].engine;
+            const grimoire = bEngine.getGameAttribute("Grimoire");
+            const grimoireUpg = bEngine.getGameAttribute("CustomLists").h.GrimoireUpg;
+            
+            if (!grimoire || !grimoireUpg) {
+                return "Error: Grimoire data not found";
+            }
+            
+            if (percentage === undefined || percentage === null) {
+                return "Error: Percentage is required";
+            }
+            
+            if (percentage < 0 || percentage > 100) {
+                return "Error: Percentage must be between 0 and 100";
+            }
+            
+            const percentage_decimal = percentage / 100;
+            const max_cap = 999999;
+            
+            let updated_count = 0;
+            let unchanged_count = 0;
+            let capped_upgrades = 0;
+            let total_upgrades = 0;
+            
+            for (let i = 0; i < grimoireUpg.length; i++) {
+                const upgrade = grimoireUpg[i];
+                if (!upgrade || !upgrade[0]) continue;
+                
+                total_upgrades++;
+                const upgradeName = upgrade[0].replace(/_/g, ' ');
+                const currentLevel = grimoire[i] || 0;
+                const maxLevel = upgrade[4] || 0;
+                
+                // Only process upgrades that are capped at 999999
+                if (maxLevel === max_cap) {
+                    capped_upgrades++;
+                    const targetLevel = Math.floor(maxLevel * percentage_decimal);
+                    
+                    if (currentLevel !== targetLevel) {
+                        grimoire[i] = targetLevel;
+                        updated_count++;
+                    } else {
+                        unchanged_count++;
+                    }
+                }
+            }
+            
+            if (capped_upgrades === 0) {
+                return "❌ No grimoire upgrades found that are capped at " + max_cap + "!";
+            } else if (updated_count === 0) {
+                return "✅ All " + capped_upgrades + " grimoire upgrades capped at " + max_cap + " are already at " + percentage + "% of their maximum level!";
+            } else {
+                return "📊 Set " + updated_count + " grimoire upgrades (capped at " + max_cap + ") to " + percentage + "% of their maximum level! (" + unchanged_count + " were already at target level, " + capped_upgrades + " total capped upgrades)";
+            }
+        } catch (e) {
+            return "Error: " + e.message;
         }
         '''
 

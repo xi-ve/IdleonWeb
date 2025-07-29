@@ -2,16 +2,18 @@ from plugin_system import PluginBase, js_export, ui_toggle, ui_search_with_resul
 from config_manager import config_manager
 
 class VaultUnlockerPlugin(PluginBase):
-    VERSION = "1.0.0"
+    VERSION = "1.0.1"
     DESCRIPTION = "Unlock and manage vault upgrades with category-based controls."
+    PLUGIN_ORDER = 1
+    CATEGORY = "Unlocks"
 
     def __init__(self, config=None):
         super().__init__(config or {})
-        self.name = 'vault_unlocker'
         self.debug = config.get('debug', False) if config else False
         self._vault_cache = None
         self._cache_timestamp = 0
         self._cache_duration = 300
+        self.name = 'vault_unlocker'
 
     async def cleanup(self): pass
     async def update(self): pass
@@ -25,9 +27,7 @@ class VaultUnlockerPlugin(PluginBase):
         label="Debug Mode",
         description="Enable debug logging for vault unlocker plugin",
         config_key="debug",
-        default_value=False,
-        category="Debug Settings",
-        order=1
+        default_value=False
     )
     async def enable_debug(self, value: bool = None):
         if value is not None:
@@ -41,8 +41,6 @@ class VaultUnlockerPlugin(PluginBase):
         description="Show all vault categories with their unlock status and levels",
         button_text="Show Vault Status",
         placeholder="Enter filter term (leave empty to show all)",
-        category="Vault Management",
-        order=2
     )
     async def vault_status_ui(self, value: str = None):
         if hasattr(self, 'injector') and self.injector:
@@ -167,8 +165,6 @@ class VaultUnlockerPlugin(PluginBase):
         description="Set a specific vault item to a specific level. Syntax: 'item_name level' (e.g., 'damage 100' or 'Bigger Damage 200')",
         button_text="Set Level",
         placeholder="Enter: item_name level (e.g., 'damage 100')",
-        category="Vault Management",
-        order=3
     )
     async def set_vault_item_level_ui(self, value: str = None):
         if hasattr(self, 'injector') and self.injector:
@@ -302,8 +298,6 @@ class VaultUnlockerPlugin(PluginBase):
         description="Unlock all vault categories (does not level them up)",
         config_key="unlock_all_categories",
         default_value=False,
-        category="Vault Management",
-        order=4
     )
     async def unlock_all_categories_ui(self, value: bool = None):
         if value is not None:
@@ -322,8 +316,6 @@ class VaultUnlockerPlugin(PluginBase):
         description="Set all vault categories to maximum level",
         config_key="max_level_all_categories",
         default_value=False,
-        category="Vault Management",
-        order=5
     )
     async def max_level_all_categories_ui(self, value: bool = None):
         if value is not None:
@@ -342,8 +334,6 @@ class VaultUnlockerPlugin(PluginBase):
         description="Reset all vault categories to level 0",
         config_key="reset_all_categories",
         default_value=False,
-        category="Vault Management",
-        order=6
     )
     async def reset_all_categories_ui(self, value: bool = None):
         if value is not None:

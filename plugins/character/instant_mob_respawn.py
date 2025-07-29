@@ -4,8 +4,10 @@ from plugin_system import plugin_command, js_export, PluginBase, console, ui_tog
 from config_manager import config_manager
 
 class InstantMobRespawnPlugin(PluginBase):
-    VERSION = "1.0.2"
+    VERSION = "1.0.3"
     DESCRIPTION = "Change the rates of the game."
+    PLUGIN_ORDER = 4
+    CATEGORY = "Character"
 
     def __init__(self, config=None):
         super().__init__(config or {})
@@ -38,9 +40,7 @@ class InstantMobRespawnPlugin(PluginBase):
         label="Enable Instant Mob Respawn",
         description="Toggle instant mob respawn functionality",
         config_key="toggle",
-        default_value=True,
-        category="Mob Settings",
-        order=1
+        default_value=True
     )
     async def enable_instant_respawn(self, value: bool = None):
         """Enable or disable instant mob respawn."""
@@ -53,9 +53,7 @@ class InstantMobRespawnPlugin(PluginBase):
         label="Debug Mode",
         description="Enable debug logging for mob respawn plugin",
         config_key="debug",
-        default_value=True,
-        category="Debug Settings",
-        order=1
+        default_value=True
     )
     async def enable_debug(self, value: bool = None):
         """Enable or disable debug mode."""
@@ -67,8 +65,6 @@ class InstantMobRespawnPlugin(PluginBase):
     @ui_button(
         label="Test Mob Respawn",
         description="Test the mob respawn functionality",
-        category="Actions",
-        order=1
     )
     async def test_mob_respawn(self):
         """Test the mob respawn functionality."""
@@ -86,7 +82,7 @@ class InstantMobRespawnPlugin(PluginBase):
     @plugin_command(
         help="Set instant mob respawn.",
         params=[
-            {"name": "toggle", "type": bool, "default": False, "help": "Set the mob respawn rate (default: False)"},
+            {"name": "toggle", "type": bool, "default": False, "help": "Set the mob respawn rate (default: False)"}
         ],
     )
     async def set(self, toggle=False, injector=None, **kwargs):

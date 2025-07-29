@@ -4,6 +4,7 @@ from config_manager import config_manager
 class ExamplePlugin(PluginBase):
     VERSION = "1.0.0"
     DESCRIPTION = "A simple example plugin"
+    PLUGIN_ORDER = 5  # This plugin will appear as #5 in the dropdown
 
     def __init__(self, config=None):
         super().__init__(config or {})
