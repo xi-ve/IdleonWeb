@@ -3,8 +3,10 @@ from plugin_system import plugin_command, js_export, PluginBase, console, ui_tog
 from config_manager import config_manager
 
 class SpawnItemPlugin(PluginBase):
-    VERSION = "1.0.2"
+    VERSION = "1.0.3"
     DESCRIPTION = "Spawn / List / Search items"
+    PLUGIN_ORDER = 6
+    CATEGORY = "Character"
 
     def __init__(self, config=None):
         super().__init__(config or {})
@@ -35,9 +37,7 @@ class SpawnItemPlugin(PluginBase):
         label="Debug Mode",
         description="Enable debug logging for spawn item plugin",
         config_key="debug",
-        default_value=True,
-        category="Debug Settings",
-        order=1
+        default_value=True
     )
     async def enable_debug(self, value: bool = None):
         if value is not None:
@@ -50,8 +50,6 @@ class SpawnItemPlugin(PluginBase):
         description="Enter item ID and amount to spawn (with autocomplete)",
         button_text="Spawn",
         placeholder="Item ID (e.g. Copper, Timecandy6)",
-        category="Spawn Actions",
-        order=1
     )
     async def spawn_item_ui(self, value: str = None):
         if value:
@@ -79,8 +77,6 @@ class SpawnItemPlugin(PluginBase):
         description="List all available items in the game (use input to filter)",
         button_text="List All",
         placeholder="Enter filter term (leave empty to list all)",
-        category="Search",
-        order=2
     )
     async def list_all_items_ui(self, value: str = None):
         if hasattr(self, 'injector') and self.injector:

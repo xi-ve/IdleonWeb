@@ -4,7 +4,7 @@
 {% set description = element.get('description', '') %}
 {% set config_key = element.get('config_key', name) %}
 {% set plugin_config = plugin_configs.get(plugin_name, {}) %}
-{% set current_value = plugin_config.get(config_key, element.get('default_value', '')) %}
+{% set current_value = element.get('current_value', plugin_config.get(config_key, element.get('default_value', ''))) %}
 
 <div class="ui-element" data-plugin-name="{{ plugin_name }}" data-config-key="{{ config_key }}" data-element-name="{{ name }}">
     <div class="element-label">{{ label }}</div>

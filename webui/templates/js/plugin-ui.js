@@ -78,7 +78,6 @@ class PluginUI {
             });
         });
 
-        // Dark mode toggle
         const darkModeToggle = document.getElementById('dark-mode-toggle');
         if (darkModeToggle) {
             darkModeToggle.addEventListener('click', (e) => {
@@ -89,14 +88,11 @@ class PluginUI {
     }
 
     initializeDarkMode() {
-        // Check if dark mode is enabled from server-side config
         const bodyElement = document.body;
         const isDarkMode = bodyElement.classList.contains('dark');
         
-        // Store the current state
         this.darkMode = isDarkMode;
         
-        // Update toggle button state
         this.updateDarkModeToggle();
     }
 
@@ -112,15 +108,12 @@ class PluginUI {
         
         this.updateDarkModeToggle();
         
-        // Save preference to server
         this.saveDarkModePreference();
     }
 
     updateDarkModeToggle() {
         const toggle = document.getElementById('dark-mode-toggle');
         if (toggle) {
-            // The CSS handles the icon visibility based on the dark class
-            // No additional JavaScript needed for the visual state
         }
     }
 
@@ -305,7 +298,6 @@ class PluginUI {
         const resultsContainer = element.querySelector('.search-results');
         const resultsList = element.querySelector('.results-list');
         
-        // Safety check: ensure required elements exist
         if (!resultsContainer || !resultsList) {
             console.error('Required search result elements not found');
             this.showStatus(element, 'Error: Search results container not found', 'error');
@@ -343,12 +335,10 @@ class PluginUI {
             return '<div class="result-item">No results found</div>';
         }
         
-        // Handle error messages
         if (resultText.startsWith('ERROR:') || resultText.startsWith('Error:')) {
             return `<div class="result-item error">${resultText}</div>`;
         }
         
-        // Handle "All Items" format
         if (resultText.includes('**All Items**')) {
             const lines = resultText.split('\n');
             let formattedHtml = '';
@@ -382,7 +372,6 @@ class PluginUI {
             return formattedHtml;
         }
         
-        // Handle regular search results (item_id : display_name format)
         if (resultText.includes(' : ')) {
             const lines = resultText.split('\n');
             let formattedHtml = '';
@@ -410,7 +399,6 @@ class PluginUI {
             return formattedHtml;
         }
         
-        // Handle single line results
         if (resultText.trim()) {
             return `<div class="result-item">${resultText}</div>`;
         }
@@ -537,7 +525,6 @@ class PluginUI {
             resultsContainer.style.display = 'none';
         }
         
-        // Only clear the results list content, not the entire container
         if (resultsList) {
             resultsList.innerHTML = '';
         }

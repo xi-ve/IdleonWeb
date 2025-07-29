@@ -1,14 +1,15 @@
 from plugin_system import PluginBase, js_export, ui_toggle
 
 class CandyUnlockPlugin(PluginBase):
-    VERSION = "1.0.0"
+    VERSION = "1.0.1"
     DESCRIPTION = "Allows the use of Time Candy anywhere, bypassing all map restrictions."
+    PLUGIN_ORDER = 3
+    CATEGORY = "Unlocks"
 
     def __init__(self, config=None):
         super().__init__(config or {})
         self.name = 'candy_unlock'
 
-    # Required methods (minimal implementation)
     async def cleanup(self): pass
     async def update(self): pass
     async def on_config_changed(self, config): 
@@ -20,8 +21,7 @@ class CandyUnlockPlugin(PluginBase):
         label="Unlock Candy Usage Everywhere",
         description="Allows using Time Candy in all maps, including dark places and World 6.",
         config_key="unlock_candy",
-        default_value=True,
-        order=0
+        default_value=True
     )
     async def unlock_candy_ui(self, value: bool = None):
         if value is not None:

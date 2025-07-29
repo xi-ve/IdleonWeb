@@ -2,13 +2,15 @@ from plugin_system import PluginBase, js_export, ui_toggle, ui_search_with_resul
 from config_manager import config_manager
 
 class AnvilCheatsPlugin(PluginBase):
-    VERSION = "1.0.0"
-    DESCRIPTION = "Comprehensive cheats for the crafting anvil (Smithing) system including free recipes, storage crafting, and anvil upgrades."
+    VERSION = "1.0.1"
+    DESCRIPTION = "Cheats for World 1 - Anvil and Smithing related"
+    PLUGIN_ORDER = 1 
+    CATEGORY = "World 1"
 
     def __init__(self, config=None):
-        super().__init__(config or {})
-        self.name = 'anvil_cheats'
+        super().__init__(config or {})        
         self.debug = config.get('debug', False) if config else False
+        self.name = 'anvil_cheats'
 
     async def cleanup(self): pass
     async def update(self): pass
@@ -38,7 +40,6 @@ class AnvilCheatsPlugin(PluginBase):
         description="Make all smithing recipe costs free (0/0 requirements)",
         config_key="free_recipe_costs",
         default_value=False,
-        category="Recipe Cheats",
         order=2
     )
     async def free_recipe_costs_ui(self, value: bool = None):
@@ -64,7 +65,6 @@ class AnvilCheatsPlugin(PluginBase):
         description="Make all anvil upgrade costs free",
         config_key="free_anvil_upgrades",
         default_value=False,
-        category="Anvil Upgrades",
         order=3
     )
     async def free_anvil_upgrades_ui(self, value: bool = None):
@@ -90,7 +90,6 @@ class AnvilCheatsPlugin(PluginBase):
         description="Make anvil production instant (no waiting time)",
         config_key="instant_anvil_production",
         default_value=False,
-        category="Anvil Upgrades",
         order=4
     )
     async def instant_anvil_production_ui(self, value: bool = None):
@@ -138,7 +137,6 @@ class AnvilCheatsPlugin(PluginBase):
         description="Set a specific anvil to maximum level",
         button_text="Max Level",
         placeholder="Enter anvil name (e.g., 'Anvil1', 'Anvil2')",
-        category="Anvil Upgrades",
         order=8
     )
     async def max_anvil_level_ui(self, value: str = None):

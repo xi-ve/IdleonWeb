@@ -4,6 +4,9 @@ from config_manager import config_manager
 class GlobalStoragePlugin(PluginBase):
     VERSION = "1.0.1"
     DESCRIPTION = "Provides global storage functionality."
+    PLUGIN_ORDER = 1
+    CATEGORY = "QoL"
+    
 
     def __init__(self, config=None):
         super().__init__(config or {})
@@ -35,9 +38,7 @@ class GlobalStoragePlugin(PluginBase):
         label="Toggle Global Storage",
         description="Toggle global storage",
         config_key="enabled",
-        default_value=False,
-        category="Storage",
-        order=1
+        default_value=False
     )
     async def toggle_global_storage_ui(self, value=None):
         if value is not None:
@@ -74,7 +75,7 @@ class GlobalStoragePlugin(PluginBase):
                 Object.defineProperty(optionsListAccount, 34, {
                     get: function() {
                         if (window.pluginConfigs && window.pluginConfigs['global_storage'] && window.pluginConfigs['global_storage'].enabled)
-                            return 450;
+                            return 0;
                         return this._34;
                     },
                     set: function(value) {
@@ -86,7 +87,24 @@ class GlobalStoragePlugin(PluginBase):
                     enumerable: true
                 });
             }
-            return "Storage limit increased to 450.";
+            if (!optionsListAccount.hasOwnProperty('_150')) {
+                optionsListAccount._150 = optionsListAccount[150];
+                Object.defineProperty(optionsListAccount, 150, {
+                    get: function() {
+                        if (window.pluginConfigs && window.pluginConfigs['global_storage'] && window.pluginConfigs['global_storage'].enabled)
+                            return 1;
+                        return this._150;
+                    },
+                    set: function(value) {
+                        if (window.pluginConfigs && window.pluginConfigs['global_storage'] && window.pluginConfigs['global_storage'].enabled)
+                            return true;
+                        this._150 = value;
+                        return true;
+                    },
+                    enumerable: true
+                });
+            }
+            return "Quickref and Storage Chest unlock functionality enabled.";
         } catch (e) {
             return `Error: ${e.message}`;
         }

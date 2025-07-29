@@ -3,8 +3,10 @@ from plugin_system import plugin_command, js_export, PluginBase, console, ui_tog
 from config_manager import config_manager
 
 class InventoryStoragePlugin(PluginBase):
-    VERSION = "1.0.0"
+    VERSION = "1.0.1"
     DESCRIPTION = "Automatically unlock all inventory packages and storage spaces"
+    PLUGIN_ORDER = 3
+    CATEGORY = "Character"
 
     def __init__(self, config=None):
         super().__init__(config or {})
@@ -34,9 +36,7 @@ class InventoryStoragePlugin(PluginBase):
         label="Debug Mode",
         description="Enable debug logging for inventory storage plugin",
         config_key="debug",
-        default_value=True,
-        category="Debug Settings",
-        order=1
+        default_value=True
     )
     async def enable_debug(self, value: bool = None):
         if value is not None:
@@ -48,9 +48,7 @@ class InventoryStoragePlugin(PluginBase):
         label="Auto Unlock All Inventory Packages",
         description="Automatically unlock all inventory-related packages (bun_c, bun_i, bon_a)",
         config_key="auto_unlock_packages",
-        default_value=False,
-        category="Package Management",
-        order=1
+        default_value=False
     )
     async def auto_unlock_packages_ui(self, value: bool = None):
         if value is not None:
@@ -68,9 +66,7 @@ class InventoryStoragePlugin(PluginBase):
         label="Max Inventory Slots",
         description="Set inventory slots to maximum (112 slots)",
         config_key="max_inventory_slots",
-        default_value=False,
-        category="Inventory Management",
-        order=2
+        default_value=False
     )
     async def max_inventory_slots_ui(self, value: bool = None):
         if value is not None:
@@ -88,9 +84,7 @@ class InventoryStoragePlugin(PluginBase):
         label="Max Chest Slots",
         description="Set chest slots to maximum (200+ slots)",
         config_key="max_chest_slots",
-        default_value=False,
-        category="Storage Management",
-        order=3
+        default_value=False
     )
     async def max_chest_slots_ui(self, value: bool = None):
         if value is not None:
@@ -108,9 +102,7 @@ class InventoryStoragePlugin(PluginBase):
         label="Unlock All Inventory Bags",
         description="Unlock all inventory bags (InvBag1-112)",
         config_key="unlock_inventory_bags",
-        default_value=False,
-        category="Bag Management",
-        order=4
+        default_value=False
     )
     async def unlock_inventory_bags_ui(self, value: bool = None):
         if value is not None:
@@ -128,9 +120,7 @@ class InventoryStoragePlugin(PluginBase):
         label="Unlock All Storage Boxes",
         description="Unlock all storage boxes (InvStorage1-99)",
         config_key="unlock_storage_boxes",
-        default_value=False,
-        category="Storage Management",
-        order=5
+        default_value=False
     )
     async def unlock_storage_boxes_ui(self, value: bool = None):
         if value is not None:
@@ -149,8 +139,6 @@ class InventoryStoragePlugin(PluginBase):
         description="Show current inventory and chest slot counts",
         button_text="Check Status",
         placeholder="Enter filter term (leave empty to show all)",
-        category="Status Information",
-        order=1
     )
     async def check_storage_status_ui(self, value: str = None):
         if hasattr(self, 'injector') and self.injector:
@@ -176,8 +164,6 @@ class InventoryStoragePlugin(PluginBase):
         description="Show detailed list of all packages, bags, and storage boxes with ownership status",
         button_text="Show Complete List",
         placeholder="Enter filter term (leave empty to show all)",
-        category="Status Information",
-        order=2
     )
     async def complete_storage_list_ui(self, value: str = None):
         if hasattr(self, 'injector') and self.injector:

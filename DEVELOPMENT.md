@@ -1,6 +1,8 @@
 # IdleonWeb Development Guide
 
 > **For users:** See [README.md](README.md) for user-friendly installation and usage instructions.
+> **For quick start:** See [PLUGIN_QUICKSTART.md](PLUGIN_QUICKSTART.md) for rapid plugin development.
+> **For comprehensive development:** This document contains detailed technical information for developers.
 
 This document contains technical documentation for developers who want to understand, extend, or contribute to the IdleonWeb project.
 
@@ -17,6 +19,8 @@ This document contains technical documentation for developers who want to unders
   - [Plugin Architecture](#plugin-architecture)
   - [Plugin Lifecycle](#plugin-lifecycle)
   - [Required Methods](#required-methods)
+  - [Plugin Categories](#plugin-categories)
+  - [Folderized Plugins](#folderized-plugins)
 - [UI Decorators](#ui-decorators)
   - [Available UI Decorators](#available-ui-decorators)
   - [Autocomplete Naming Convention](#autocomplete-naming-convention)
@@ -202,6 +206,50 @@ async def on_game_ready(self) -> None:
     """Called when the Idleon game is fully loaded and ready."""
 ```
 
+### Plugin Categories
+
+Plugins can be organized into categories using the `CATEGORY` attribute:
+
+```python
+class MyPlugin(PluginBase):
+    VERSION = "1.0.0"
+    DESCRIPTION = "My awesome plugin"
+    PLUGIN_ORDER = 1  # Control display order (lower = first)
+    CATEGORY = "Character"  # Available: Character, QoL, Unlocks, World 1, etc.
+```
+
+#### Available Categories
+- **`"Character"`** - Character-related features (stats, abilities, inventory)
+- **`"QoL"`** - Quality of Life improvements (convenience features)
+- **`"Unlocks"`** - Unlock-related features (cards, vault, packages)
+- **`"World 1"`**, **`"World 2"`**, etc. - World-specific features
+- **`"Sneaking"`** - Sneaking game related features
+
+### Folderized Plugins
+
+Plugins can be organized in subdirectories for better structure:
+
+```
+plugins/
+├── character/
+│   ├── godlike_powers.py
+│   ├── spawn_item.py
+│   └── stats_multiplier.py
+├── qol/
+│   └── global_storage.py
+├── unlocks/
+│   ├── card_cheats.py
+│   └── vault_unlocker.py
+└── world1/
+    └── anvil_cheats.py
+```
+
+**Plugin names** in subdirectories use dot notation:
+- `plugins/character/godlike_powers.py` → Plugin name: `character.godlike_powers`
+- `plugins/unlocks/card_cheats.py` → Plugin name: `unlocks.card_cheats`
+
+The system automatically discovers and loads plugins from subdirectories.
+
 ---
 
 ## UI Decorators
@@ -234,6 +282,60 @@ Each UI decorator accepts the following common parameters:
 - **`description`** - Help text shown below the element
 - **`category`** - Groups elements in the web UI (e.g., "General Settings", "Actions")
 - **`order`** - Display order within the category (lower numbers appear first)
+
+### UI Category System and Sorting
+
+The web UI automatically organizes UI elements into categories for better user experience:
+
+**Category Organization:**
+- Elements with the same `category` parameter are grouped together
+- Categories are sorted alphabetically
+- Elements within each category are sorted by their `order` parameter
+- Elements without a category default to "General"
+
+**Category Examples:**
+```python
+@ui_toggle(
+    label="Enable Feature",
+    category="Core Settings",  # Groups with other "Core Settings"
+    order=1  # First in the category
+)
+async def enable_feature_ui(self, value=None):
+    pass
+
+@ui_slider(
+    label="Speed Multiplier", 
+    category="Performance",  # Different category
+    order=1
+)
+async def speed_ui(self, value=None):
+    pass
+
+@ui_button(
+    label="Test Action",
+    category="Actions",  # Action buttons category
+    order=1
+)
+async def test_action_ui(self):
+    pass
+```
+
+**Category Sorting Rules:**
+1. **Alphabetical**: Categories are sorted A-Z
+2. **Element Order**: Within each category, elements are sorted by `order` (lower numbers first)
+3. **Default Category**: Elements without `category` go to "General"
+4. **Default Order**: Elements without `order` default to 0
+
+**Common Category Names:**
+- `"General"` - Default category for basic settings
+- `"Core Settings"` - Essential plugin configuration
+- `"Performance"` - Speed, efficiency, and optimization settings
+- `"Actions"` - Buttons and interactive elements
+- `"Debug"` - Debugging and development tools
+- `"Advanced"` - Advanced or experimental features
+- `"Customization"` - User customization options
+
+> **For quick UI examples, see [PLUGIN_QUICKSTART.md](PLUGIN_QUICKSTART.md#3-add-ui-elements)**
 
 #### Element-Specific Parameters
 
@@ -290,6 +392,8 @@ from config_manager import config_manager
 class ExamplePlugin(PluginBase):
     VERSION = "1.0.0"
     DESCRIPTION = "Example plugin demonstrating all UI elements"
+    PLUGIN_ORDER = 1
+    CATEGORY = "Character"
 
     def __init__(self, config=None):
         super().__init__(config or {})
@@ -516,106 +620,356 @@ class ExamplePlugin(PluginBase):
             console.print(f"[ExamplePlugin] Executing command: {command}")
         return self.run_js_export('execute_command_js', injector, command=command)
 
-    # JavaScript Generation and Injection
+---
 
-    The plugin system automatically generates and injects JavaScript code into the game. Here's how it works:
+## JavaScript Generation and Injection
 
-    ## JavaScript Generation Process
+The plugin system automatically generates and injects JavaScript code into the game. Here's how it works:
 
-    1. **Function Discovery**: The system scans all plugin methods ending with `_js`
-    2. **Parameter Extraction**: Extracts parameter names from the `@js_export` decorator
-    3. **Code Generation**: Wraps your JavaScript with game-ready checks and error handling
-    4. **Combination**: All plugin JavaScript is merged into `core/plugins_combined.js`
-    5. **Injection**: The combined JavaScript is injected into the game context
+### JavaScript Generation Process
 
-    ## Generated JavaScript Structure
+1. **Function Discovery**: The system scans all plugin methods ending with `_js`
+2. **Parameter Extraction**: Extracts parameter names from the `@js_export` decorator
+3. **Code Generation**: Wraps your JavaScript with game-ready checks and error handling
+4. **Combination**: All plugin JavaScript is merged into `core/plugins_combined.js`
+5. **Injection**: The combined JavaScript is injected into the game context
 
-    Your JavaScript code gets automatically wrapped:
+### Naming Convention
 
-    ```javascript
-    // Original function
-    window.spawn_item = async function(item, amount) {
-        try {
-            await window.__idleon_wait_for_game_ready();
-            
-            // Your JavaScript code here
-            const ctx = window.__idleon_cheats__;
-            const engine = ctx["com.stencyl.Engine"].engine;
-            
-            console.log("Spawning item: " + item);
-            
-            return "Item spawned successfully!";
-        } catch (e) {
-            console.error('[spawn_item] Error:', e);
-            return `Error: ${e.message}`;
+**Important**: All `@js_export` functions must end with `_js` in their function name. The system automatically removes the `_js` suffix when creating the JavaScript function name.
+
+```python
+@js_export()
+def my_function_js(self):  # ← Must end with _js
+    return "console.log('Hello World');"
+```
+
+**Becomes available in JavaScript as:**
+```javascript
+window.plugin_name.my_function()  // ← _js suffix removed, grouped under plugin namespace
+```
+
+### Generated JavaScript Structure
+
+Your JavaScript code gets automatically wrapped. The function name is derived from your Python function name with the `_js` suffix removed and grouped under the plugin's namespace:
+
+```javascript
+// Original function: spawn_item_js() becomes window.plugin_name.spawn_item()
+window.plugin_name = window.plugin_name || {};
+window.plugin_name.spawn_item = async function(item, amount) {
+    try {
+        await window.__idleon_wait_for_game_ready();
+        
+        // Your JavaScript code here
+        const ctx = window.__idleon_cheats__;
+        const engine = ctx["com.stencyl.Engine"].engine;
+        
+        console.log("Spawning item: " + item);
+        
+        return "Item spawned successfully!";
+    } catch (e) {
+        console.error('[spawn_item] Error:', e);
+        return `Error: ${e.message}`;
+    }
+}
+```
+
+### Parameter Handling
+
+**Python to JavaScript parameter mapping:**
+
+```python
+@js_export(params=["item", "amount"])
+def spawn_item_js(self, item=None, amount=None):  # ← Must end with _js
+    return f"console.log('Item: {item}, Amount: {amount}');"
+```
+
+**Becomes:**
+```javascript
+window.plugin_name.spawn_item = async function(item, amount) {  // ← _js suffix removed, grouped under plugin namespace
+    // item and amount are passed from Python
+    console.log('Item: ' + item + ', Amount: ' + amount);
+}
+```
+
+### Debug Mode
+
+When any plugin has `debug: true` in its config, the system generates debug files:
+
+```
+core/tmp_js/
+├── SpawnItemPlugin_js_dump.js
+├── InstantMobRespawnPlugin_js_dump.js
+└── ...
+```
+
+These files contain the raw JavaScript generated for each plugin.
+
+### Plugin Namespacing
+
+JavaScript functions are automatically grouped under the plugin's namespace to avoid conflicts:
+
+```javascript
+// Functions are available as:
+window.plugin_name.function_name()
+
+// Examples:
+window.spawn_item.spawn_item("Copper", 10)
+window.godlike_powers.set_powers(true)
+window.card_cheats.set_card_level("mushG", 5)
+```
+
+**Compatibility Layer**: The system includes a compatibility layer that automatically translates old-style `window.function_name()` calls to the appropriate plugin namespace, so existing code continues to work.
+
+### Game Context Access
+
+Always access the game through the `__idleon_cheats__` context:
+
+```javascript
+const ctx = window.__idleon_cheats__;
+const engine = ctx["com.stencyl.Engine"].engine;
+const itemDefs = engine.getGameAttribute("ItemDefinitionsGET").h;
+const character = engine.getGameAttribute("OtherPlayers").h[engine.getGameAttribute("UserInfo")[0]];
+```
+
+### Common Patterns
+
+**Spawning Items:**
+```javascript
+const dropFn = events(189);
+dropFn._customBlock_DropSomething(itemId, amount, 0, 0, 2, y, 0, x, y);
+```
+
+**Modifying Game Values:**
+```javascript
+character.setValue("ActorEvents_20", "_PlayerSpeed", newSpeed);
+```
+
+**Getting Game Data:**
+```javascript
+const itemDefs = engine.getGameAttribute("ItemDefinitionsGET").h;
+const monsterDefs = engine.getGameAttribute("MonsterDefinitionsGET").h;
+```
+
+**Plugin Configuration Access:**
+```javascript
+// Access plugin config in JavaScript
+if (window.pluginConfigs && window.pluginConfigs['my_plugin']) {
+    const config = window.pluginConfigs['my_plugin'];
+    if (config.enabled) {
+        // Do something when enabled
+    }
+}
+```
+
+---
+
+## Hot Reload System
+
+The plugin system supports hot reloading for rapid development and testing:
+
+### Configuration Hot Reload
+- Changes to `core/conf.json` are automatically detected
+- Use the `reload_config` command to refresh plugin configurations
+- Plugin configurations are immediately synchronized to the browser
+- No need to restart the injector for config changes
+
+### Plugin Hot Reload
+- Plugin Python files can be modified while the system is running
+- Use the `reload` command to reload all plugins
+- JavaScript is automatically regenerated and reinjected
+- UI elements are updated in the web interface
+
+### JavaScript Hot Reload
+- JavaScript code changes are automatically detected
+- The system regenerates `core/plugins_combined.js` on plugin reload
+- Browser JavaScript is automatically reinjected
+- No need to refresh the browser page
+
+### Hot Reload Workflow
+```bash
+# 1. Start the system
+python main.py
+inject
+
+# 2. Make changes to plugin files
+# Edit plugins/my_plugin.py
+
+# 3. Reload plugins (regenerates JS and updates UI)
+reload
+
+# 4. Or reload just configuration
+reload_config
+
+# 5. Changes are immediately available in the game
+```
+
+### Development Tips
+- Use `reload` during development to test changes quickly
+- Use `reload_config` when only changing configuration values
+- Monitor the console for any reload errors
+- The web UI automatically updates when plugins are reloaded
+- JavaScript errors are reported in the browser console
+
+---
+
+## Window Configuration System
+
+The plugin system automatically synchronizes plugin configurations between Python and the browser's JavaScript context. This allows JavaScript code to access plugin settings in real-time.
+
+### Configuration Structure
+
+Plugin configurations are stored in the browser's `window` object under `window.pluginConfigs`:
+
+```javascript
+window.pluginConfigs = {
+    "plugin_name": {
+        "enabled": true,
+        "speed_multiplier": 2.5,
+        "custom_setting": "value",
+        "debug": false
+    },
+    "another_plugin": {
+        "enabled": false,
+        "threshold": 100
+    }
+}
+```
+
+### How Configuration is Synchronized
+
+1. **Initialization**: When a plugin is initialized, its configuration is automatically pushed to the browser:
+   ```python
+   # In PluginBase.init_config_in_browser()
+   init_expr = "window.pluginConfigs = window.pluginConfigs || {};"
+   self.injector.evaluate(init_expr)
+   
+   # Get current config and set it in browser
+   current_config = config_manager.get_plugin_config(self.name)
+   self.set_config(current_config)
+   ```
+
+2. **Real-time Updates**: When plugin configuration changes (via UI or CLI), it's immediately synchronized:
+   ```python
+   # In PluginBase.set_config()
+   js_config = json.dumps(config)
+   expr = f"window.pluginConfigs['{self.name}'] = {js_config};"
+   self.injector.evaluate(expr)
+   ```
+
+3. **Automatic Persistence**: Changes are automatically saved to `core/conf.json`:
+   ```python
+   # In PluginBase.save_to_global_config()
+   config_manager.set_plugin_config(self.name, config)
+   ```
+
+### Accessing Configuration in JavaScript
+
+**Basic Access:**
+```javascript
+// Check if plugin is enabled
+if (window.pluginConfigs && window.pluginConfigs['my_plugin']) {
+    const config = window.pluginConfigs['my_plugin'];
+    if (config.enabled) {
+        console.log("Plugin is enabled!");
+    }
+}
+```
+
+**Safe Access with Defaults:**
+```javascript
+// Safe access with fallback values
+const config = window.pluginConfigs?.['my_plugin'] || {};
+const enabled = config.enabled || false;
+const speed = config.speed_multiplier || 1.0;
+```
+
+**Real-time Configuration Checks:**
+```javascript
+// Check configuration in real-time
+function checkPluginConfig() {
+    const config = window.pluginConfigs?.['my_plugin'] || {};
+    
+    if (config.enabled) {
+        // Apply enabled features
+        applySpeedMultiplier(config.speed_multiplier || 1.0);
+    } else {
+        // Disable features
+        resetSpeedMultiplier();
+    }
+}
+```
+
+### Why Configuration is in Window
+
+1. **Real-time Access**: JavaScript code can check configuration values immediately without making requests back to Python
+2. **Performance**: No need for async calls or polling to check plugin settings
+3. **Simplicity**: Direct object access is faster and simpler than API calls
+4. **Consistency**: Configuration is available in the same context as the game code
+5. **Automatic Updates**: Changes from the web UI or CLI are immediately reflected in JavaScript
+
+### Configuration Lifecycle
+
+1. **Plugin Load**: Configuration is loaded from `core/conf.json`
+2. **Browser Init**: Configuration is pushed to `window.pluginConfigs[plugin_name]`
+3. **UI Changes**: Web UI updates trigger immediate browser synchronization
+4. **CLI Changes**: Command line changes trigger immediate browser synchronization
+5. **JavaScript Access**: JavaScript code can access current configuration at any time
+6. **Persistence**: All changes are automatically saved to `core/conf.json`
+
+### Best Practices
+
+**Always Check for Existence:**
+```javascript
+// Good: Check if config exists
+if (window.pluginConfigs && window.pluginConfigs['my_plugin']) {
+    const config = window.pluginConfigs['my_plugin'];
+    // Use config
+}
+
+// Bad: Direct access without checking
+const config = window.pluginConfigs['my_plugin']; // Could be undefined
+```
+
+**Use Default Values:**
+```javascript
+// Good: Provide fallback values
+const enabled = window.pluginConfigs?.['my_plugin']?.enabled || false;
+const speed = window.pluginConfigs?.['my_plugin']?.speed_multiplier || 1.0;
+
+// Bad: No fallback
+const enabled = window.pluginConfigs['my_plugin'].enabled; // Could throw error
+```
+
+**Check Configuration Changes:**
+```javascript
+// Monitor configuration changes
+function setupConfigWatcher() {
+    const originalConfig = JSON.stringify(window.pluginConfigs?.['my_plugin'] || {});
+    
+    setInterval(() => {
+        const currentConfig = JSON.stringify(window.pluginConfigs?.['my_plugin'] || {});
+        if (currentConfig !== originalConfig) {
+            console.log("Configuration changed, updating behavior...");
+            updatePluginBehavior();
         }
-    }
-    ```
+    }, 1000);
+}
+```
 
-    ## Parameter Handling
+**Handle Missing Configuration:**
+```javascript
+// Graceful handling of missing configuration
+function getPluginConfig(pluginName, defaultValue = {}) {
+    return window.pluginConfigs?.[pluginName] || defaultValue;
+}
 
-    **Python to JavaScript parameter mapping:**
-
-    ```python
-    @js_export(params=["item", "amount"])
-    def spawn_item_js(self, item=None, amount=None):
-        return f"console.log('Item: {item}, Amount: {amount}');"
-    ```
-
-    **Becomes:**
-    ```javascript
-    window.spawn_item = async function(item, amount) {
-        // item and amount are passed from Python
-        console.log('Item: ' + item + ', Amount: ' + amount);
-    }
-    ```
-
-    ## Debug Mode
-
-    When any plugin has `debug: true` in its config, the system generates debug files:
-
-    ```
-    core/tmp_js/
-    ├── SpawnItemPlugin_js_dump.js
-    ├── InstantMobRespawnPlugin_js_dump.js
-    └── ...
-    ```
-
-    These files contain the raw JavaScript generated for each plugin.
-
-    ## Game Context Access
-
-    Always access the game through the `__idleon_cheats__` context:
-
-    ```javascript
-    const ctx = window.__idleon_cheats__;
-    const engine = ctx["com.stencyl.Engine"].engine;
-    const itemDefs = engine.getGameAttribute("ItemDefinitionsGET").h;
-    const character = engine.getGameAttribute("OtherPlayers").h[engine.getGameAttribute("UserInfo")[0]];
-    ```
-
-    ## Common Patterns
-
-    **Spawning Items:**
-    ```javascript
-    const dropFn = events(189);
-    dropFn._customBlock_DropSomething(itemId, amount, 0, 0, 2, y, 0, x, y);
-    ```
-
-    **Modifying Game Values:**
-    ```javascript
-    character.setValue("ActorEvents_20", "_PlayerSpeed", newSpeed);
-    ```
-
-    **Getting Game Data:**
-    ```javascript
-    const itemDefs = engine.getGameAttribute("ItemDefinitionsGET").h;
-    const monsterDefs = engine.getGameAttribute("MonsterDefinitionsGET").h;
-    ```
+const config = getPluginConfig('my_plugin', { enabled: false, speed: 1.0 });
+```
 
     # JavaScript Exports
     @js_export()
-    def test_connection_js(self):
+    def test_connection_js(self):  # ← Must end with _js
         return '''
         try {
             const ctx = window.__idleon_cheats__;
@@ -630,7 +984,7 @@ class ExamplePlugin(PluginBase):
         '''
 
     @js_export(params=["command"])
-    def execute_command_js(self, command=None):
+    def execute_command_js(self, command=None):  # ← Must end with _js
         return f'''
         try {{
             console.log("Executing command: {command}");
@@ -641,7 +995,7 @@ class ExamplePlugin(PluginBase):
         '''
 
     @js_export(params=["query"])
-    def search_items_js(self, query=None):
+    def search_items_js(self, query=None):  # ← Must end with _js
         return f'''
         try {{
             const ctx = window.__idleon_cheats__;
@@ -662,7 +1016,7 @@ class ExamplePlugin(PluginBase):
         '''
 
     @js_export(params=["item"])
-    def spawn_item_js(self, item=None):
+    def spawn_item_js(self, item=None):  # ← Must end with _js
         return f'''
         try {{
             const ctx = window.__idleon_cheats__;
@@ -680,7 +1034,7 @@ class ExamplePlugin(PluginBase):
         '''
 
     @js_export()
-    def get_item_list_js(self):
+    def get_item_list_js(self):  # ← Must end with _js
         return '''
         try {
             const ctx = window.__idleon_cheats__;
@@ -702,12 +1056,16 @@ plugin_class = ExamplePlugin
 ## Best Practices
 
 1. **Naming Convention**: Always end UI element functions with `_ui` (e.g., `spawn_item_ui`)
-2. **Autocomplete Functions**: Follow the pattern `get_{element_name}_autocomplete` for autocomplete inputs
-3. **Config Keys**: Use descriptive config keys that match your plugin's functionality
-4. **Categories**: Group related elements in the same category for better organization
-5. **Error Handling**: Always check for injector availability and handle errors gracefully
-6. **Return Values**: Return descriptive success/error messages for user feedback
-7. **Debug Mode**: Use the plugin's debug flag for conditional logging
+2. **JavaScript Exports**: Always end `@js_export` functions with `_js` (e.g., `spawn_item_js`)
+3. **Autocomplete Functions**: Follow the pattern `get_{element_name}_autocomplete` for autocomplete inputs
+4. **Config Keys**: Use descriptive config keys that match your plugin's functionality
+5. **Categories**: Group related elements in the same category for better organization
+6. **Error Handling**: Always check for injector availability and handle errors gracefully
+7. **Return Values**: Return descriptive success/error messages for user feedback
+8. **Debug Mode**: Use the plugin's debug flag for conditional logging
+9. **Plugin Categories**: Use appropriate categories to organize plugins
+10. **Plugin Ordering**: Set `PLUGIN_ORDER` to control display order
+11. **Folder Structure**: Use subdirectories for better plugin organization
 
 ---
 
@@ -753,6 +1111,8 @@ value = config_manager.get_path('plugin_configs.my_plugin.enabled', False)
 config_manager.set_path('plugin_configs.my_plugin.enabled', True)
 ```
 
+
+
 ---
 
 ## CLI Interface
@@ -774,8 +1134,8 @@ Plugin commands are accessed as `plugins.pluginname.command`:
 
 ```bash
 # Example plugin commands
-plugins.spawn_item.spawn "Copper" 5
-plugins.instant_mob_respawn.toggle
+plugins.character.spawn_item.spawn "Copper" 5
+plugins.character.instant_mob_respawn.toggle
 ```
 
 ---
@@ -803,6 +1163,7 @@ webui/templates/
     ├── base.html           # Base template
     ├── plugin_cards.html   # Single plugin layout
     ├── tabbed_interface.html # Multi-plugin layout
+    ├── categorized_interface.html # Categorized plugin interface
     └── ui_elements.html    # UI element templates
 ```
 
@@ -813,6 +1174,8 @@ webui/templates/
 - `GET /api/autocomplete` - Get autocomplete suggestions
 - `GET /api/ui_schemas` - Get plugin UI schemas
 - `GET /api/ui_elements` - Get UI elements data
+
+
 
 ---
 
@@ -833,6 +1196,7 @@ webui/templates/
 - Check for syntax errors in your plugin file
 - Ensure your plugin class is named and exported correctly
 - Check the launcher logs for import errors
+- Verify the plugin has correct `CATEGORY` and `PLUGIN_ORDER` attributes
 
 **Web UI not accessible?**
 - Ensure the web server is running and check `http://localhost:8080`
@@ -843,6 +1207,10 @@ webui/templates/
 - Make sure your plugin uses the correct UI decorators
 - Check that the web server is started
 - Verify plugin configuration is loaded
+
+**Plugin categories not working?**
+- Ensure the plugin has a valid `CATEGORY` attribute
+- Check that the category name matches available categories
 
 **Debug output:**
 - Set `"debug": true` in `core/conf.json` for verbose logs
@@ -863,6 +1231,10 @@ webui/templates/
 - Wait for the game to fully load
 - Check that the injection completed successfully
 - Verify the game context is available
+
+**"Plugin category not found"**
+- Check that the plugin has a valid `CATEGORY` attribute
+- Ensure the category name is one of the available categories
 
 ---
 
@@ -888,17 +1260,27 @@ IdleonWeb/
 │           ├── base.html        # Base template
 │           ├── plugin_cards.html # Single plugin layout
 │           ├── tabbed_interface.html # Multi-plugin layout
+│           ├── categorized_interface.html # Categorized plugin interface
 │           └── ui_elements.html # UI element templates
 ├── plugins/
-│   ├── spawn_item.py           # Item spawning plugin
-│   ├── instant_mob_respawn.py  # Mob respawn plugin
-│   └── ...                     # Additional plugins
-├── main.py                     # CLI entry point
-├── plugin_system.py            # Plugin management system
-├── config_manager.py           # Configuration management
-├── setup.py                    # Universal setup script
-├── requirements.txt            # Python dependencies
-└── README.md                   # User documentation
+│   ├── character/           # Character-related plugins
+│   │   ├── godlike_powers.py
+│   │   ├── spawn_item.py
+│   │   └── stats_multiplier.py
+│   ├── qol/                # Quality of Life plugins
+│   │   └── global_storage.py
+│   ├── unlocks/            # Unlock-related plugins
+│   │   ├── card_cheats.py
+│   │   └── vault_unlocker.py
+│   ├── world1/             # World 1 specific plugins
+│   │   └── anvil_cheats.py
+│   └── ...                 # Additional plugin categories
+├── main.py                 # CLI entry point
+├── plugin_system.py        # Plugin management system
+├── config_manager.py       # Configuration management
+├── setup.py                # Universal setup script
+├── requirements.txt        # Python dependencies
+└── README.md               # User documentation
 ```
 
 ---
@@ -931,6 +1313,9 @@ When creating plugins:
 3. **Handle errors gracefully** and provide clear error messages
 4. **Test on multiple platforms** if possible
 5. **Document your plugin** with clear descriptions and examples
+6. **Use appropriate categories** to organize plugins
+7. **Set plugin order** to control display order
+8. **Consider folder structure** for better organization
 
 ---
 
@@ -955,4 +1340,4 @@ This project extends those concepts with:
 - Web UI for plugin configuration
 - Enhanced CLI with autocompletion
 - Centralized configuration management
-- Real-time plugin development workflow 
+and much more!

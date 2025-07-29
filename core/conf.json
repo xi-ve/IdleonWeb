@@ -2,55 +2,56 @@
   "openDevTools": false,
   "interactive": true,
   "plugins": [
-    "spawn_item",
-    "instant_mob_respawn",
-    "global_storage",
-    "stats_multiplier",
-    "godlike_powers",
-    "package_toggle",
-    "inventory_storage",
-    "candy_unlock",
-    "quest_helper",
-    "vault_unlocker",
-    "grimoire_unlocker"
+    "character.godlike_powers",
+    "character.inventory_storage",
+    "character.quest_helper",
+    "character.instant_mob_respawn",
+    "character.instant_afk_time",
+    "character.spawn_item",
+    "character.stats_multiplier",
+    "character.sneaking_items",
+    "unlocks.sneaking_cheats",
+    "unlocks.candy_unlock",
+    "unlocks.vault_unlocker",
+    "unlocks.card_cheats",
+    "unlocks.grimoire_unlocker",
+    "unlocks.package_toggle",
+    "qol.global_storage",
+    "world1.anvil_cheats"
   ],
   "plugin_configs": {
     "spawn_item": {
       "debug": false,
-      "spawn_item_ui": "TalentPoint6",
+      "spawn_item_ui": "Crystal6",
       "search_items_ui": "crab",
-      "list_all_items_ui": "book"
+      "list_all_items_ui": "W7"
     },
     "instant_mob_respawn": {
       "debug": false,
       "toggle": true
     },
     "global_storage": {
-      "enabled": false
+      "enabled": true
     },
     "stats_multiplier": {
       "enabled": true,
       "debug": false,
-      "damage_multiplier": 18,
+      "damage_multiplier": 44,
       "efficiency_multiplier": 1,
       "afk_multiplier": 5,
       "drop_multiplier": 1,
       "monster_multiplier": 1,
-      "printer_multiplier": 17.9
+      "printer_multiplier": 1
     },
     "godlike_powers": {
-      "enabled": true,
-      "debug": false,
-      "reach": true,
-      "crit": false,
       "ability": true,
-      "food": false,
-      "hitchance": true,
-      "intervention": false,
-      "weapon_speed": 14,
       "card": true,
-      "poison": false,
-      "hp": false
+      "crit": true,
+      "enabled": true,
+      "reach": true,
+      "weapon_speed": 14,
+      "hitchance": true,
+      "food": true
     },
     "package_toggle": {
       "list_bought_packages_ui": "",
@@ -67,9 +68,6 @@
       "debug": false,
       "auto_unlock_packages": false
     },
-    "CandyUnlockPlugin": {
-      "unlock_candy": true
-    },
     "quest_helper": {
       "quest_helper_ui": "",
       "auto_complete_all": false,
@@ -77,7 +75,7 @@
       "reset_quests_ui": false
     },
     "candy_unlock": {
-      "unlock_candy": false
+      "unlock_candy": true
     },
     "vault_unlocker": {
       "vault_status_ui": "",
@@ -89,7 +87,18 @@
     "grimoire_unlocker": {
       "grimoire_status_ui": "",
       "unlock_all_upgrades": false,
-      "set_grimoire_upgrade_level_ui": "Wraith Accuracy 500"
+      "set_grimoire_upgrade_level_ui": "Wraith Accuracy 500",
+      "max_level_all_upgrades": false,
+      "reset_all_upgrades": false,
+      "set_all_grimoire_upgrades_percentage_ui": "50"
+    },
+    "card_cheats": {
+      "set_all_cards_to_max": false,
+      "free_card_upgrades": true,
+      "unlock_all_card_slots": false,
+      "card_status_ui": "",
+      "set_card_level_ui": "mushP",
+      "debug": false
     }
   },
   "debug": false,

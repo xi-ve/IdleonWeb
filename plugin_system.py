@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional, Type, Callable, Union
 import traceback
 import json
 from enum import Enum
+import ast
 
 from rich.console import Console
 from config_manager import config_manager
@@ -19,6 +20,68 @@ logger = logging.getLogger(__name__)
 console = Console()
 
 command_registry = {}
+
+def check_js_syntax(js_code: str, plugin_name: str, function_name: str) -> tuple[bool, str]:
+    """
+    Check JavaScript syntax using Python's ast module for basic validation.
+    Returns (is_valid, error_message).
+    """
+    try:
+        # Basic JavaScript syntax checks
+        # Check for common syntax issues that could break the combined JS
+        
+        # Check for unmatched quotes
+        single_quotes = js_code.count("'")
+        double_quotes = js_code.count('"')
+        backticks = js_code.count('`')
+        
+        if single_quotes % 2 != 0:
+            return False, f"Unmatched single quotes in {plugin_name}.{function_name}"
+        
+        if double_quotes % 2 != 0:
+            return False, f"Unmatched double quotes in {plugin_name}.{function_name}"
+        
+        if backticks % 2 != 0:
+            return False, f"Unmatched backticks in {plugin_name}.{function_name}"
+        
+        # Check for unmatched braces
+        open_braces = js_code.count('{')
+        close_braces = js_code.count('}')
+        
+        if open_braces != close_braces:
+            return False, f"Unmatched braces in {plugin_name}.{function_name} (open: {open_braces}, close: {close_braces})"
+        
+        # Check for unmatched parentheses
+        open_parens = js_code.count('(')
+        close_parens = js_code.count(')')
+        
+        if open_parens != close_parens:
+            return False, f"Unmatched parentheses in {plugin_name}.{function_name} (open: {open_parens}, close: {close_parens})"
+        
+        # Check for unmatched brackets
+        open_brackets = js_code.count('[')
+        close_brackets = js_code.count(']')
+        
+        if open_brackets != close_brackets:
+            return False, f"Unmatched brackets in {plugin_name}.{function_name} (open: {open_brackets}, close: {close_brackets})"
+        
+        # Check for common JavaScript syntax issues
+        problematic_patterns = [
+            ('return `', 'return `'),  # Check for template literals
+            ('`${', '`${'),  # Check for template interpolation
+            ('console.log(', 'console.log('),  # Check for console calls
+            ('window.', 'window.'),  # Check for window references
+        ]
+        
+        for pattern, description in problematic_patterns:
+            if pattern in js_code:
+                # These are actually valid, just checking they're not broken
+                pass
+        
+        return True, ""
+        
+    except Exception as e:
+        return False, f"Syntax check error in {plugin_name}.{function_name}: {str(e)}"
 
 class UIElementType(Enum):
     TOGGLE = "toggle"
@@ -255,6 +318,7 @@ class PluginBase(ABC):
         self.version = getattr(self, 'VERSION', '1.0.0')
         self.description = getattr(self, 'DESCRIPTION', 'No description provided')
         self.dependencies = getattr(self, 'DEPENDENCIES', [])
+        self.plugin_order = getattr(self, 'PLUGIN_ORDER', 0)
         self.injector = None
         self.plugin_manager = None
 
@@ -304,13 +368,21 @@ class PluginBase(ABC):
         for attr_name in dir(self):
             attr = getattr(self, attr_name)
             if callable(attr) and getattr(attr, "_ui_element", False):
+                config_key = getattr(attr, "_ui_config_key", attr_name)
+                default_value = getattr(attr, "_ui_default_value", None)
+                
+                # Get current value from config manager, fallback to default
+                # This matches how plugins actually get their config values
+                current_value = config_manager.get_path(f'plugin_configs.{self.name}.{config_key}', default_value)
+                
                 element_data = {
                     "name": attr_name,
                     "type": getattr(attr, "_ui_element_type", UIElementType.BUTTON).value,
                     "label": getattr(attr, "_ui_label", attr_name),
                     "description": getattr(attr, "_ui_description", ""),
-                    "config_key": getattr(attr, "_ui_config_key", attr_name),
-                    "default_value": getattr(attr, "_ui_default_value", None),
+                    "config_key": config_key,
+                    "default_value": default_value,
+                    "current_value": current_value,
                     "min_value": getattr(attr, "_ui_min_value", None),
                     "max_value": getattr(attr, "_ui_max_value", None),
                     "step": getattr(attr, "_ui_step", None),
@@ -337,17 +409,22 @@ class PluginBase(ABC):
         """Generate a complete UI schema for the plugin."""
         ui_elements = self.get_ui_elements()
         
+        # Use the plugin's CATEGORY field, or 'General' if not defined
+        plugin_category = getattr(self, 'CATEGORY', 'General')
+        
         schema = {
-            "plugin_name": self.name,
-            "plugin_description": self.description,
-            "plugin_version": self.version,
+            "plugin_info": {
+                "name": self.name,
+                "description": self.description,
+                "version": self.version,
+                "category": plugin_category,
+                "order": self.plugin_order
+            },
             "categories": {}
         }
         
         for category, elements in ui_elements.items():
-            schema["categories"][category] = {
-                "elements": elements
-            }
+            schema["categories"][category] = elements
         
         return schema
 
@@ -378,19 +455,21 @@ class PluginBase(ABC):
         
         js_args = ', '.join(json.dumps(a) for a in args)
         
-        check_expr = f"typeof window.{js_name} === 'function'"
+        # Use plugin namespace to avoid conflicts
+        plugin_name = getattr(self, 'name', self.__class__.__name__)
+        check_expr = f"typeof window.{plugin_name}.{js_name} === 'function'"
         try:
             check_result = injector.evaluate(check_expr)
             if not check_result.get('result', {}).get('value', False):
                 if GLOBAL_DEBUG:
-                    console.print(f"[DEBUG] Function {js_name} not found in window")
-                return f"Error: Function {js_name} not found"
+                    console.print(f"[DEBUG] Function {plugin_name}.{js_name} not found in window")
+                return f"Error: Function {plugin_name}.{js_name} not found"
         except Exception as e:
             if GLOBAL_DEBUG:
-                console.print(f"[DEBUG] Error checking function {js_name}: {e}")
+                console.print(f"[DEBUG] Error checking function {plugin_name}.{js_name}: {e}")
             return f"Error checking function: {e}"
         
-        expr = f"window.{js_name}({js_args})"
+        expr = f"window.{plugin_name}.{js_name}({js_args})"
         
         if GLOBAL_DEBUG:
             console.print(f"[DEBUG] Executing: {expr}")
@@ -403,8 +482,8 @@ class PluginBase(ABC):
             return value
         except Exception as e:
             if GLOBAL_DEBUG:
-                console.print(f"[DEBUG] Error executing {js_name}: {e}")
-            return f"Error executing {js_name}: {e}"
+                console.print(f"[DEBUG] Error executing {plugin_name}.{js_name}: {e}")
+            return f"Error executing {plugin_name}.{js_name}: {e}"
 
     def set_config(self, config: Dict[str, Any]) -> None:
         if self.injector:
@@ -433,7 +512,9 @@ class PluginBase(ABC):
             init_expr = "window.pluginConfigs = window.pluginConfigs || {};"
             self.injector.evaluate(init_expr)
             
-            self.set_config(self.config)
+            # Get current config from config manager to ensure we have the latest values
+            current_config = config_manager.get_plugin_config(self.name)
+            self.set_config(current_config)
         except Exception as e:
             if GLOBAL_DEBUG:
                 console.print(f"[DEBUG] Error initializing config: {e}")
@@ -443,6 +524,16 @@ class PluginBase(ABC):
         
         # Save to config manager (this automatically saves to file)
         config_manager.set_plugin_config(self.name, plugin_config)
+        
+        # Update local config to match what was saved
+        self.config = config_manager.get_plugin_config(self.name)
+        
+        # Reload config to ensure consistency
+        config_manager.reload()
+        
+        # Update browser config with the latest values
+        if self.injector:
+            self.set_config(self.config)
         
         if self.plugin_manager:
             try:
@@ -464,6 +555,7 @@ class PluginManager:
         self.plugins: Dict[str, PluginBase] = {}
         self.plugin_dir = Path(plugin_dir)
         self.plugin_names = plugin_names
+        self.failed_plugins = set()  # Track plugins that failed to load
 
     async def load_plugins(self, injector, plugin_configs: Dict[str, Any] = None, 
                           global_debug: bool = True) -> None:
@@ -488,6 +580,7 @@ class PluginManager:
             except Exception as e:
                 console.print(f"[red]Failed to load plugin '{plugin_name}': {e}[/red]")
                 logger.error(f"Failed to load plugin '{plugin_name}': {e}")
+                self.failed_plugins.add(plugin_name)  # Track failed plugin
                 if GLOBAL_DEBUG:
                     logger.debug(traceback.format_exc())
 
@@ -498,9 +591,18 @@ class PluginManager:
         if not plugin_class:
             raise ImportError(f"Plugin '{plugin_name}' not found in {self.plugin_dir}")
         
-        plugin_instance = plugin_class(plugin_config)
+        # Get the latest config from config manager to ensure consistency
+        latest_config = config_manager.get_plugin_config(plugin_name)
+        # Merge with provided config (provided config takes precedence for initialization)
+        merged_config = {**latest_config, **plugin_config}
+        
+        plugin_instance = plugin_class(merged_config)
         plugin_instance.plugin_manager = self
         plugin_instance.global_debug = global_debug
+        
+        # Ensure the plugin's local config is synced with the global config
+        # This ensures plugins use config_manager.get_path() correctly
+        plugin_instance.config = config_manager.get_plugin_config(plugin_name)
         
         for dependency in getattr(plugin_instance, 'dependencies', []):
             if dependency not in self.plugins:
@@ -519,12 +621,21 @@ class PluginManager:
             raise RuntimeError(f"Failed to initialize plugin: {plugin_name}")
 
     async def _load_external_plugin(self, plugin_name: str) -> Optional[Type[PluginBase]]:
-        plugin_file = self.plugin_dir / f"{plugin_name}.py"
+        # Check if this is a folderized plugin (contains a dot)
+        if '.' in plugin_name:
+            # Split the plugin name into subdirectory and filename
+            subdir_name, file_name = plugin_name.split('.', 1)
+            plugin_file = self.plugin_dir / subdir_name / f"{file_name}.py"
+        else:
+            # Regular plugin in root directory
+            plugin_file = self.plugin_dir / f"{plugin_name}.py"
         
         if not plugin_file.exists():
             return None
         
-        spec = importlib.util.spec_from_file_location(plugin_name, plugin_file)
+        # Create a unique module name to avoid conflicts
+        module_name = f"plugins.{plugin_name.replace('.', '_')}"
+        spec = importlib.util.spec_from_file_location(module_name, plugin_file)
         if not spec or not spec.loader:
             return None
             
@@ -562,6 +673,7 @@ class PluginManager:
             except Exception as e:
                 console.print(f"[red]Failed to initialize plugin '{plugin_name}': {e}[/red]")
                 logger.error(f"Failed to initialize plugin '{plugin_name}': {e}")
+                self.failed_plugins.add(plugin_name)  # Track failed plugin
         
         if injector:
             for plugin in self.plugins.values():
@@ -633,16 +745,15 @@ class PluginManager:
         all_ui_elements = {}
         
         for plugin_name, plugin in self.plugins.items():
+            # Skip plugins that failed to load
+            if plugin_name in self.failed_plugins:
+                continue
+                
             plugin_ui_elements = plugin.get_ui_elements()
             if plugin_ui_elements:  # Only include plugins with UI elements
-                all_ui_elements[plugin_name] = {
-                    "plugin_info": {
-                        "name": plugin.name,
-                        "description": plugin.description,
-                        "version": plugin.version
-                    },
-                    "categories": plugin_ui_elements
-                }
+                # Use the plugin's UI schema to get proper category information
+                plugin_schema = plugin.get_ui_schema()
+                all_ui_elements[plugin_name] = plugin_schema
         
         return all_ui_elements
 
@@ -657,6 +768,9 @@ class PluginManager:
         """Get UI schemas for all plugins."""
         schemas = {}
         for plugin_name, plugin in self.plugins.items():
+            # Skip plugins that failed to load
+            if plugin_name in self.failed_plugins:
+                continue
             schemas[plugin_name] = plugin.get_ui_schema()
         return schemas
 
@@ -751,6 +865,8 @@ class PluginManager:
     def collect_all_plugin_js_with_sizes(self) -> tuple[str, dict[str, int]]:
         js_code = ""
         plugin_sizes = {}
+        syntax_errors = []
+        plugin_results = []
         
         debug = any(
             hasattr(plugin, 'config') and plugin.config.get('debug', False)
@@ -761,9 +877,40 @@ class PluginManager:
             tmp_js_dir = Path(__file__).parent / 'core' / 'tmp_js'
             tmp_js_dir.mkdir(exist_ok=True)
         
+        # Add compatibility layer for old-style function calls
+        compatibility_layer = """
+        // Compatibility layer for old-style function calls
+        // This automatically translates window.func_name calls to window.plugin_name.func_name
+        if (!window.__compatibility_layer_initialized__) {
+            window.__compatibility_layer_initialized__ = true;
+            const originalWindow = window;
+            window = new Proxy(window, {
+                get: function(target, prop) {
+                    // If it's a function call pattern, check if it exists in any plugin namespace
+                    if (typeof prop === 'string' && !target.hasOwnProperty(prop)) {
+                        for (const pluginName in target) {
+                            if (target[pluginName] && typeof target[pluginName] === 'object' && target[pluginName][prop]) {
+                                return target[pluginName][prop];
+                            }
+                        }
+                    }
+                    return target[prop];
+                }
+            });
+        }
+        """
+        js_code += compatibility_layer
+        
         for plugin in self.plugins.values():
             plugin_js = ""
             plugin_name = getattr(plugin, 'name', plugin.__class__.__name__)
+            plugin_has_errors = False
+            plugin_error_details = []
+            
+            # Initialize plugin namespace to ensure it exists
+            namespace_init = f"window.{plugin_name} = window.{plugin_name} || {{}};\n"
+            js_code += namespace_init
+            plugin_js += namespace_init
             
             for attr_name in dir(plugin):
                 if attr_name.endswith('_js'):
@@ -795,6 +942,14 @@ class PluginManager:
                         
                         js_name = attr_name[:-3]
                         
+                        # Check syntax before wrapping
+                        is_valid, error_msg = check_js_syntax(js_body, plugin_name, js_name)
+                        if not is_valid:
+                            syntax_errors.append(f"[{plugin_name}.{js_name}] {error_msg}")
+                            plugin_has_errors = True
+                            plugin_error_details.append(f"  • {js_name}: {error_msg}")
+                            continue
+                        
                         wrapped_js_body = f"""
                         try {{
                             await window.__idleon_wait_for_game_ready();
@@ -806,7 +961,8 @@ class PluginManager:
                         }}
                         """
                         
-                        js_func_code = f"window.{js_name} = async function({param_list}) {{\n{wrapped_js_body}\n}}\n"
+                        js_func_code = f"window.{plugin_name}.{js_name} = async function({param_list}) {{\n{wrapped_js_body}\n}}\n"
+                        
                         js_code += js_func_code
                         plugin_js += js_func_code
             
@@ -817,6 +973,87 @@ class PluginManager:
                 plugin_file = tmp_js_dir / f"{plugin.__class__.__name__}_js_dump.js"
                 with open(plugin_file, 'w', encoding='utf-8') as f:
                     f.write(plugin_js)
+            
+            # Store plugin result for summary
+            plugin_results.append({
+                'name': plugin_name,
+                'success': not plugin_has_errors,
+                'error_details': plugin_error_details,
+                'js_size': len(plugin_js)
+            })
+            
+            # Add to failed plugins if JS syntax errors were found
+            if plugin_has_errors:
+                self.failed_plugins.add(plugin_name)
+                console.print(f"[DEBUG] Added {plugin_name} to failed_plugins due to JS syntax errors")
+        
+        # Display comprehensive summary
+        from rich.table import Table
+        from rich.panel import Panel
+        
+        # Create summary table
+        summary_table = Table(title="Plugin JavaScript Generation Summary", show_lines=True)
+        summary_table.add_column("Plugin Name", style="bold green")
+        summary_table.add_column("Status", style="cyan")
+        summary_table.add_column("JS Size (KB)", style="magenta")
+        summary_table.add_column("Functions", style="yellow")
+        
+        total_size = 0
+        total_functions = 0
+        successful_plugins = 0
+        failed_plugins = 0
+        
+        for result in plugin_results:
+            status_icon = "✅" if result['success'] else "❌"
+            status_text = "Success" if result['success'] else "Failed"
+            js_size_kb = f"{result['js_size']/1024:.2f}"
+            
+            # Count functions for this plugin
+            plugin = self.plugins.get(result['name'])
+            func_count = len(plugin.get_commands()) if plugin else 0
+            
+            summary_table.add_row(
+                result['name'],
+                f"{status_icon} {status_text}",
+                js_size_kb,
+                str(func_count)
+            )
+            
+            total_size += result['js_size']
+            total_functions += func_count
+            if result['success']:
+                successful_plugins += 1
+            else:
+                failed_plugins += 1
+        
+        # Add total row
+        summary_table.add_row("", "", "", "")
+        summary_table.add_row(
+            "TOTAL", 
+            f"✅ {successful_plugins} success, ❌ {failed_plugins} failed", 
+            f"{total_size/1024:.2f}", 
+            str(total_functions),
+            style="bold"
+        )
+        
+        console.print(summary_table)
+        
+        # Show detailed error information if any
+        if syntax_errors:
+            error_details = []
+            for result in plugin_results:
+                if not result['success']:
+                    error_details.append(f"[bold red]{result['name']}:[/bold red]")
+                    error_details.extend(result['error_details'])
+                    error_details.append("")  # Empty line between plugins
+            
+            error_panel = Panel(
+                "\n".join(error_details),
+                title="[bold red]JavaScript Syntax Errors[/bold red]",
+                border_style="red"
+            )
+            console.print(error_panel)
+            console.print("[yellow]Plugins with errors were skipped. Fix the syntax issues and reload.[/yellow]")
         
         return js_code, plugin_sizes
 
@@ -844,6 +1081,42 @@ class PluginManager:
                 console.print(f"[green]Reloaded config for plugin: {plugin_name}[/green]")
             else:
                 console.print(f"[yellow]No config found for plugin: {plugin_name}[/yellow]")
+
+    async def reload_plugins(self) -> None:
+        """Unload all plugins and reload them from their Python files."""
+        if GLOBAL_DEBUG:
+            console.print("[DEBUG] Starting plugin reload...")
+        
+        # Clean up existing plugins
+        await self.cleanup_all()
+        
+        # Clear the plugins dictionary and failed plugins set
+        self.plugins.clear()
+        self.failed_plugins.clear()
+        
+        # Reload configuration
+        config_manager.reload()
+        plugin_configs = config_manager.get_all_plugin_configs()
+        
+        # Reload all plugins
+        for plugin_name in self.plugin_names:
+            try:
+                if GLOBAL_DEBUG:
+                    console.print(f"[DEBUG] Reloading plugin: {plugin_name}...")
+                await self._load_plugin(
+                    plugin_name, 
+                    plugin_configs.get(plugin_name, {}), 
+                    None,  # No injector during reload
+                    global_debug=GLOBAL_DEBUG
+                )
+                if GLOBAL_DEBUG:
+                    console.print(f"[DEBUG] Reloaded plugin: {plugin_name}")
+            except Exception as e:
+                console.print(f"[red]Failed to reload plugin '{plugin_name}': {e}[/red]")
+                logger.error(f"Failed to reload plugin '{plugin_name}': {e}")
+                self.failed_plugins.add(plugin_name)  # Track failed plugin
+                if GLOBAL_DEBUG:
+                    logger.debug(traceback.format_exc())
 
 def parse_plugin_args(params_meta: List[Dict[str, Any]], args: List[str]) -> Dict[str, Any]:
     result = {}

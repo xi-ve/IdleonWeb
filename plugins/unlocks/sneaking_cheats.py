@@ -4,11 +4,13 @@ from config_manager import config_manager
 class SneakingCheatsPlugin(PluginBase):
     VERSION = "1.0.0"
     DESCRIPTION = "Comprehensive cheats for the sneaking game including money, unlocks, upgrades, and more. ⚠️ HIGH RISK: These features may brick your account as the sneaking game data structure is complex and not fully explored. Use at your own risk!"
+    PLUGIN_ORDER = 6
+    CATEGORY = "Unlocks"
 
     def __init__(self, config=None):
-        super().__init__(config or {})
-        self.name = 'sneaking_cheats'
+        super().__init__(config or {})        
         self.debug = config.get('debug', False) if config else False
+        self.name = 'sneaking_cheats'
 
     async def cleanup(self): pass
     async def update(self): pass

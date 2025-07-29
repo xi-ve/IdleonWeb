@@ -587,23 +587,272 @@ body.dark .dark-mode-icon:last-child {
     overflow: hidden;
 }
 
-.tab-header {
-    display: flex;
+.category-header {
     background: var(--surface);
     border-bottom: 1px solid var(--border);
-    overflow-x: auto;
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+}
+
+.category-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    max-width: 100%;
+}
+
+.category-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    min-width: 140px;
+    max-width: 200px;
+    position: relative;
+    overflow: hidden;
+}
+
+.category-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+}
+
+.category-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3), 0 4px 12px rgba(59, 130, 246, 0.2);
+    transform: translateY(-1px);
+    font-weight: 600;
+}
+
+.category-btn.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    animation: shimmer 2s infinite;
+    pointer-events: none;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+@keyframes selected-pulse {
+    0%, 100% {
+        box-shadow: inset 0 0 20px rgba(59, 130, 246, 0.3);
+    }
+    50% {
+        box-shadow: inset 0 0 35px rgba(59, 130, 246, 0.6);
+    }
+}
+
+.category-btn .category-name {
+    font-weight: 500;
+}
+
+.category-btn .plugin-count {
+    background: rgba(255, 255, 255, 0.2);
+    color: inherit;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.category-btn.active .plugin-count {
+    background: rgba(255, 255, 255, 0.3);
+    font-weight: 600;
+    transform: scale(1.05);
+}
+
+.category-checkmark {
+    font-size: 0.875rem;
+    font-weight: bold;
+    color: inherit;
+    margin-right: 0.25rem;
+    min-width: 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.category-btn.active .category-checkmark {
+    transform: scale(1.1);
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+.category-dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-arrow {
+    font-size: 0.75rem;
+    margin-left: 0.5rem;
+    transition: transform 0.2s ease;
+}
+
+.category-btn.active .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.category-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    max-height: 300px;
+    overflow-y: auto;
+    display: none;
+    margin-top: 0.25rem;
+    min-width: 350px;
+    max-width: 500px;
+}
+
+.category-dropdown.show {
+    display: block;
+}
+
+.plugin-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid var(--border);
+    gap: 0.5rem;
+    position: relative;
+}
+
+.plugin-option.selected {
+    background: rgba(59, 130, 246, 0.2);
+    border-left: 3px solid var(--primary-color);
+    font-weight: 500;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 0 20px rgba(59, 130, 246, 0.3);
+    animation: selected-pulse 3s ease-in-out infinite;
+}
+
+/* Removed checkmark since we now use shimmer effect for highlighting */
+
+.plugin-option.selected::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent, rgba(59, 130, 246, 0.25), transparent);
+    animation: shimmer 2s infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.plugin-option:hover {
+    background: var(--surface);
+    box-shadow: inset 2px 0 0 var(--primary-color);
+    transition: all 0.2s ease;
+}
+
+.plugin-option.selected:hover {
+    background: rgba(59, 130, 246, 0.15);
+    box-shadow: inset 2px 0 0 var(--primary-color);
+}
+
+.plugin-option:last-child {
+    border-bottom: none;
+}
+
+.plugin-option .plugin-name {
+    font-weight: 500;
+    color: var(--text-primary);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+}
+
+.plugin-option.selected .plugin-name {
+    font-weight: 600;
+    color: var(--primary-color);
+    text-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+}
+
+.plugin-option .plugin-version {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: var(--surface);
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+.plugin-option.selected .plugin-version {
+    background: rgba(59, 130, 246, 0.2);
+    color: var(--primary-color);
+    font-weight: 500;
+    transform: scale(1.05);
+}
+
+.plugin-order {
+    font-size: 0.7rem;
+    color: var(--primary-color);
+    background: rgba(99, 102, 241, 0.1);
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+    flex-shrink: 0;
+    margin-right: 0.25rem;
+}
+
+.tab-header {
+    display: flex;
+    flex-wrap: wrap;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    gap: 0.25rem;
+    padding: 0.5rem;
 }
 
 .tab-button {
-    padding: 1rem 1.5rem;
+    padding: 0.75rem 1rem;
     background: transparent;
     border: none;
     color: var(--text-secondary);
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
-    white-space: nowrap;
-    border-bottom: 2px solid transparent;
+    border-radius: 0.375rem;
+    border: 1px solid transparent;
+    min-width: fit-content;
 }
 
 .tab-button:hover {
@@ -613,7 +862,7 @@ body.dark .dark-mode-icon:last-child {
 
 .tab-button.active {
     color: var(--primary-color);
-    border-bottom-color: var(--primary-color);
+    border-color: var(--primary-color);
     background: var(--background);
 }
 
@@ -640,25 +889,38 @@ body.dark .dark-mode-icon:last-child {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.plugin-version-badge {
+    background: var(--success-color);
+    color: white;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    font-size: 0.65rem;
+    font-weight: 500;
+    white-space: nowrap;
+    margin-left: auto;
 }
 
 .plugin-badge {
     background: var(--primary-color);
     color: white;
-    padding: 0.25rem 0.5rem;
+    padding: 0.125rem 0.375rem;
     border-radius: 0.25rem;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .plugin-count {
     background: var(--secondary-color);
     color: white;
-    padding: 0.25rem 0.5rem;
+    padding: 0.125rem 0.375rem;
     border-radius: 0.25rem;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 @media (max-width: 768px) {
@@ -681,18 +943,56 @@ body.dark .dark-mode-icon:last-child {
         width: 100%;
     }
     
+    .category-header {
+        padding: 0.75rem;
+    }
+    
+    .category-buttons {
+        gap: 0.25rem;
+    }
+    
+    .category-btn {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+        min-width: 120px;
+        max-width: 160px;
+    }
+    
+    .category-dropdown {
+        min-width: 180px;
+        max-width: 220px;
+    }
+    
+    .plugin-option {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .plugin-option .plugin-name {
+        font-size: 0.875rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .plugin-option .plugin-version {
+        font-size: 0.7rem;
+        padding: 0.1rem 0.25rem;
+    }
+    
+    .plugin-order {
+        font-size: 0.65rem;
+        padding: 0.1rem 0.25rem;
+        margin-right: 0.2rem;
+    }
+    
     .tab-header {
-        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.75rem;
     }
     
     .tab-button {
-        text-align: left;
-        border-bottom: 1px solid var(--border);
-        border-right: none;
-    }
-    
-    .tab-button.active {
-        border-bottom-color: var(--primary-color);
-        border-right-color: transparent;
+        flex: 1;
+        min-width: 120px;
+        text-align: center;
     }
 } 
