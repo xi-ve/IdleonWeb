@@ -10,6 +10,18 @@ A modern, user-friendly launcher and plugin system for enhancing Legends of Idle
 
 > **For developers:** See [PLUGIN_QUICKSTART.md](PLUGIN_QUICKSTART.md) for a quick guide to creating plugins, or [DEVELOPMENT.md](DEVELOPMENT.md) for detailed technical documentation.
 
+## Screenshots
+
+<p align="center">
+  <img src="images/screenshot1.png" alt="IdleonWeb - Dashboard" width="800">
+  <br/>
+  <img src="images/screenshot2.png" alt="IdleonWeb - Plugin Configuration" width="800">
+  <br/>
+  <img src="images/screenshot3.png" alt="IdleonWeb - Dark Mode" width="800">
+  <br/>
+  <img src="images/screenshot4.png" alt="IdleonWeb - Game Integration" width="800">
+</p>
+
 ## Features
 
 - **Easy-to-Use Web Interface** - Configure plugins and manage game enhancements through a modern web browser
