@@ -45,11 +45,6 @@ A modern, user-friendly launcher and plugin system for enhancing Legends of Idle
 4. Type `inject` to launch the game with enhancements
 5. Open `http://localhost:8080` in your browser to configure plugins
 
-### Platform-Specific Setup
-**All Platforms:**
-- Run `python setup.py` (recommended)
-- The universal setup script automatically detects your platform and installs the appropriate dependencies
-
 ---
 
 ## How to Use
