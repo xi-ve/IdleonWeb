@@ -14,13 +14,13 @@ A modern, user-friendly launcher and plugin system for enhancing Legends of Idle
   <summary><strong>Screenshots (click to expand)</strong></summary>
 
   <p align="center">
-    <img src="images/screenshot1.png" alt="IdleonWeb - Dashboard" width="800">
+    <img src="images/screenshot1.png" alt="IdleonWeb " width="800">
     <br/>
-    <img src="images/screenshot2.png" alt="IdleonWeb - Plugin Configuration" width="800">
+    <img src="images/screenshot2.png" alt="IdleonWeb " width="800">
     <br/>
-    <img src="images/screenshot3.png" alt="IdleonWeb - Dark Mode" width="800">
+    <img src="images/screenshot3.png" alt="IdleonWeb " width="800">
     <br/>
-    <img src="images/screenshot4.png" alt="IdleonWeb - Game Integration" width="800">
+    <img src="images/screenshot4.png" alt="IdleonWeb " width="800">
   </p>
 </details>
 
