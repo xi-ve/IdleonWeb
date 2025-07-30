@@ -56,7 +56,8 @@ class ConfigManager:
             "injector": {
                 "cdp_port": 32123,
                 "njs_pattern": "*N.js",
-                "idleon_url": "https://www.legendsofidleon.com/ytGl5oc/"
+                "idleon_url": "https://www.legendsofidleon.com/ytGl5oc/",
+                "timeout": 120000
             }
         }
 
@@ -79,6 +80,17 @@ class ConfigManager:
         self._config['plugin_configs'][plugin_name] = config
         self._save_config()
         logger.info(f"Updated config for plugin: {plugin_name}")
+
+    def update_plugin_config(self, plugin_name: str, config_updates: Dict[str, Any]) -> None:
+        if 'plugin_configs' not in self._config:
+            self._config['plugin_configs'] = {}
+
+        existing_config = self._config['plugin_configs'].get(plugin_name, {})        
+        updated_config = {**existing_config, **config_updates}        
+        self._config['plugin_configs'][plugin_name] = updated_config
+        self._save_config()
+        
+        logger.info(f"Updated config for plugin: {plugin_name} (merged {len(config_updates)} keys)")
 
     def get_global(self, key: str, default: Any = None) -> Any:
         return self._config.get(key, default)
@@ -149,25 +161,22 @@ class ConfigManager:
         self._save_config()
         logger.info(f"Set config path '{path}' to {value}")
 
-    # Convenience methods for injector configuration
     def get_injector_config(self) -> Dict[str, Any]:
-        """Get the injector configuration section."""
         return self._config.get('injector', {})
 
     def get_cdp_port(self) -> int:
-        """Get the Chrome DevTools Protocol port."""
         return self.get_path('injector.cdp_port', 32123)
 
     def get_njs_pattern(self) -> str:
-        """Get the N.js pattern for interception."""
         return self.get_path('injector.njs_pattern', '*N.js')
 
     def get_idleon_url(self) -> str:
-        """Get the Idleon game URL."""
         return self.get_path('injector.idleon_url', 'https://www.legendsofidleon.com/ytGl5oc/')
 
-    def set_injector_config(self, cdp_port: int = None, njs_pattern: str = None, idleon_url: str = None) -> None:
-        """Set injector configuration values."""
+    def get_timeout(self) -> int:
+        return self.get_path('injector.timeout', 120000)
+
+    def set_injector_config(self, cdp_port: int = None, njs_pattern: str = None, idleon_url: str = None, timeout: int = None) -> None:
         injector_config = self.get_injector_config()
         
         if cdp_port is not None:
@@ -176,27 +185,24 @@ class ConfigManager:
             injector_config['njs_pattern'] = njs_pattern
         if idleon_url is not None:
             injector_config['idleon_url'] = idleon_url
+        if timeout is not None:
+            injector_config['timeout'] = timeout
         
         self._config['injector'] = injector_config
         self._save_config()
         logger.info("Updated injector configuration")
 
-    # Convenience methods for webui configuration
     def get_webui_config(self) -> Dict[str, Any]:
-        """Get the webui configuration section."""
         return self._config.get('webui', {})
 
     def get_darkmode(self) -> bool:
-        """Get the dark mode setting."""
         return self.get_path('webui.darkmode', False)
 
     def set_darkmode(self, enabled: bool) -> None:
-        """Set the dark mode setting."""
         self.set_path('webui.darkmode', enabled)
         logger.info(f"Updated dark mode setting: {enabled}")
 
     def set_webui_config(self, darkmode: bool = None) -> None:
-        """Set webui configuration values."""
         webui_config = self.get_webui_config()
         
         if darkmode is not None:

@@ -13,6 +13,7 @@ class ConfigManager {
         this.cdpPort = this.injectorConfig.cdp_port || 32123;
         this.njsPattern = this.injectorConfig.njs_pattern || '*N.js';
         this.idleonUrl = this.injectorConfig.idleon_url || 'https://www.legendsofidleon.com/ytGl5oc/';
+        this.timeout = this.injectorConfig.timeout || 120_000;
     }
 
     loadConfig() {
@@ -87,7 +88,10 @@ class CDPManager {
         this.tab = null;
     }
 
-    async waitForCDP(timeout = 60_000) {
+    async waitForCDP(timeout = null) {
+        // Use config timeout if not specified, fallback to default
+        const actualTimeout = timeout || this.config.timeout || 120_000;
+        
         return new Promise((resolve, reject) => {
             const start = Date.now();
             const check = () => {
@@ -108,8 +112,8 @@ class CDPManager {
             };
             
             const retry = () => {
-                if (Date.now() - start > timeout) {
-                    reject(new Error('Timeout waiting for CDP endpoint'));
+                if (Date.now() - start > actualTimeout) {
+                    reject(new Error(`Timeout waiting for CDP endpoint after ${actualTimeout/1000} seconds`));
                 } else {
                     setTimeout(check, 500);
                 }
@@ -119,9 +123,23 @@ class CDPManager {
     }
 
     async connect() {
-        const tabs = await CDP.List({ port: this.config.cdpPort });
+        // Add timeout for CDP connection
+        const connectionTimeout = this.config.timeout || 120_000;
+        
+        const tabs = await Promise.race([
+            CDP.List({ port: this.config.cdpPort }),
+            new Promise((_, reject) => 
+                setTimeout(() => reject(new Error(`CDP connection timeout after ${connectionTimeout/1000} seconds`)), connectionTimeout)
+            )
+        ]);
+        
         this.tab = tabs[0];
-        this.client = await CDP({ target: this.tab, port: this.config.cdpPort });
+        this.client = await Promise.race([
+            CDP({ target: this.tab, port: this.config.cdpPort }),
+            new Promise((_, reject) => 
+                setTimeout(() => reject(new Error(`CDP client connection timeout after ${connectionTimeout/1000} seconds`)), connectionTimeout)
+            )
+        ]);
         return this.client;
     }
 
@@ -241,7 +259,18 @@ class GameContextManager {
                 let contextReady = false;
                 let contextExpr = "window.__idleon_cheats__";
                 
-                for (let i = 0; i < 60; ++i) {
+                // Calculate timeout based on config, default to 60 seconds
+                const contextTimeout = this.cdpManager.config.timeout || 120_000;
+                const maxIterations = Math.ceil(contextTimeout / 1000); // Convert timeout to iterations
+                const startTime = Date.now();
+                
+                for (let i = 0; i < maxIterations; ++i) {
+                    // Check if we've exceeded the timeout
+                    if (Date.now() - startTime > contextTimeout) {
+                        console.error(`[Injector] ERROR: Could not find __idleon_cheats__ context after ${contextTimeout/1000} seconds.`);
+                        process.exit(1);
+                    }
+                    
                     let res = await this.cdpManager.client.Runtime.evaluate({ 
                         expression: `typeof ${contextExpr} === 'object'`, 
                         returnByValue: true 
@@ -266,16 +295,23 @@ class GameContextManager {
                 }
                 
                 if (!contextReady) {
-                    console.error("[Injector] ERROR: Could not find __idleon_cheats__ context after page load.");
+                    console.error(`[Injector] ERROR: Could not find __idleon_cheats__ context after ${contextTimeout/1000} seconds.`);
                     process.exit(1);
                 }
 
                 console.log("[Injector] Waiting for game to be fully ready...");
                 try {
-                    await this.cdpManager.client.Runtime.evaluate({ 
-                        expression: `await window.__idleon_wait_for_game_ready()`, 
-                        awaitPromise: true 
-                    });
+                    // Add timeout for game ready wait
+                    const gameReadyTimeout = this.cdpManager.config.timeout || 120_000;
+                    await Promise.race([
+                        this.cdpManager.client.Runtime.evaluate({ 
+                            expression: `await window.__idleon_wait_for_game_ready()`, 
+                            awaitPromise: true 
+                        }),
+                        new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error(`Game ready timeout after ${gameReadyTimeout/1000} seconds`)), gameReadyTimeout)
+                        )
+                    ]);
                     console.log("[Injector] Game is ready!");
                     
                     const pluginJsPath = path.join(__dirname, 'plugins_combined.js');
@@ -332,7 +368,7 @@ class IdleonInjector {
             console.log('[Injector] Starting main logic...');
             
             this.browserLauncher.launch();
-            await this.cdpManager.waitForCDP();
+            await this.cdpManager.waitForCDP(this.configManager.timeout);
             
             const client = await this.cdpManager.connect();
             const { Network, Runtime, Page } = await this.cdpManager.setupNetworkInterception();

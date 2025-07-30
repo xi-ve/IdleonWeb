@@ -23,63 +23,54 @@ command_registry = {}
 
 def check_js_syntax(js_code: str, plugin_name: str, function_name: str) -> tuple[bool, str]:
     """
-    Check JavaScript syntax using Python's ast module for basic validation.
+    Check JavaScript syntax by attempting to compile/validate the code.
     Returns (is_valid, error_message).
     """
     try:
-        # Basic JavaScript syntax checks
-        # Check for common syntax issues that could break the combined JS
+        # Try to use Node.js to validate the JavaScript syntax
+        import subprocess
+        import tempfile
+        import os
         
-        # Check for unmatched quotes
-        single_quotes = js_code.count("'")
-        double_quotes = js_code.count('"')
-        backticks = js_code.count('`')
+        # Create a temporary file with the JavaScript code
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False) as temp_file:
+            temp_file.write(js_code)
+            temp_file_path = temp_file.name
         
-        if single_quotes % 2 != 0:
-            return False, f"Unmatched single quotes in {plugin_name}.{function_name}"
-        
-        if double_quotes % 2 != 0:
-            return False, f"Unmatched double quotes in {plugin_name}.{function_name}"
-        
-        if backticks % 2 != 0:
-            return False, f"Unmatched backticks in {plugin_name}.{function_name}"
-        
-        # Check for unmatched braces
-        open_braces = js_code.count('{')
-        close_braces = js_code.count('}')
-        
-        if open_braces != close_braces:
-            return False, f"Unmatched braces in {plugin_name}.{function_name} (open: {open_braces}, close: {close_braces})"
-        
-        # Check for unmatched parentheses
-        open_parens = js_code.count('(')
-        close_parens = js_code.count(')')
-        
-        if open_parens != close_parens:
-            return False, f"Unmatched parentheses in {plugin_name}.{function_name} (open: {open_parens}, close: {close_parens})"
-        
-        # Check for unmatched brackets
-        open_brackets = js_code.count('[')
-        close_brackets = js_code.count(']')
-        
-        if open_brackets != close_brackets:
-            return False, f"Unmatched brackets in {plugin_name}.{function_name} (open: {open_brackets}, close: {close_brackets})"
-        
-        # Check for common JavaScript syntax issues
-        problematic_patterns = [
-            ('return `', 'return `'),  # Check for template literals
-            ('`${', '`${'),  # Check for template interpolation
-            ('console.log(', 'console.log('),  # Check for console calls
-            ('window.', 'window.'),  # Check for window references
-        ]
-        
-        for pattern, description in problematic_patterns:
-            if pattern in js_code:
-                # These are actually valid, just checking they're not broken
+        try:
+            # Try to validate the JavaScript using Node.js
+            result = subprocess.run(
+                ['node', '--check', temp_file_path],
+                capture_output=True,
+                text=True,
+                timeout=5  # 5 second timeout
+            )
+            
+            # Clean up the temporary file
+            os.unlink(temp_file_path)
+            
+            if result.returncode == 0:
+                return True, ""
+            else:
+                # Extract the error message, removing the temp file path
+                error_msg = result.stderr.replace(temp_file_path, f"{plugin_name}.{function_name}")
+                return False, f"JavaScript syntax error: {error_msg.strip()}"
+                
+        except subprocess.TimeoutExpired:
+            # Clean up the temporary file
+            os.unlink(temp_file_path)
+            return False, f"JavaScript validation timed out for {plugin_name}.{function_name}"
+        except FileNotFoundError:
+            # Node.js not available, skip validation
+            return True, ""
+        except Exception as e:
+            # Clean up the temporary file
+            try:
+                os.unlink(temp_file_path)
+            except:
                 pass
-        
-        return True, ""
-        
+            return False, f"JavaScript validation error: {str(e)}"
+            
     except Exception as e:
         return False, f"Syntax check error in {plugin_name}.{function_name}: {str(e)}"
 
@@ -522,8 +513,8 @@ class PluginBase(ABC):
     def save_to_global_config(self, config: Dict[str, Any] = None) -> None:
         plugin_config = config or self.config
         
-        # Save to config manager (this automatically saves to file)
-        config_manager.set_plugin_config(self.name, plugin_config)
+        # Save to config manager using merge method (this automatically saves to file)
+        config_manager.update_plugin_config(self.name, plugin_config)
         
         # Update local config to match what was saved
         self.config = config_manager.get_plugin_config(self.name)
@@ -534,20 +525,6 @@ class PluginBase(ABC):
         # Update browser config with the latest values
         if self.injector:
             self.set_config(self.config)
-        
-        if self.plugin_manager:
-            try:
-                loop = None
-                try:
-                    loop = asyncio.get_running_loop()
-                except RuntimeError:
-                    pass
-                if loop and loop.is_running():
-                    asyncio.create_task(self.plugin_manager.notify_config_changed(plugin_config, self.name))
-                else:
-                    asyncio.run(self.plugin_manager.notify_config_changed(plugin_config, self.name))
-            except Exception:
-                pass
 
 class PluginManager:
     
@@ -683,6 +660,9 @@ class PluginManager:
                         console.print(f"Executed on_game_ready for plugin: {plugin.name}")
                 except Exception as e:
                     logger.error(f"Error executing on_game_ready for plugin '{plugin.name}': {e}")
+        
+        if GLOBAL_DEBUG:
+            console.print(f"[DEBUG] Plugin initialization complete. {len(self.plugins)} plugins initialized, {len(self.failed_plugins)} failed.")
 
     async def cleanup_all(self) -> None:
         for plugin_name, plugin in list(self.plugins.items()):
@@ -822,8 +802,26 @@ class PluginManager:
                 # Update plugin config
                 plugin.config[config_key] = value
                 
-                # Save to global config (this will handle the config change notification)
-                plugin.save_to_global_config()
+                # Save only the specific config key to global config (this will handle the config change notification)
+                config_manager.update_plugin_config(plugin_name, {config_key: value})
+                
+                # Update the plugin's local config to match what was saved
+                plugin.config = config_manager.get_plugin_config(plugin_name)
+                
+                # Notify the plugin of the config change with the updated config
+                if plugin.plugin_manager:
+                    try:
+                        loop = None
+                        try:
+                            loop = asyncio.get_running_loop()
+                        except RuntimeError:
+                            pass
+                        if loop and loop.is_running():
+                            asyncio.create_task(plugin.plugin_manager.notify_config_changed(plugin.config, plugin_name))
+                        else:
+                            asyncio.run(plugin.plugin_manager.notify_config_changed(plugin.config, plugin_name))
+                    except Exception:
+                        pass
             
             return {"success": True, "result": result}
         except Exception as e:
@@ -850,7 +848,8 @@ class PluginManager:
             except Exception as e:
                 if GLOBAL_DEBUG:
                     logger.error(f"Error notifying plugin of config change: {e}")
-        else:
+        elif plugin_name is None:
+            # Only broadcast to all plugins when no specific plugin is specified
             for name, plugin in self.plugins.items():
                 try:
                     await plugin.on_config_changed(plugin.config)
@@ -1094,6 +1093,19 @@ class PluginManager:
         self.plugins.clear()
         self.failed_plugins.clear()
         
+        # Clear any cached modules to force fresh reload
+        import sys
+        modules_to_remove = []
+        for module_name in sys.modules.keys():
+            if module_name.startswith('plugins.'):
+                modules_to_remove.append(module_name)
+        
+        for module_name in modules_to_remove:
+            if module_name in sys.modules:
+                del sys.modules[module_name]
+                if GLOBAL_DEBUG:
+                    console.print(f"[DEBUG] Removed cached module: {module_name}")
+        
         # Reload configuration
         config_manager.reload()
         plugin_configs = config_manager.get_all_plugin_configs()
@@ -1117,6 +1129,9 @@ class PluginManager:
                 self.failed_plugins.add(plugin_name)  # Track failed plugin
                 if GLOBAL_DEBUG:
                     logger.debug(traceback.format_exc())
+        
+        if GLOBAL_DEBUG:
+            console.print(f"[DEBUG] Plugin reload complete. Loaded {len(self.plugins)} plugins, {len(self.failed_plugins)} failed.")
 
 def parse_plugin_args(params_meta: List[Dict[str, Any]], args: List[str]) -> Dict[str, Any]:
     result = {}

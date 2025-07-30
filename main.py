@@ -66,11 +66,22 @@ def run_injector():
     )
     process.wait()
 
-def collect_plugin_js(plugin_manager):
+def collect_plugin_js(plugin_manager, include_core=True):
     js_code, plugin_sizes = plugin_manager.collect_all_plugin_js_with_sizes()
     if config_manager.get_path('debug', False):
         console.print("[DEBUG] Generated plugin JS code length:", len(js_code))
+    
     js_path = CORE_DIR / "plugins_combined.js"
+    
+    if include_core:
+        # Include core.js for initial injection
+        core_path = CORE_DIR / "core.js"
+        if core_path.exists():
+            with open(core_path, "r", encoding='utf-8') as f:
+                core_code = f.read()
+            js_code = core_code + '\n' + js_code
+            console.print("[DEBUG] Included core.js in combined JS")
+    
     with open(js_path, "w", encoding='utf-8') as f:
         f.write(js_code)
 
@@ -111,7 +122,7 @@ def cmd_inject(args=None, plugin_manager=None):
     console.print("[green]Python plugins reloaded.[/green]")
 
     # 2. Regenerate and reload the combined plugin JS
-    collect_plugin_js(plugin_manager)
+    collect_plugin_js(plugin_manager, include_core=True)
     console.print("[green]Plugin JS regenerated.[/green]")
 
     # Get injector configuration
@@ -181,6 +192,7 @@ def cmd_injector_config(args=None, plugin_manager=None):
     table.add_row("CDP Port", str(config_manager.get_cdp_port()), "Chrome DevTools Protocol port")
     table.add_row("N.js Pattern", config_manager.get_njs_pattern(), "Pattern for intercepting game JS")
     table.add_row("Idleon URL", config_manager.get_idleon_url(), "Game URL to launch")
+    table.add_row("Timeout (ms)", str(config_manager.get_timeout()), "CDP connection timeout in milliseconds")
     
     console.print(table)
 
@@ -235,9 +247,17 @@ def cmd_reload(args=None, plugin_manager=None):
         asyncio.run(plugin_manager.reload_plugins())
         console.print("[green]Python plugins reloaded.[/green]")
 
-        # 2. Regenerate and reload the combined plugin JS
-        collect_plugin_js(plugin_manager)
-        console.print("[green]Plugin JS regenerated.[/green]")
+        # 2. Regenerate and reload the combined plugin JS (without core.js for reloads)
+        js_code, plugin_sizes = plugin_manager.collect_all_plugin_js_with_sizes()
+        if config_manager.get_path('debug', False):
+            console.print("[DEBUG] Generated plugin JS code length:", len(js_code))
+        
+        # For reloads, we don't include core.js to avoid conflicts with existing functions
+        js_path = CORE_DIR / "plugins_combined.js"
+        with open(js_path, "w", encoding='utf-8') as f:
+            f.write(js_code)
+        console.print("[green]Plugin JS regenerated (without core.js for reload).[/green]")
+        
         if injector:
             try:
                 # Re-inject the new JS into the running injector session

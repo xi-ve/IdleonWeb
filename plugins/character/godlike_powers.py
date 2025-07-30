@@ -1,3 +1,4 @@
+import time
 from plugin_system import PluginBase, ui_toggle, ui_slider, plugin_command, js_export, console
 from config_manager import config_manager
 
@@ -13,12 +14,17 @@ class GodlikePowersPlugin(PluginBase):
         self.name = 'godlike_powers'
         self.enabled = self.config.get('enabled', False)
         self.debug = config_manager.get_path('plugin_configs.godlike_powers.debug', False)
+        self.last_update = 0
 
     async def cleanup(self):
         pass
 
     async def update(self):
         self.debug = config_manager.get_path('plugin_configs.godlike_powers.debug', False)
+        if self.last_update < time.time() - 10:
+            self.last_update = time.time()
+            if hasattr(self, 'injector') and self.injector and config_manager.get_path('plugin_configs.godlike_powers.enabled', False):
+                self.run_js_export('godlike_powers_js', self.injector, enabled=self.config.get('enabled', False))
 
     async def on_config_changed(self, config):
         self.enabled = config.get('enabled', False)
@@ -45,13 +51,13 @@ class GodlikePowersPlugin(PluginBase):
         label="Enable Godlike Powers",
         description="Enable all godlike power features",
         config_key="enabled",
-        default_value=False
+        default_value=False,
+        order=1
     )
     async def enable_godlike_powers_ui(self, value=None):
-        if value is not None:
-            self.config['enabled'] = value
-            self.save_to_global_config()
+        if value is not None:        
             self.enabled = value
+            config_manager.set_path('plugin_configs.godlike_powers.enabled', value)
             if hasattr(self, 'injector') and self.injector:
                 self.run_js_export('godlike_powers_js', self.injector, enabled=value)
         return f"Godlike Powers are {'enabled' if self.config.get('enabled', False) else 'disabled'}"
@@ -76,7 +82,8 @@ class GodlikePowersPlugin(PluginBase):
         label="Reach Power",
         description="Set player reach to 666",
         config_key="reach",
-        default_value=False
+        default_value=False,
+        order=2
     )
     async def reach_power_ui(self, value=None):
         if value is not None:
@@ -90,7 +97,8 @@ class GodlikePowersPlugin(PluginBase):
         label="Critical Hit Power",
         description="Set critical hit chance to 100%",
         config_key="crit",
-        default_value=False
+        default_value=False,
+        order=3
     )
     async def crit_power_ui(self, value=None):
         if value is not None:
@@ -104,7 +112,8 @@ class GodlikePowersPlugin(PluginBase):
         label="Ability Power",
         description="Zero ability cooldown, mana cost nullification and cast time 0.1s",
         config_key="ability",
-        default_value=False
+        default_value=False,
+        order=4
     )
     async def ability_power_ui(self, value=None):
         if value is not None:
@@ -118,7 +127,8 @@ class GodlikePowersPlugin(PluginBase):
         label="Food Power",
         description="Food deduction nullification",
         config_key="food",
-        default_value=False
+        default_value=False,
+        order=5
     )
     async def food_power_ui(self, value=None):
         if value is not None:
@@ -132,7 +142,8 @@ class GodlikePowersPlugin(PluginBase):
         label="Hit Chance Power",
         description="Set hit chance to 100%",
         config_key="hitchance",
-        default_value=False
+        default_value=False,
+        order=6
     )
     async def hitchance_power_ui(self, value=None):
         if value is not None:
@@ -146,7 +157,8 @@ class GodlikePowersPlugin(PluginBase):
         label="Divine Intervention",
         description="Instant divine intervention",
         config_key="intervention",
-        default_value=False
+        default_value=False,
+        order=7
     )
     async def intervention_power_ui(self, value=None):
         if value is not None:
@@ -164,6 +176,7 @@ class GodlikePowersPlugin(PluginBase):
         min_value=1,
         max_value=14,
         step=1,
+        order=8
     )
     async def weapon_speed_ui(self, value=None):
         if value is not None:
@@ -177,7 +190,8 @@ class GodlikePowersPlugin(PluginBase):
         label="Card Power",
         description="Alter Efaunt, Chaotic Efaunt, Dr Defecaus, Oak Tree and Copper with insane stats",
         config_key="card",
-        default_value=False
+        default_value=False,
+        order=9
     )
     async def card_power_ui(self, value=None):
         if value is not None:
@@ -191,7 +205,8 @@ class GodlikePowersPlugin(PluginBase):
         label="Poison Power",
         description="Instant bubo poison",
         config_key="poison",
-        default_value=False
+        default_value=False,
+        order=10
     )
     async def poison_power_ui(self, value=None):
         if value is not None:
@@ -205,7 +220,8 @@ class GodlikePowersPlugin(PluginBase):
         label="Invincibility",
         description="Never lose HP, become invincible",
         config_key="hp",
-        default_value=False
+        default_value=False,
+        order=11
     )
     async def hp_power_ui(self, value=None):
         if value is not None:
