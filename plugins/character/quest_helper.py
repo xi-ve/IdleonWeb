@@ -1,9 +1,9 @@
-from plugin_system import PluginBase, js_export, ui_search_with_results, ui_toggle, plugin_command
+from plugin_system import plugin_command, js_export, PluginBase, console, ui_toggle, ui_search_with_results, ui_autocomplete_input, ui_banner
 from config_manager import config_manager
 
 class QuestHelperPlugin(PluginBase):
-    VERSION = "1.0.0"
-    DESCRIPTION = "Lists all ongoing quests and allows instant completion by clicking quest names."
+    VERSION = "1.0.1"
+    DESCRIPTION = "Lists all ongoing quests and allows instant completion by clicking quest names. This plugin is work-in-progress and has a high risk of bricking your quests permanently. Use at your own risk!"
     PLUGIN_ORDER = 5
     CATEGORY = "Character"
 
@@ -20,33 +20,15 @@ class QuestHelperPlugin(PluginBase):
         self.debug = config.get('debug', False) if config else False
     async def on_game_ready(self): pass
 
-    @ui_search_with_results(
-        label="Quest Helper",
-        description="List all ongoing quests and complete them instantly",
-        button_text="Refresh Quest List",
-        placeholder="Search quests (leave empty to show all)",
-        category="Gameplay Enhancements",
-        order=0
+    @ui_banner(
+        label="⚠️ HIGH RISK WARNING",
+        description="This plugin is work-in-progress and has a high risk of bricking your quests permanently! Use at your own risk!",
+        banner_type="warning",
+        category="General",
+        order=-100
     )
-    async def quest_helper_ui(self, value: str = None):
-        if hasattr(self, 'injector') and self.injector:
-            try:
-                result = await self.get_quest_list(self.injector)
-                if value and value.strip():
-                    # Filter results based on input
-                    lines = result.split('\n')
-                    filtered_lines = []
-                    query_lower = value.lower()
-                    for line in lines:
-                        if query_lower in line.lower():
-                            filtered_lines.append(line)
-                    return '\n'.join(filtered_lines) if filtered_lines else f"No quests found matching: {value}"
-                else:
-                    return result
-            except Exception as e:
-                return f"ERROR: Error getting quest list: {str(e)}"
-        else:
-            return "ERROR: No injector available - run 'inject' first to connect to the game"
+    async def warning_banner(self):
+        return "Warning banner displayed"
 
     @ui_toggle(
         label="Auto-Complete All Quests",

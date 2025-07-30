@@ -67,12 +67,12 @@ python main.py
 
 ### Character Plugins
 - **Godlike Powers** - Comprehensive character enhancements (reach, crit, abilities, invincibility)
-- **Instant AFK Time** - Set instant AFK time and trigger character selection
 - **Instant Mob Respawn** - Toggle instant mob respawning
 - **Inventory Storage** - Unlock all inventory packages and storage spaces
 - **Quest Helper** - List and complete quests instantly
 - **Spawn Item** - Drop any item in the game with autocomplete
 - **Stats Multiplier** - Multiply various game stats by configurable amounts
+- **Sneaking Items** - Item cheats for the sneaking game
 
 ### QoL (Quality of Life) Plugins
 - **Global Storage** - Provides global storage functionality
@@ -83,13 +83,10 @@ python main.py
 - **Grimoire Unlocker** - Unlock and manage grimoire upgrades for Death Bringer class
 - **Package Toggle** - Toggle bought packages and bundles
 - **Vault Unlocker** - Unlock and manage vault upgrades with category-based controls
+- **Sneaking Cheats** - Comprehensive cheats for the sneaking game
 
 ### World-Specific Plugins
 - **Anvil Cheats** (World 1) - Cheats for anvil and smithing related features
-
-### Sneaking Game Plugins
-- **Sneaking Cheats** - Comprehensive cheats for the sneaking game
-- **Sneaking Items** - Item cheats for the sneaking game
 
 ---
 

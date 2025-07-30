@@ -1,10 +1,11 @@
 from ast import Dict
+import time
 from typing import Any, Dict
 from plugin_system import plugin_command, js_export, PluginBase, console, ui_toggle, ui_button
 from config_manager import config_manager
 
 class InstantMobRespawnPlugin(PluginBase):
-    VERSION = "1.0.3"
+    VERSION = "1.0.4"
     DESCRIPTION = "Change the rates of the game."
     PLUGIN_ORDER = 4
     CATEGORY = "Character"
@@ -14,12 +15,23 @@ class InstantMobRespawnPlugin(PluginBase):
         self.injector = None
         self.name = 'instant_mob_respawn'
         self.debug = config_manager.get_path('plugin_configs.instant_mob_respawn.debug', True)
+        self.last_update = 0
 
     async def cleanup(self) -> None:
         pass
 
     async def update(self) -> None:
         self.debug = config_manager.get_path('plugin_configs.instant_mob_respawn.debug', True)
+        if self.last_update < time.time() - 10:
+            self.last_update = time.time()
+            if hasattr(self, 'injector') and self.injector and config_manager.get_path('plugin_configs.instant_mob_respawn.enabled', False):
+                try:
+                    proxy_status = self.run_js_export('check_proxy_status_js', self.injector)
+                    if not proxy_status:
+                        self.run_js_export('setup_proxy_mob_respawn_rate_js', self.injector, enabled=self.config.get('toggle', True))
+                except Exception as e:
+                    if self.debug:
+                        console.print(f"[instant_mob_respawn] Error checking proxy status: {e}")
 
     async def on_game_ready(self) -> None:
         if self.injector:
@@ -62,23 +74,6 @@ class InstantMobRespawnPlugin(PluginBase):
             self.save_to_global_config()
         return f"Debug mode {'enabled' if self.config.get('debug', True) else 'disabled'}"
 
-    @ui_button(
-        label="Test Mob Respawn",
-        description="Test the mob respawn functionality",
-    )
-    async def test_mob_respawn(self):
-        """Test the mob respawn functionality."""
-        if hasattr(self, 'injector') and self.injector:
-            try:
-                # Test the proxy setup
-                result = self.run_js_export('setup_proxy_mob_respawn_rate_js', self.injector)
-                enabled = self.config.get('toggle', True)
-                return f"SUCCESS: Mob respawn test - Enabled: {enabled}, Result: {result}"
-            except Exception as e:
-                return f"ERROR: Error testing mob respawn: {str(e)}"
-        else:
-            return "ERROR: No injector available - run 'inject' first"
-
     @plugin_command(
         help="Set instant mob respawn.",
         params=[
@@ -96,18 +91,59 @@ class InstantMobRespawnPlugin(PluginBase):
         try {
             const ctx = window.__idleon_cheats__;
             const engine = ctx["com.stencyl.Engine"].engine;
-            engine.setGameAttribute("MonsterRespawnTime",
-                new Proxy(engine.getGameAttribute("MonsterRespawnTime"), {
-                    set: function(target, prop, value) {
-                        return (target[prop] = window.pluginConfigs['instant_mob_respawn']?.toggle ? 0 : value);
-                    },
-                })
-            );
-            console.log("[instant_mob_respawn] proxy was set");
+            
+            if (window.__mob_respawn_proxy_setup__) {
+                console.log("[instant_mob_respawn] Proxy already set up");
+            }
+            
+            if (!window.__mob_respawn_original__) {
+                window.__mob_respawn_original__ = engine.getGameAttribute("MonsterRespawnTime");
+                console.log("[instant_mob_respawn] Stored original MonsterRespawnTime");
+            }
+            
+            const originalRespawnTime = window.__mob_respawn_original__;
+            const proxy = new Proxy(originalRespawnTime, {
+                set: function(target, prop, value) {
+                    const pluginConfig = window.pluginConfigs && window.pluginConfigs['instant_mob_respawn'];
+                    const shouldUseZero = pluginConfig && pluginConfig.toggle;
+                    
+                    if (shouldUseZero) {
+                        return (target[prop] = 0);
+                    } else {
+                        return (target[prop] = value);
+                    }
+                },
+                get: function(target, prop) {
+                    const pluginConfig = window.pluginConfigs && window.pluginConfigs['instant_mob_respawn'];
+                    const shouldUseZero = pluginConfig && pluginConfig.toggle;
+                    
+                    if (shouldUseZero && prop !== 'constructor' && prop !== 'toString' && prop !== 'valueOf') {
+                        return 0;
+                    }
+                    return target[prop];
+                }
+            });
+            
+            engine.setGameAttribute("MonsterRespawnTime", proxy);
+            window.__mob_respawn_proxy_setup__ = true;
+            
+            console.log("[instant_mob_respawn] Proxy was set successfully");
             return "Mob respawn rate proxy setup successfully";
         } catch (e) {
             console.error("Error setting up mob respawn rate proxy:", e);
             return `Error: ${e.message}`;
+        }
+        '''
+
+    @js_export()
+    def check_proxy_status_js(self):
+        return '''
+        try {
+            const isProxySetup = window.__mob_respawn_proxy_setup__ === true;            
+            return isProxySetup;
+        } catch (e) {
+            console.error("Error checking proxy status:", e);
+            return false;
         }
         '''
 

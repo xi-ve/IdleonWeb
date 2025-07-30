@@ -1,9 +1,9 @@
 from typing import Dict, Any
-from plugin_system import plugin_command, js_export, PluginBase, console, ui_toggle, ui_search_with_results, ui_autocomplete_input
+from plugin_system import plugin_command, js_export, PluginBase, console, ui_toggle, ui_search_with_results, ui_autocomplete_input, ui_button
 from config_manager import config_manager
 
 class InventoryStoragePlugin(PluginBase):
-    VERSION = "1.0.1"
+    VERSION = "1.0.2"
     DESCRIPTION = "Automatically unlock all inventory packages and storage spaces"
     PLUGIN_ORDER = 3
     CATEGORY = "Character"
@@ -44,95 +44,85 @@ class InventoryStoragePlugin(PluginBase):
             self.save_to_global_config()
         return f"Debug mode {'enabled' if self.config.get('debug', True) else 'disabled'}"
 
-    @ui_toggle(
-        label="Auto Unlock All Inventory Packages",
-        description="Automatically unlock all inventory-related packages (bun_c, bun_i, bon_a)",
-        config_key="auto_unlock_packages",
-        default_value=False
+    @ui_button(
+        label="Unlock All Inventory Packages",
+        description="Unlock all inventory-related packages (bun_c, bun_i, bon_a)",
+        category="Actions",
+        order=1
     )
-    async def auto_unlock_packages_ui(self, value: bool = None):
-        if value is not None:
-            self.config["auto_unlock_packages"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    result = await self.unlock_all_inventory_packages(self.injector)
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    return f"ERROR: Error unlocking packages: {str(e)}"
-        return f"Auto unlock packages {'enabled' if self.config.get('auto_unlock_packages', False) else 'disabled'}"
+    async def auto_unlock_packages_ui(self):
+        if hasattr(self, 'injector') and self.injector:
+            try:
+                result = await self.unlock_all_inventory_packages(self.injector)
+                return f"SUCCESS: {result}"
+            except Exception as e:
+                return f"ERROR: Error unlocking packages: {str(e)}"
+        else:
+            return "ERROR: No injector available - run 'inject' first"
 
-    @ui_toggle(
-        label="Max Inventory Slots",
+    @ui_button(
+        label="Set Max Inventory Slots",
         description="Set inventory slots to maximum (112 slots)",
-        config_key="max_inventory_slots",
-        default_value=False
+        category="Actions",
+        order=2
     )
-    async def max_inventory_slots_ui(self, value: bool = None):
-        if value is not None:
-            self.config["max_inventory_slots"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    result = await self.set_max_inventory_slots(self.injector)
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    return f"ERROR: Error setting inventory slots: {str(e)}"
-        return f"Max inventory slots {'enabled' if self.config.get('max_inventory_slots', False) else 'disabled'}"
+    async def max_inventory_slots_ui(self):
+        if hasattr(self, 'injector') and self.injector:
+            try:
+                result = await self.set_max_inventory_slots(self.injector)
+                return f"SUCCESS: {result}"
+            except Exception as e:
+                return f"ERROR: Error setting inventory slots: {str(e)}"
+        else:
+            return "ERROR: No injector available - run 'inject' first"
 
-    @ui_toggle(
-        label="Max Chest Slots",
+    @ui_button(
+        label="Set Max Chest Slots",
         description="Set chest slots to maximum (200+ slots)",
-        config_key="max_chest_slots",
-        default_value=False
+        category="Actions",
+        order=3
     )
-    async def max_chest_slots_ui(self, value: bool = None):
-        if value is not None:
-            self.config["max_chest_slots"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    result = await self.set_max_chest_slots(self.injector)
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    return f"ERROR: Error setting chest slots: {str(e)}"
-        return f"Max chest slots {'enabled' if self.config.get('max_chest_slots', False) else 'disabled'}"
+    async def max_chest_slots_ui(self):
+        if hasattr(self, 'injector') and self.injector:
+            try:
+                result = await self.set_max_chest_slots(self.injector)
+                return f"SUCCESS: {result}"
+            except Exception as e:
+                return f"ERROR: Error setting chest slots: {str(e)}"
+        else:
+            return "ERROR: No injector available - run 'inject' first"
 
-    @ui_toggle(
+    @ui_button(
         label="Unlock All Inventory Bags",
         description="Unlock all inventory bags (InvBag1-112)",
-        config_key="unlock_inventory_bags",
-        default_value=False
+        category="Actions",
+        order=4
     )
-    async def unlock_inventory_bags_ui(self, value: bool = None):
-        if value is not None:
-            self.config["unlock_inventory_bags"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    result = await self.unlock_all_inventory_bags(self.injector)
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    return f"ERROR: Error unlocking inventory bags: {str(e)}"
-        return f"Unlock inventory bags {'enabled' if self.config.get('unlock_inventory_bags', False) else 'disabled'}"
+    async def unlock_inventory_bags_ui(self):
+        if hasattr(self, 'injector') and self.injector:
+            try:
+                result = await self.unlock_all_inventory_bags(self.injector)
+                return f"SUCCESS: {result}"
+            except Exception as e:
+                return f"ERROR: Error unlocking inventory bags: {str(e)}"
+        else:
+            return "ERROR: No injector available - run 'inject' first"
 
-    @ui_toggle(
+    @ui_button(
         label="Unlock All Storage Boxes",
         description="Unlock all storage boxes (InvStorage1-99)",
-        config_key="unlock_storage_boxes",
-        default_value=False
+        category="Actions",
+        order=5
     )
-    async def unlock_storage_boxes_ui(self, value: bool = None):
-        if value is not None:
-            self.config["unlock_storage_boxes"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    result = await self.unlock_all_storage_boxes(self.injector)
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    return f"ERROR: Error unlocking storage boxes: {str(e)}"
-        return f"Unlock storage boxes {'enabled' if self.config.get('unlock_storage_boxes', False) else 'disabled'}"
+    async def unlock_storage_boxes_ui(self):
+        if hasattr(self, 'injector') and self.injector:
+            try:
+                result = await self.unlock_all_storage_boxes(self.injector)
+                return f"SUCCESS: {result}"
+            except Exception as e:
+                return f"ERROR: Error unlocking storage boxes: {str(e)}"
+        else:
+            return "ERROR: No injector available - run 'inject' first"
 
     @ui_search_with_results(
         label="Current Storage Status",
@@ -478,9 +468,7 @@ class InventoryStoragePlugin(PluginBase):
             
             const results = [];
             
-            results.push(`🎁 **INVENTORY PACKAGES**`);
-            results.push(`Code | Name | Effect | Status`);
-            results.push(`-----|------|--------|--------`);
+            results.push(`🎁 INVENTORY PACKAGES`);
             
             const inventoryPackages = [
                 { code: "bun_c", name: "Starter Pack", effect: "+16 chest slots" },
@@ -494,14 +482,14 @@ class InventoryStoragePlugin(PluginBase):
                 if (is_owned) owned_packages++;
                 
                 const status = is_owned ? "🟢 OWNED" : "⚪ NOT OWNED";
-                results.push(`${pkg.code} | ${pkg.name} | ${pkg.effect} | ${status}`);
+                results.push(`${status} **${pkg.code}** : ${pkg.name} (${pkg.effect})`);
             }
             
-            results.push(`\\n**Summary:** ${owned_packages}/${inventoryPackages.length} packages owned`);
+            results.push(``);
+            results.push(`Summary: ${owned_packages}/${inventoryPackages.length} packages owned`);
             
-            results.push(`\\n🎒 **INVENTORY BAGS (InvBag1-112)**`);
-            results.push(`Bag | Status | Slots Provided`);
-            results.push(`----|--------|----------------`);
+            results.push(``);
+            results.push(`🎒 INVENTORY BAGS (InvBag1-112)`);
             
             let owned_bags = 0;
             let total_bag_slots = 0;
@@ -517,14 +505,14 @@ class InventoryStoragePlugin(PluginBase):
                 }
                 
                 const status = is_owned ? "🟢 OWNED" : "⚪ NOT OWNED";
-                results.push(`InvBag${i.toString().padStart(3, '0')} | ${status} | ${slots_provided}`);
+                results.push(`${status} **InvBag${i.toString().padStart(3, '0')}** : ${slots_provided} slots`);
             }
             
-            results.push(`\\n**Summary:** ${owned_bags}/112 bags owned (${total_bag_slots} total slots)`);
+            results.push(``);
+            results.push(`Summary: ${owned_bags}/112 bags owned (${total_bag_slots} total slots)`);
             
-            results.push(`\\n📦 **STORAGE BOXES (InvStorage1-99)**`);
-            results.push(`Box | Status | Slots Provided`);
-            results.push(`----|--------|----------------`);
+            results.push(``);
+            results.push(`📦 STORAGE BOXES (InvStorage1-99)`);
             
             let owned_boxes = 0;
             let total_box_slots = 0;
@@ -540,19 +528,22 @@ class InventoryStoragePlugin(PluginBase):
                 }
                 
                 const status = is_owned ? "🟢 OWNED" : "⚪ NOT OWNED";
-                results.push(`InvStorage${i.toString().padStart(2, '0')} | ${status} | ${slots_provided}`);
+                results.push(`${status} **InvStorage${i.toString().padStart(2, '0')}** : ${slots_provided} slots`);
             }
             
-            results.push(`\\n**Summary:** ${owned_boxes}/99 storage boxes owned (${total_box_slots} total slots)`);
+            results.push(``);
+            results.push(`Summary: ${owned_boxes}/99 storage boxes owned (${total_box_slots} total slots)`);
             
             const inventory_slots = bEngine.gameAttributes.h.InventorySlotsOwned || 0;
             const chest_slots = bEngine.gameAttributes.h.ChestSlotsOwned || 0;
             
-            results.push(`\\n📊 **CURRENT SLOT STATUS**`);
+            results.push(``);
+            results.push(`📊 CURRENT SLOT STATUS`);
             results.push(`Inventory Slots: ${inventory_slots}/112 (${Math.round(inventory_slots/112*100)}%)`);
             results.push(`Chest Slots: ${chest_slots}/250 (${Math.round(chest_slots/250*100)}%)`);
             
-            results.push(`\\n🎯 **OVERALL SUMMARY**`);
+            results.push(``);
+            results.push(`🎯 OVERALL SUMMARY`);
             results.push(`• Packages: ${owned_packages}/${inventoryPackages.length} (${Math.round(owned_packages/inventoryPackages.length*100)}%)`);
             results.push(`• Inventory Bags: ${owned_bags}/112 (${Math.round(owned_bags/112*100)}%)`);
             results.push(`• Storage Boxes: ${owned_boxes}/99 (${Math.round(owned_boxes/99*100)}%)`);

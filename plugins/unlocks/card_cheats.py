@@ -1,4 +1,4 @@
-from plugin_system import PluginBase, js_export, ui_toggle, ui_search_with_results, plugin_command, ui_autocomplete_input, console
+from plugin_system import PluginBase, js_export, ui_banner, ui_toggle, ui_search_with_results, plugin_command, ui_autocomplete_input, console
 
 class CardCheatsPlugin(PluginBase):
     VERSION = "1.0.1"
@@ -28,6 +28,16 @@ class CardCheatsPlugin(PluginBase):
             except Exception as e:
                 if self.debug:
                     console.print(f"[card_cheats] Error auto-running free card upgrades: {e}")
+
+    @ui_banner(
+        label="⚠️ HIGH RISK WARNING",
+        description="This plugin is work-in-progress and has a high risk of bricking your quests permanently! Use at your own risk!",
+        banner_type="warning",
+        category="Actions",
+        order=-100
+    )
+    async def warning_banner(self):
+        return "Warning banner displayed"
 
     @ui_toggle(
         label="Debug Mode",

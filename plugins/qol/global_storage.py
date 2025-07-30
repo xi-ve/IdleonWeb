@@ -1,3 +1,5 @@
+from re import S
+import time
 from plugin_system import PluginBase, ui_toggle, plugin_command, js_export
 from config_manager import config_manager
 
@@ -12,12 +14,19 @@ class GlobalStoragePlugin(PluginBase):
         super().__init__(config or {})
         self.name = 'global_storage'
         self.enabled = self.config.get('enabled', False)
+        self.last_update_time = None
 
     async def cleanup(self):
         pass
 
     async def update(self):
-        pass
+        self.enabled = self.config.get('enabled', False)
+        if self.last_update_time is None or time.time() - self.last_update_time > 10:
+            self.last_update_time = time.time()
+            if self.enabled:
+                self.run_js_export('global_storage_js', self.injector, enabled=True)
+            else:
+                self.run_js_export('global_storage_js', self.injector, enabled=False)
 
     async def on_config_changed(self, config):
         self.enabled = config.get('enabled', False)

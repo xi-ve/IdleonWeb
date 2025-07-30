@@ -1,4 +1,4 @@
-from plugin_system import PluginBase, js_export, ui_toggle, ui_search_with_results, plugin_command, ui_autocomplete_input, console
+from plugin_system import PluginBase, js_export, ui_banner, ui_toggle, ui_search_with_results, plugin_command, ui_autocomplete_input, console
 from config_manager import config_manager
 
 class SneakingCheatsPlugin(PluginBase):
@@ -20,27 +20,15 @@ class SneakingCheatsPlugin(PluginBase):
             self.set_config(config)
     async def on_game_ready(self): pass
 
-    @ui_search_with_results(
+    @ui_banner(
         label="⚠️ HIGH RISK WARNING",
-        description="Sneaking cheats may brick your account! The data structure is complex and not fully explored. Use emergency fixes if needed.",
-        button_text="Show Warning",
-        placeholder="",
-        category="⚠️ WARNING",
-        order=0
+        description="This plugin is work-in-progress and has a high risk of bricking your quests permanently! Use at your own risk!",
+        banner_type="warning",
+        category="Money Cheats",
+        order=-100
     )
-    async def show_warning_ui(self, value: str = None):
-        return """
-<div style='background: linear-gradient(135deg, #ff6b6b, #ff8e8e); color: white; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 5px solid #ff4757;'>
-    <div style='font-weight: bold; font-size: 18px; margin-bottom: 10px;'>⚠️ HIGH RISK WARNING ⚠️</div>
-    <div style='margin-bottom: 8px;'><strong>Sneaking Game Cheats are EXPERIMENTAL!</strong></div>
-    <div style='margin-bottom: 8px;'>• The sneaking game data structure is complex and not fully explored</div>
-    <div style='margin-bottom: 8px;'>• These features may corrupt your character data</div>
-    <div style='margin-bottom: 8px;'>• Use the "Fix Bricked Character" function if the game breaks</div>
-    <div style='margin-bottom: 8px;'>• Use the "Initialize Sneaking Game" function for first-time setup</div>
-    <div style='margin-bottom: 8px;'>• Always backup your save before using these features</div>
-    <div style='font-weight: bold; margin-top: 10px;'>USE AT YOUR OWN RISK!</div>
-</div>
-        """
+    async def warning_banner(self):
+        return "Warning banner displayed"
 
     @ui_toggle(
         label="Debug Mode",

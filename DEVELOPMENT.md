@@ -265,6 +265,7 @@ The system automatically discovers and loads plugins from subdirectories.
 - **`@ui_input_with_button`** - Input field with execute button
 - **`@ui_search_with_results`** - Search input with results display
 - **`@ui_autocomplete_input`** - Input with autocomplete suggestions
+- **`@ui_banner`** - Informational banner / warning element
 
 ### Autocomplete Naming Convention
 
@@ -1124,6 +1125,8 @@ config_manager.set_path('plugin_configs.my_plugin.enabled', True)
 - **`injector_config`**: Show injector-specific configuration (CDP port, URL, etc.)
 - **`plugins`**: List loaded plugins
 - **`reload_config`**: Reload plugin configurations from conf.json
+- **`reload`**: Reload all plugins and regenerate JavaScript
+- **`darkmode`**: Toggle dark mode for the web UI
 - **`web_ui`**: Start the plugin web UI server
 - **`help`**: Show help menu
 - **`exit`**: Exit the CLI

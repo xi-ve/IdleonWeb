@@ -1,8 +1,9 @@
+import time
 from plugin_system import PluginBase, js_export, ui_toggle, ui_search_with_results, plugin_command, ui_autocomplete_input, console
 from config_manager import config_manager
 
 class AnvilCheatsPlugin(PluginBase):
-    VERSION = "1.0.1"
+    VERSION = "1.0.2"
     DESCRIPTION = "Cheats for World 1 - Anvil and Smithing related"
     PLUGIN_ORDER = 1 
     CATEGORY = "World 1"
@@ -11,9 +12,22 @@ class AnvilCheatsPlugin(PluginBase):
         super().__init__(config or {})        
         self.debug = config.get('debug', False) if config else False
         self.name = 'anvil_cheats'
+        self.last_update = time.time()
 
     async def cleanup(self): pass
-    async def update(self): pass
+    async def update(self): 
+        self.debug = config_manager.get_path('plugin_configs.anvil_cheats.debug', True)
+        if self.last_update < time.time() - 10:
+            self.last_update = time.time()
+            if hasattr(self, 'injector') and self.injector and config_manager.get_path('plugin_configs.anvil_cheats.free_recipe_costs', False):
+                try:
+                    result = self.run_js_export('free_recipe_costs_js', self.injector)
+                    if self.debug:
+                        console.print(f"[anvil_cheats] Result: {result}")
+                except Exception as e:
+                    if self.debug:
+                        console.print(f"[anvil_cheats] Error enabling free recipe costs: {e}")
+
     async def on_config_changed(self, config): 
         self.debug = config.get('debug', False)
         if hasattr(self, 'injector') and self.injector:

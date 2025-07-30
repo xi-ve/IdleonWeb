@@ -10,6 +10,7 @@ Want to create a plugin for IdleonWeb? This guide will get you up and running in
   - [Toggle Switch](#toggle-switch)
   - [Button](#button)
   - [Slider](#slider)
+  - [Banner](#banner)
 - [4. Add JavaScript Code](#4-add-javascript-code)
   - [JavaScript with Parameters](#javascript-with-parameters)
 - [5. Test Your Plugin](#5-test-your-plugin)
@@ -97,6 +98,19 @@ async def amount_ui(self, value=None):
         self.config["amount"] = value
         self.save_to_global_config()
     return f"Amount set to {self.config.get('amount', 50)}"
+```
+
+### Banner
+```python
+@ui_banner(
+    label="⚠️ High Risk Warning",
+    description="This action may brick your account.",
+    banner_type="warning",
+    category="General",
+    order=-100
+)
+async def warning_banner(self):
+    pass
 ```
 
 ## 4. Add JavaScript Code

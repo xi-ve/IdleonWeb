@@ -22,49 +22,37 @@ console = Console()
 command_registry = {}
 
 def check_js_syntax(js_code: str, plugin_name: str, function_name: str) -> tuple[bool, str]:
-    """
-    Check JavaScript syntax by attempting to compile/validate the code.
-    Returns (is_valid, error_message).
-    """
     try:
-        # Try to use Node.js to validate the JavaScript syntax
         import subprocess
         import tempfile
         import os
         
-        # Create a temporary file with the JavaScript code
         with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False) as temp_file:
             temp_file.write(js_code)
             temp_file_path = temp_file.name
         
         try:
-            # Try to validate the JavaScript using Node.js
             result = subprocess.run(
                 ['node', '--check', temp_file_path],
                 capture_output=True,
                 text=True,
-                timeout=5  # 5 second timeout
+                timeout=5
             )
             
-            # Clean up the temporary file
             os.unlink(temp_file_path)
             
             if result.returncode == 0:
                 return True, ""
             else:
-                # Extract the error message, removing the temp file path
                 error_msg = result.stderr.replace(temp_file_path, f"{plugin_name}.{function_name}")
                 return False, f"JavaScript syntax error: {error_msg.strip()}"
                 
         except subprocess.TimeoutExpired:
-            # Clean up the temporary file
             os.unlink(temp_file_path)
             return False, f"JavaScript validation timed out for {plugin_name}.{function_name}"
         except FileNotFoundError:
-            # Node.js not available, skip validation
             return True, ""
         except Exception as e:
-            # Clean up the temporary file
             try:
                 os.unlink(temp_file_path)
             except:
@@ -86,6 +74,7 @@ class UIElementType(Enum):
     INPUT_WITH_BUTTON = "input_with_button"
     SEARCH_WITH_RESULTS = "search_with_results"
     AUTOCOMPLETE_INPUT = "autocomplete_input"
+    BANNER = "banner"
 
 def plugin_command(help: str = None, js_export: bool = False, params: List[Dict[str, Any]] = None):
     def decorator(func: Callable) -> Callable:
@@ -121,27 +110,7 @@ def ui_element(
     order: int = 0,
     **kwargs
 ):
-    """
-    Decorator to create UI elements for plugin configuration.
-    
-    Args:
-        element_type: Type of UI element (toggle, slider, button, etc.)
-        label: Display label for the element
-        description: Help text for the element
-        config_key: Key in plugin config to bind to (defaults to function name)
-        default_value: Default value for the element
-        min_value: Minimum value for numeric inputs
-        max_value: Maximum value for numeric inputs
-        step: Step value for sliders
-        options: List of options for select elements
-        placeholder: Placeholder text for inputs
-        required: Whether the field is required
-        category: UI category to group elements
-        order: Display order within category
-        **kwargs: Additional element-specific properties
-    """
     def decorator(func: Callable) -> Callable:
-        # Convert string to enum if needed
         final_element_type = element_type
         if isinstance(element_type, str):
             try:
@@ -168,10 +137,8 @@ def ui_element(
         return func
     return decorator
 
-# Convenience decorators for common UI elements
 def ui_toggle(label: str = None, description: str = None, config_key: str = None, 
               default_value: bool = False, category: str = "General", order: int = 0):
-    """Decorator for toggle/switch UI elements."""
     return ui_element(
         UIElementType.TOGGLE,
         label=label,
@@ -186,7 +153,6 @@ def ui_slider(label: str = None, description: str = None, config_key: str = None
               default_value: Union[int, float] = 0, min_value: Union[int, float] = 0,
               max_value: Union[int, float] = 100, step: Union[int, float] = 1,
               category: str = "General", order: int = 0):
-    """Decorator for slider UI elements."""
     return ui_element(
         UIElementType.SLIDER,
         label=label,
@@ -202,7 +168,6 @@ def ui_slider(label: str = None, description: str = None, config_key: str = None
 
 def ui_button(label: str = None, description: str = None, category: str = "Actions", 
               order: int = 0, **kwargs):
-    """Decorator for button UI elements."""
     return ui_element(
         UIElementType.BUTTON,
         label=label,
@@ -215,7 +180,6 @@ def ui_button(label: str = None, description: str = None, category: str = "Actio
 def ui_select(label: str = None, description: str = None, config_key: str = None,
               options: List[Dict[str, Any]] = None, default_value: Any = None,
               category: str = "General", order: int = 0):
-    """Decorator for select/dropdown UI elements."""
     return ui_element(
         UIElementType.SELECT,
         label=label,
@@ -230,7 +194,6 @@ def ui_select(label: str = None, description: str = None, config_key: str = None
 def ui_text_input(label: str = None, description: str = None, config_key: str = None,
                   default_value: str = "", placeholder: str = None, required: bool = False,
                   category: str = "General", order: int = 0):
-    """Decorator for text input UI elements."""
     return ui_element(
         UIElementType.TEXT_INPUT,
         label=label,
@@ -247,7 +210,6 @@ def ui_number_input(label: str = None, description: str = None, config_key: str 
                    default_value: Union[int, float] = 0, min_value: Union[int, float] = None,
                    max_value: Union[int, float] = None, step: Union[int, float] = 1,
                    category: str = "General", order: int = 0):
-    """Decorator for number input UI elements."""
     return ui_element(
         UIElementType.NUMBER_INPUT,
         label=label,
@@ -263,7 +225,6 @@ def ui_number_input(label: str = None, description: str = None, config_key: str 
 
 def ui_input_with_button(label: str = None, description: str = None, button_text: str = "Execute",
                         placeholder: str = None, category: str = "Actions", order: int = 0):
-    """Decorator for input field with button UI elements."""
     return ui_element(
         UIElementType.INPUT_WITH_BUTTON,
         label=label,
@@ -276,7 +237,6 @@ def ui_input_with_button(label: str = None, description: str = None, button_text
 
 def ui_search_with_results(label: str = None, description: str = None, button_text: str = "Search",
                           placeholder: str = None, category: str = "Search", order: int = 0):
-    """Decorator for search input with results list UI elements."""
     return ui_element(
         UIElementType.SEARCH_WITH_RESULTS,
         label=label,
@@ -289,7 +249,6 @@ def ui_search_with_results(label: str = None, description: str = None, button_te
 
 def ui_autocomplete_input(label: str = None, description: str = None, button_text: str = "Execute",
                          placeholder: str = None, category: str = "Actions", order: int = 0):
-    """Decorator for autocomplete input with button UI elements."""
     return ui_element(
         UIElementType.AUTOCOMPLETE_INPUT,
         label=label,
@@ -298,6 +257,18 @@ def ui_autocomplete_input(label: str = None, description: str = None, button_tex
         category=category,
         order=order,
         button_text=button_text
+    )
+
+def ui_banner(label: str = None, description: str = None, banner_type: str = "neutral", 
+              category: str = "Banners", order: int = 0, **kwargs):
+    return ui_element(
+        UIElementType.BANNER,
+        label=label,
+        description=description,
+        category=category,
+        order=order,
+        banner_type=banner_type,
+        **kwargs
     )
 
 class PluginBase(ABC):
@@ -353,7 +324,6 @@ class PluginBase(ABC):
         return commands
 
     def get_ui_elements(self) -> Dict[str, List[Dict[str, Any]]]:
-        """Collect all UI elements from the plugin, organized by category."""
         elements_by_category = {}
         
         for attr_name in dir(self):
@@ -362,8 +332,6 @@ class PluginBase(ABC):
                 config_key = getattr(attr, "_ui_config_key", attr_name)
                 default_value = getattr(attr, "_ui_default_value", None)
                 
-                # Get current value from config manager, fallback to default
-                # This matches how plugins actually get their config values
                 current_value = config_manager.get_path(f'plugin_configs.{self.name}.{config_key}', default_value)
                 
                 element_data = {
@@ -385,22 +353,23 @@ class PluginBase(ABC):
                     "func": attr
                 }
                 
+                if getattr(attr, "_ui_element_type", None) == UIElementType.BANNER:
+                    element_data["banner_type"] = getattr(attr, "_ui_properties", {}).get("banner_type", "neutral")
+                    element_data["current_value"] = None
+                
                 category = getattr(attr, "_ui_category", "General")
                 if category not in elements_by_category:
                     elements_by_category[category] = []
                 elements_by_category[category].append(element_data)
         
-        # Sort elements by order within each category
         for category in elements_by_category:
             elements_by_category[category].sort(key=lambda x: x["order"])
         
         return elements_by_category
 
     def get_ui_schema(self) -> Dict[str, Any]:
-        """Generate a complete UI schema for the plugin."""
         ui_elements = self.get_ui_elements()
         
-        # Use the plugin's CATEGORY field, or 'General' if not defined
         plugin_category = getattr(self, 'CATEGORY', 'General')
         
         schema = {
@@ -446,14 +415,12 @@ class PluginBase(ABC):
         
         js_args = ', '.join(json.dumps(a) for a in args)
         
-        # Use plugin namespace to avoid conflicts
         plugin_name = getattr(self, 'name', self.__class__.__name__)
         check_expr = f"typeof window.{plugin_name}.{js_name} === 'function'"
         try:
             check_result = injector.evaluate(check_expr)
             if not check_result.get('result', {}).get('value', False):
-                if GLOBAL_DEBUG:
-                    console.print(f"[DEBUG] Function {plugin_name}.{js_name} not found in window")
+                console.print(f"[DEBUG] Function {plugin_name}.{js_name} not found in window")
                 return f"Error: Function {plugin_name}.{js_name} not found"
         except Exception as e:
             if GLOBAL_DEBUG:
@@ -503,7 +470,6 @@ class PluginBase(ABC):
             init_expr = "window.pluginConfigs = window.pluginConfigs || {};"
             self.injector.evaluate(init_expr)
             
-            # Get current config from config manager to ensure we have the latest values
             current_config = config_manager.get_plugin_config(self.name)
             self.set_config(current_config)
         except Exception as e:
@@ -513,16 +479,12 @@ class PluginBase(ABC):
     def save_to_global_config(self, config: Dict[str, Any] = None) -> None:
         plugin_config = config or self.config
         
-        # Save to config manager using merge method (this automatically saves to file)
         config_manager.update_plugin_config(self.name, plugin_config)
         
-        # Update local config to match what was saved
         self.config = config_manager.get_plugin_config(self.name)
         
-        # Reload config to ensure consistency
         config_manager.reload()
         
-        # Update browser config with the latest values
         if self.injector:
             self.set_config(self.config)
 
@@ -532,11 +494,10 @@ class PluginManager:
         self.plugins: Dict[str, PluginBase] = {}
         self.plugin_dir = Path(plugin_dir)
         self.plugin_names = plugin_names
-        self.failed_plugins = set()  # Track plugins that failed to load
+        self.failed_plugins = set()
 
     async def load_plugins(self, injector, plugin_configs: Dict[str, Any] = None, 
                           global_debug: bool = True) -> None:
-        # Ensure we have the latest config from file
         config_manager.reload()
         
         if plugin_configs is None:
@@ -557,7 +518,7 @@ class PluginManager:
             except Exception as e:
                 console.print(f"[red]Failed to load plugin '{plugin_name}': {e}[/red]")
                 logger.error(f"Failed to load plugin '{plugin_name}': {e}")
-                self.failed_plugins.add(plugin_name)  # Track failed plugin
+                self.failed_plugins.add(plugin_name)
                 if GLOBAL_DEBUG:
                     logger.debug(traceback.format_exc())
 
@@ -568,17 +529,13 @@ class PluginManager:
         if not plugin_class:
             raise ImportError(f"Plugin '{plugin_name}' not found in {self.plugin_dir}")
         
-        # Get the latest config from config manager to ensure consistency
         latest_config = config_manager.get_plugin_config(plugin_name)
-        # Merge with provided config (provided config takes precedence for initialization)
         merged_config = {**latest_config, **plugin_config}
         
         plugin_instance = plugin_class(merged_config)
         plugin_instance.plugin_manager = self
         plugin_instance.global_debug = global_debug
         
-        # Ensure the plugin's local config is synced with the global config
-        # This ensures plugins use config_manager.get_path() correctly
         plugin_instance.config = config_manager.get_plugin_config(plugin_name)
         
         for dependency in getattr(plugin_instance, 'dependencies', []):
@@ -598,19 +555,15 @@ class PluginManager:
             raise RuntimeError(f"Failed to initialize plugin: {plugin_name}")
 
     async def _load_external_plugin(self, plugin_name: str) -> Optional[Type[PluginBase]]:
-        # Check if this is a folderized plugin (contains a dot)
         if '.' in plugin_name:
-            # Split the plugin name into subdirectory and filename
             subdir_name, file_name = plugin_name.split('.', 1)
             plugin_file = self.plugin_dir / subdir_name / f"{file_name}.py"
         else:
-            # Regular plugin in root directory
             plugin_file = self.plugin_dir / f"{plugin_name}.py"
         
         if not plugin_file.exists():
             return None
         
-        # Create a unique module name to avoid conflicts
         module_name = f"plugins.{plugin_name.replace('.', '_')}"
         spec = importlib.util.spec_from_file_location(module_name, plugin_file)
         if not spec or not spec.loader:
@@ -650,7 +603,7 @@ class PluginManager:
             except Exception as e:
                 console.print(f"[red]Failed to initialize plugin '{plugin_name}': {e}[/red]")
                 logger.error(f"Failed to initialize plugin '{plugin_name}': {e}")
-                self.failed_plugins.add(plugin_name)  # Track failed plugin
+                self.failed_plugins.add(plugin_name)
         
         if injector:
             for plugin in self.plugins.values():
@@ -721,46 +674,38 @@ class PluginManager:
         return routes
 
     def get_all_ui_elements(self) -> Dict[str, Dict[str, List[Dict[str, Any]]]]:
-        """Collect all UI elements from all plugins, organized by plugin and category."""
         all_ui_elements = {}
         
         for plugin_name, plugin in self.plugins.items():
-            # Skip plugins that failed to load
             if plugin_name in self.failed_plugins:
                 continue
                 
             plugin_ui_elements = plugin.get_ui_elements()
-            if plugin_ui_elements:  # Only include plugins with UI elements
-                # Use the plugin's UI schema to get proper category information
+            if plugin_ui_elements:
                 plugin_schema = plugin.get_ui_schema()
                 all_ui_elements[plugin_name] = plugin_schema
         
         return all_ui_elements
 
     def get_ui_schema_for_plugin(self, plugin_name: str) -> Optional[Dict[str, Any]]:
-        """Get UI schema for a specific plugin."""
         plugin = self.plugins.get(plugin_name)
         if plugin:
             return plugin.get_ui_schema()
         return None
 
     def get_all_ui_schemas(self) -> Dict[str, Dict[str, Any]]:
-        """Get UI schemas for all plugins."""
         schemas = {}
         for plugin_name, plugin in self.plugins.items():
-            # Skip plugins that failed to load
             if plugin_name in self.failed_plugins:
                 continue
             schemas[plugin_name] = plugin.get_ui_schema()
         return schemas
 
     async def execute_ui_action(self, plugin_name: str, element_name: str, value: Any = None) -> Any:
-        """Execute a UI element action for a specific plugin."""
         plugin = self.plugins.get(plugin_name)
         if not plugin:
             return {"error": f"Plugin '{plugin_name}' not found"}
         
-        # Find the UI element function
         ui_elements = plugin.get_ui_elements()
         target_func = None
         
@@ -776,15 +721,12 @@ class PluginManager:
             return {"error": f"UI element '{element_name}' not found in plugin '{plugin_name}'"}
         
         try:
-            # Check if the function expects a value parameter
             sig = inspect.signature(target_func)
             params = list(sig.parameters.keys())
             
-            # Skip 'self' parameter
             if params and params[0] == 'self':
                 params = params[1:]
             
-            # Execute the function with or without value parameter
             if inspect.iscoroutinefunction(target_func):
                 if params and len(params) > 0:
                     result = await target_func(value)
@@ -796,19 +738,17 @@ class PluginManager:
                 else:
                     result = target_func()
             
-            # Update config if the function has a config_key and value is provided
+            if getattr(target_func, "_ui_element_type", None) == UIElementType.BANNER:
+                return {"success": True, "result": result}
+            
             config_key = getattr(target_func, "_ui_config_key", None)
             if config_key and value is not None:
-                # Update plugin config
                 plugin.config[config_key] = value
                 
-                # Save only the specific config key to global config (this will handle the config change notification)
                 config_manager.update_plugin_config(plugin_name, {config_key: value})
                 
-                # Update the plugin's local config to match what was saved
                 plugin.config = config_manager.get_plugin_config(plugin_name)
                 
-                # Notify the plugin of the config change with the updated config
                 if plugin.plugin_manager:
                     try:
                         loop = None
@@ -849,7 +789,6 @@ class PluginManager:
                 if GLOBAL_DEBUG:
                     logger.error(f"Error notifying plugin of config change: {e}")
         elif plugin_name is None:
-            # Only broadcast to all plugins when no specific plugin is specified
             for name, plugin in self.plugins.items():
                 try:
                     await plugin.on_config_changed(plugin.config)
@@ -876,16 +815,12 @@ class PluginManager:
             tmp_js_dir = Path(__file__).parent / 'core' / 'tmp_js'
             tmp_js_dir.mkdir(exist_ok=True)
         
-        # Add compatibility layer for old-style function calls
         compatibility_layer = """
-        // Compatibility layer for old-style function calls
-        // This automatically translates window.func_name calls to window.plugin_name.func_name
         if (!window.__compatibility_layer_initialized__) {
             window.__compatibility_layer_initialized__ = true;
             const originalWindow = window;
             window = new Proxy(window, {
                 get: function(target, prop) {
-                    // If it's a function call pattern, check if it exists in any plugin namespace
                     if (typeof prop === 'string' && !target.hasOwnProperty(prop)) {
                         for (const pluginName in target) {
                             if (target[pluginName] && typeof target[pluginName] === 'object' && target[pluginName][prop]) {
@@ -906,7 +841,6 @@ class PluginManager:
             plugin_has_errors = False
             plugin_error_details = []
             
-            # Initialize plugin namespace to ensure it exists
             namespace_init = f"window.{plugin_name} = window.{plugin_name} || {{}};\n"
             js_code += namespace_init
             plugin_js += namespace_init
@@ -941,7 +875,6 @@ class PluginManager:
                         
                         js_name = attr_name[:-3]
                         
-                        # Check syntax before wrapping
                         is_valid, error_msg = check_js_syntax(js_body, plugin_name, js_name)
                         if not is_valid:
                             syntax_errors.append(f"[{plugin_name}.{js_name}] {error_msg}")
@@ -965,7 +898,6 @@ class PluginManager:
                         js_code += js_func_code
                         plugin_js += js_func_code
             
-            # Store individual plugin size
             plugin_sizes[plugin_name] = len(plugin_js)
             
             if debug and plugin_js:
@@ -973,7 +905,6 @@ class PluginManager:
                 with open(plugin_file, 'w', encoding='utf-8') as f:
                     f.write(plugin_js)
             
-            # Store plugin result for summary
             plugin_results.append({
                 'name': plugin_name,
                 'success': not plugin_has_errors,
@@ -981,16 +912,13 @@ class PluginManager:
                 'js_size': len(plugin_js)
             })
             
-            # Add to failed plugins if JS syntax errors were found
             if plugin_has_errors:
                 self.failed_plugins.add(plugin_name)
                 console.print(f"[DEBUG] Added {plugin_name} to failed_plugins due to JS syntax errors")
         
-        # Display comprehensive summary
         from rich.table import Table
         from rich.panel import Panel
         
-        # Create summary table
         summary_table = Table(title="Plugin JavaScript Generation Summary", show_lines=True)
         summary_table.add_column("Plugin Name", style="bold green")
         summary_table.add_column("Status", style="cyan")
@@ -1007,7 +935,6 @@ class PluginManager:
             status_text = "Success" if result['success'] else "Failed"
             js_size_kb = f"{result['js_size']/1024:.2f}"
             
-            # Count functions for this plugin
             plugin = self.plugins.get(result['name'])
             func_count = len(plugin.get_commands()) if plugin else 0
             
@@ -1025,7 +952,6 @@ class PluginManager:
             else:
                 failed_plugins += 1
         
-        # Add total row
         summary_table.add_row("", "", "", "")
         summary_table.add_row(
             "TOTAL", 
@@ -1037,14 +963,13 @@ class PluginManager:
         
         console.print(summary_table)
         
-        # Show detailed error information if any
         if syntax_errors:
             error_details = []
             for result in plugin_results:
                 if not result['success']:
                     error_details.append(f"[bold red]{result['name']}:[/bold red]")
                     error_details.extend(result['error_details'])
-                    error_details.append("")  # Empty line between plugins
+                    error_details.append("")
             
             error_panel = Panel(
                 "\n".join(error_details),
@@ -1082,18 +1007,14 @@ class PluginManager:
                 console.print(f"[yellow]No config found for plugin: {plugin_name}[/yellow]")
 
     async def reload_plugins(self) -> None:
-        """Unload all plugins and reload them from their Python files."""
         if GLOBAL_DEBUG:
             console.print("[DEBUG] Starting plugin reload...")
         
-        # Clean up existing plugins
         await self.cleanup_all()
         
-        # Clear the plugins dictionary and failed plugins set
         self.plugins.clear()
         self.failed_plugins.clear()
         
-        # Clear any cached modules to force fresh reload
         import sys
         modules_to_remove = []
         for module_name in sys.modules.keys():
@@ -1106,11 +1027,9 @@ class PluginManager:
                 if GLOBAL_DEBUG:
                     console.print(f"[DEBUG] Removed cached module: {module_name}")
         
-        # Reload configuration
         config_manager.reload()
         plugin_configs = config_manager.get_all_plugin_configs()
         
-        # Reload all plugins
         for plugin_name in self.plugin_names:
             try:
                 if GLOBAL_DEBUG:
@@ -1118,7 +1037,7 @@ class PluginManager:
                 await self._load_plugin(
                     plugin_name, 
                     plugin_configs.get(plugin_name, {}), 
-                    None,  # No injector during reload
+                    None,
                     global_debug=GLOBAL_DEBUG
                 )
                 if GLOBAL_DEBUG:
@@ -1126,7 +1045,7 @@ class PluginManager:
             except Exception as e:
                 console.print(f"[red]Failed to reload plugin '{plugin_name}': {e}[/red]")
                 logger.error(f"Failed to reload plugin '{plugin_name}': {e}")
-                self.failed_plugins.add(plugin_name)  # Track failed plugin
+                self.failed_plugins.add(plugin_name)
                 if GLOBAL_DEBUG:
                     logger.debug(traceback.format_exc())
         

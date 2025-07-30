@@ -526,6 +526,127 @@ body.dark .dark-mode-icon:last-child {
     padding-left: 1rem;
 }
 
+.result-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.5rem 0;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+}
+
+.result-table th {
+    background: var(--surface);
+    padding: 0.5rem;
+    text-align: left;
+    font-weight: bold;
+    border-bottom: 2px solid var(--border);
+    color: var(--text-primary);
+}
+
+.result-table td {
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+}
+
+.result-table tr:hover {
+    background: var(--surface);
+}
+
+.result-item.section-header {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: var(--primary-color);
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem 0;
+    border-bottom: 2px solid var(--border);
+}
+
+.result-item.bullet {
+    padding-left: 1.5rem;
+    position: relative;
+}
+
+.result-item.bullet::before {
+    content: "•";
+    position: absolute;
+    left: 0.5rem;
+    color: var(--primary-color);
+}
+
+.result-item.summary {
+    font-weight: bold;
+    color: var(--text-primary);
+    background: var(--surface);
+    border-radius: 0.25rem;
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+}
+
+.banner {
+    margin: 1rem 0;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border-left: 4px solid;
+    font-family: inherit;
+}
+
+.banner-neutral {
+    background: var(--surface);
+    border-left-color: var(--border);
+    color: var(--text-primary);
+}
+
+.banner-warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-left-color: #f59e0b;
+    color: #dc2626;
+}
+
+.banner-warning .banner-title {
+    color: #dc2626;
+}
+
+.banner-warning .banner-message {
+    color: #dc2626;
+}
+
+.banner-error {
+    background: rgba(239, 68, 68, 0.1);
+    border-left-color: #ef4444;
+    color: #991b1b;
+}
+
+.banner-success {
+    background: rgba(16, 185, 129, 0.1);
+    border-left-color: #10b981;
+    color: #065f46;
+}
+
+.banner-info {
+    background: rgba(59, 130, 246, 0.1);
+    border-left-color: #3b82f6;
+    color: #1e40af;
+}
+
+.banner-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.banner-title {
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-bottom: 0.25rem;
+}
+
+.banner-message {
+    line-height: 1.5;
+    white-space: pre-line;
+}
+
 .autocomplete-input {
     display: flex;
     gap: 0.5rem;

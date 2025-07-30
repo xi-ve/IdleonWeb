@@ -6,6 +6,17 @@
 {% set plugin_config = plugin_configs.get(plugin_name, {}) %}
 {% set current_value = element.get('current_value', plugin_config.get(config_key, element.get('default_value', ''))) %}
 
+{% if element_type == 'banner' %}
+<div class="banner banner-{{ element.get('banner_type', 'neutral') }}">
+    <div class="banner-content">
+        <div class="banner-title">{{ label }}</div>
+        {% if description %}
+        <div class="banner-message">{{ description }}</div>
+        {% endif %}
+    </div>
+</div>
+
+{% else %}
 <div class="ui-element" data-plugin-name="{{ plugin_name }}" data-config-key="{{ config_key }}" data-element-name="{{ name }}">
     <div class="element-label">{{ label }}</div>
     {% if description %}
@@ -91,4 +102,5 @@
     {% else %}
     <button class="btn" data-original-text="{{ label }}">{{ label }}</button>
     {% endif %}
-</div> 
+</div>
+{% endif %} 
