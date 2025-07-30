@@ -41,7 +41,7 @@ A modern, user-friendly launcher and plugin system for enhancing Legends of Idle
 ### Universal Setup (Recommended)
 1. Download and extract the files
 2. Run `python setup.py` to install dependencies (works on all platforms)
-3. Run `python main.py` to start the launcher
+3. Run `python launch.py` to start the launcher
 4. Type `inject` to launch the game with enhancements
 5. Open `http://localhost:8080` in your browser to configure plugins
 
@@ -51,7 +51,7 @@ A modern, user-friendly launcher and plugin system for enhancing Legends of Idle
 
 ### Starting the Launcher
 ```bash
-python main.py
+python launch.py
 ```
 
 ### Launching the Game
