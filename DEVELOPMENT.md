@@ -968,88 +968,88 @@ function getPluginConfig(pluginName, defaultValue = {}) {
 const config = getPluginConfig('my_plugin', { enabled: false, speed: 1.0 });
 ```
 
-    # JavaScript Exports
-    @js_export()
-    def test_connection_js(self):  # ← Must end with _js
-        return '''
-        try {
-            const ctx = window.__idleon_cheats__;
-            if (ctx && ctx["com.stencyl.Engine"]) {
-                return "Game connection successful";
-            } else {
-                return "Game not ready";
-            }
-        } catch (e) {
-            return `Error: ${e.message}`;
+## JavaScript Exports
+
+```python
+@js_export()
+def test_connection_js(self):  # ← Must end with _js
+    return '''
+    try {
+        const ctx = window.__idleon_cheats__;
+        if (ctx && ctx["com.stencyl.Engine"]) {
+            return "Game connection successful";
+        } else {
+            return "Game not ready";
         }
-        '''
+    } catch (e) {
+        return `Error: ${e.message}`;
+    }
+    '''
 
-    @js_export(params=["command"])
-    def execute_command_js(self, command=None):  # ← Must end with _js
-        return f'''
-        try {{
-            console.log("Executing command: {command}");
-            return "Command executed successfully";
-        }} catch (e) {{
-            return `Error: ${{e.message}}`;
-        }}
-        '''
+@js_export(params=["command"])
+def execute_command_js(self, command=None):
+    return f'''
+    try {{
+        console.log("Executing command: {command}");
+        return "Command executed successfully";
+    }} catch (e) {{
+        return `Error: ${{e.message}}`;
+    }}
+    '''
 
-    @js_export(params=["query"])
-    def search_items_js(self, query=None):  # ← Must end with _js
-        return f'''
-        try {{
-            const ctx = window.__idleon_cheats__;
-            const itemDefs = ctx["com.stencyl.Engine"].engine.getGameAttribute("ItemDefinitionsGET").h;
-            const q = "{query}".toLowerCase();
-            
-            const matches = Object.entries(itemDefs).filter(([id, def]) => {{
-                const name = def?.h?.displayName || '';
-                return id.toLowerCase().includes(q) || name.toLowerCase().includes(q);
-            }});
-            
-            return matches.length 
-                ? matches.map(([id, def]) => `${{id}} : ${{def?.h?.displayName?.replace(/_/g, ' ') || id}}`).join("\\n")
-                : `No items found for: {query}`;
-        }} catch (e) {{
-            return `Error: ${{e.message}}`;
-        }}
-        '''
+@js_export(params=["query"])
+def search_items_js(self, query=None):
+    return f'''
+    try {{
+        const ctx = window.__idleon_cheats__;
+        const itemDefs = ctx["com.stencyl.Engine"].engine.getGameAttribute("ItemDefinitionsGET").h;
+        const q = "{query}".toLowerCase();
 
-    @js_export(params=["item"])
-    def spawn_item_js(self, item=None):  # ← Must end with _js
-        return f'''
-        try {{
-            const ctx = window.__idleon_cheats__;
-            const engine = ctx["com.stencyl.Engine"].engine;
-            const itemDefs = engine.getGameAttribute("ItemDefinitionsGET").h;
-            
-            const itemDef = itemDefs["{item}"];
-            if (!itemDef) return `No item found: '{{item}}'`;
-            
-            console.log(`Spawning item: ${{itemDef.h.displayName}}`);
-            return `Spawned ${{itemDef.h.displayName}}`;
-        }} catch (e) {{
-            return `Error: ${{e.message}}`;
-        }}
-        '''
+        const matches = Object.entries(itemDefs).filter(([id, def]) => {{
+            const name = def?.h?.displayName || '';
+            return id.toLowerCase().includes(q) || name.toLowerCase().includes(q);
+        }});
 
-    @js_export()
-    def get_item_list_js(self):  # ← Must end with _js
-        return '''
-        try {
-            const ctx = window.__idleon_cheats__;
-            const itemDefs = ctx["com.stencyl.Engine"].engine.getGameAttribute("ItemDefinitionsGET").h;
-            
-            return Object.entries(itemDefs)
-                .map(([id, def]) => `${id} : ${def?.h?.displayName?.replace(/_/g, ' ') || id}`)
-                .join("\\n");
-        } catch (e) {
-            return `Error: ${e.message}`;
-        }
-        '''
+        return matches.length
+            ? matches.map(([id, def]) => `${{id}} : ${{def?.h?.displayName?.replace(/_/g, ' ') || id}}`).join("\n")
+            : `No items found for: {query}`;
+    }} catch (e) {{
+        return `Error: ${{e.message}}`;
+    }}
+    '''
 
-plugin_class = ExamplePlugin
+@js_export(params=["item"])
+def spawn_item_js(self, item=None):
+    return f'''
+    try {{
+        const ctx = window.__idleon_cheats__;
+        const engine = ctx["com.stencyl.Engine"].engine;
+        const itemDefs = engine.getGameAttribute("ItemDefinitionsGET").h;
+
+        const itemDef = itemDefs["{item}"];
+        if (!itemDef) return `No item found: '{{item}}'`;
+
+        console.log(`Spawning item: ${{itemDef.h.displayName}}`);
+        return `Spawned ${{itemDef.h.displayName}}`;
+    }} catch (e) {{
+        return `Error: ${{e.message}}`;
+    }}
+    '''
+
+@js_export()
+def get_item_list_js(self):
+    return '''
+    try {
+        const ctx = window.__idleon_cheats__;
+        const itemDefs = ctx["com.stencyl.Engine"].engine.getGameAttribute("ItemDefinitionsGET").h;
+
+        return Object.entries(itemDefs)
+            .map(([id, def]) => `${id} : ${def?.h?.displayName?.replace(/_/g, ' ') || id}`)
+            .join("\n");
+    } catch (e) {
+        return `Error: ${e.message}`;
+    }
+    '''
 ```
 
 ---
@@ -1174,173 +1174,4 @@ webui/templates/
 
 - `GET /` - Main UI page
 - `POST /api/ui_action` - Execute UI actions
-- `GET /api/autocomplete` - Get autocomplete suggestions
-- `GET /api/ui_schemas` - Get plugin UI schemas
-- `GET /api/ui_elements` - Get UI elements data
-
-
-
----
-
-## Troubleshooting
-
-### Development Issues
-
-**Node.js not found?**
-- Ensure Node.js and npm are installed and in your PATH
-- Check with `node --version` and `npm --version`
-
-**Chromium/Chrome not found?**
-- The injector tries common install locations
-- Install Chromium or Google Chrome if needed
-- Check the injector logs for path detection
-
-**Plugin not showing up?**
-- Check for syntax errors in your plugin file
-- Ensure your plugin class is named and exported correctly
-- Check the launcher logs for import errors
-- Verify the plugin has correct `CATEGORY` and `PLUGIN_ORDER` attributes
-
-**Web UI not accessible?**
-- Ensure the web server is running and check `http://localhost:8080`
-- Check for port conflicts
-- Verify the web server started successfully
-
-**UI elements not appearing?**
-- Make sure your plugin uses the correct UI decorators
-- Check that the web server is started
-- Verify plugin configuration is loaded
-
-**Plugin categories not working?**
-- Ensure the plugin has a valid `CATEGORY` attribute
-- Check that the category name matches available categories
-
-**Debug output:**
-- Set `"debug": true` in `core/conf.json` for verbose logs
-- Check browser console for JavaScript errors
-- Monitor the launcher output for Python errors
-
-### Common Error Messages
-
-**"Module not found"**
-- Ensure all dependencies are installed: `pip install -r requirements.txt`
-- Check that you're in the virtual environment
-
-**"Port already in use"**
-- Kill existing processes on port 32123: `lsof -ti:32123 | xargs kill -9`
-- Or change the port in `core/conf.json`
-
-**"Game not ready"**
-- Wait for the game to fully load
-- Check that the injection completed successfully
-- Verify the game context is available
-
-**"Plugin category not found"**
-- Check that the plugin has a valid `CATEGORY` attribute
-- Ensure the category name is one of the available categories
-
----
-
-## Project Structure
-
-```
-IdleonWeb/
-├── core/
-│   ├── injector.js          # Node.js browser automation
-│   ├── core.js              # Game integration utilities
-│   ├── plugins_combined.js  # Merged plugin JavaScript
-│   ├── conf.json           # Configuration file
-│   └── package.json        # Node.js dependencies
-├── webui/
-│   ├── web_api_integration.py  # Web server and API
-│   ├── web_ui_generator.py     # UI generation utilities
-│   └── templates/
-│       ├── css/
-│       │   └── styles.css      # Web UI styling
-│       ├── js/
-│       │   └── plugin-ui.js    # Frontend JavaScript
-│       └── html/
-│           ├── base.html        # Base template
-│           ├── plugin_cards.html # Single plugin layout
-│           ├── tabbed_interface.html # Multi-plugin layout
-│           ├── categorized_interface.html # Categorized plugin interface
-│           └── ui_elements.html # UI element templates
-├── plugins/
-│   ├── character/           # Character-related plugins
-│   │   ├── godlike_powers.py
-│   │   ├── spawn_item.py
-│   │   └── stats_multiplier.py
-│   ├── qol/                # Quality of Life plugins
-│   │   └── global_storage.py
-│   ├── unlocks/            # Unlock-related plugins
-│   │   ├── card_cheats.py
-│   │   └── vault_unlocker.py
-│   ├── world1/             # World 1 specific plugins
-│   │   └── anvil_cheats.py
-│   └── ...                 # Additional plugin categories
-├── main.py                 # CLI entry point
-├── plugin_system.py        # Plugin management system
-├── config_manager.py       # Configuration management
-├── setup.py                # Universal setup script
-├── requirements.txt        # Python dependencies
-└── README.md               # User documentation
-```
-
----
-
-## Contributing
-
-### Development Workflow
-
-1. **Fork the repository**
-2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
-3. **Make your changes**
-4. **Test thoroughly**: Run the launcher and test your changes
-5. **Commit your changes**: `git commit -m 'Add amazing feature'`
-6. **Push to the branch**: `git push origin feature/amazing-feature`
-7. **Open a Pull Request**
-
-### Code Style
-
-- **Python**: Follow PEP 8 guidelines
-- **JavaScript**: Use consistent indentation and naming
-- **Documentation**: Add docstrings and comments for complex logic
-- **Testing**: Test your changes thoroughly before submitting
-
-### Plugin Development
-
-When creating plugins:
-
-1. **Follow the plugin structure** shown in the example
-2. **Use appropriate UI decorators** for user interaction
-3. **Handle errors gracefully** and provide clear error messages
-4. **Test on multiple platforms** if possible
-5. **Document your plugin** with clear descriptions and examples
-6. **Use appropriate categories** to organize plugins
-7. **Set plugin order** to control display order
-8. **Consider folder structure** for better organization
-
----
-
-## License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
----
-
-## Credits
-
-This project was inspired by and builds upon the excellent work of the original [Idleon-Injector](https://github.com/MrJoiny/Idleon-Injector) project by [@MrJoiny](https://github.com/MrJoiny). The original injector demonstrated the core concepts of browser automation and script injection for Legends of Idleon, which served as the foundation for this Python-based plugin system.
-
-Key inspirations from the original project:
-- Browser automation using Chrome DevTools Protocol
-- Script interception and injection techniques
-- Game context detection and integration
-- Cross-platform compatibility approaches
-
-This project extends those concepts with:
-- Modern Python-based plugin architecture
-- Web UI for plugin configuration
-- Enhanced CLI with autocompletion
-- Centralized configuration management
-and much more!
+- `
