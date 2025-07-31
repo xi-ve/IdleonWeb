@@ -1,4 +1,4 @@
-from plugin_system import PluginBase, js_export, ui_toggle, ui_search_with_results, plugin_command, ui_autocomplete_input, console
+from plugin_system import PluginBase, js_export, ui_toggle, ui_search_with_results, plugin_command, ui_autocomplete_input, console, ui_button
 from config_manager import config_manager
 
 class VaultUnlockerPlugin(PluginBase):
@@ -293,59 +293,35 @@ class VaultUnlockerPlugin(PluginBase):
                 console.print(f"[vault_unlocker] Error in get_set_vault_item_level_ui_autocomplete: {e}")
             return []
 
-    @ui_toggle(
+    @ui_button(
         label="Unlock All Vault Categories",
         description="Unlock all vault categories (does not level them up)",
-        config_key="unlock_all_categories",
-        default_value=False,
+        category="Actions",
+        order=1
     )
-    async def unlock_all_categories_ui(self, value: bool = None):
-        if value is not None:
-            self.config["unlock_all_categories"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    result = await self.unlock_all_vault_categories(self.injector)
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    return f"ERROR: Error unlocking vault categories: {str(e)}"
-        return f"Unlock all vault categories {'enabled' if self.config.get('unlock_all_categories', False) else 'disabled'}"
+    async def unlock_all_categories_ui(self):
+        result = await self.unlock_all_vault_categories(self.injector)
+        return f"SUCCESS: {result}"
 
-    @ui_toggle(
+    @ui_button(
         label="Max Level All Vault Categories",
         description="Set all vault categories to maximum level",
-        config_key="max_level_all_categories",
-        default_value=False,
+        category="Actions",
+        order=2
     )
-    async def max_level_all_categories_ui(self, value: bool = None):
-        if value is not None:
-            self.config["max_level_all_categories"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    result = await self.max_level_all_vault_categories(self.injector)
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    return f"ERROR: Error max leveling vault categories: {str(e)}"
-        return f"Max level all vault categories {'enabled' if self.config.get('max_level_all_categories', False) else 'disabled'}"
+    async def max_level_all_categories_ui(self):
+        result = await self.max_level_all_vault_categories(self.injector)
+        return f"SUCCESS: {result}"
 
-    @ui_toggle(
+    @ui_button(
         label="Reset All Vault Categories",
         description="Reset all vault categories to level 0",
-        config_key="reset_all_categories",
-        default_value=False,
+        category="Actions",
+        order=3
     )
-    async def reset_all_categories_ui(self, value: bool = None):
-        if value is not None:
-            self.config["reset_all_categories"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    result = await self.reset_all_vault_categories(self.injector)
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    return f"ERROR: Error resetting vault categories: {str(e)}"
-        return f"Reset all vault categories {'enabled' if self.config.get('reset_all_categories', False) else 'disabled'}"
+    async def reset_all_categories_ui(self):
+        result = await self.reset_all_vault_categories(self.injector)
+        return f"SUCCESS: {result}"
 
     @plugin_command(
         help="Get vault status showing all categories and their levels.",

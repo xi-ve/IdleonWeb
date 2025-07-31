@@ -39,65 +39,34 @@ class CandyUnlockPlugin(PluginBase):
             if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
             const bEngine = ctx["com.stencyl.Engine"].engine;
             
-            // Try different paths to find the item move function
             let itemMoveFn = null;
             let scriptsPath = null;
             
-            // Try the events path first
             if (ctx["events"] && ctx["events"](38)) {
                 itemMoveFn = ctx["events"](38).prototype._event_InvItem4custom;
                 scriptsPath = ctx["events"](38);
             }
-            // Try scripts path as fallback
             else if (ctx["scripts"] && ctx["scripts"]["ActorEvents_38"]) {
                 itemMoveFn = ctx["scripts"]["ActorEvents_38"].prototype._event_InvItem4custom;
                 scriptsPath = ctx["scripts"]["ActorEvents_38"];
             }
-            // Try direct access
             else if (window.ActorEvents_38) {
                 itemMoveFn = window.ActorEvents_38.prototype._event_InvItem4custom;
                 scriptsPath = window.ActorEvents_38;
             }
-            
-            if (!itemMoveFn) {
-                // Fallback: try to find any function that handles item usage
-                console.log("Item move function not found, trying alternative approach...");
-                
-                // Set a global flag that can be checked by the game
-                bEngine.getGameAttribute("PixelHelperActor")[23].getValue("ActorEvents_577", "_GenINFO")[86] = 1;
-                
-                // Try to patch the candy restriction check directly
-                if (window.canUseCandy !== undefined) {
-                    const originalCanUseCandy = window.canUseCandy;
-                    window.canUseCandy = function() { return true; };
-                }
-                
-                if (window.isCandyRestricted !== undefined) {
-                    const originalIsCandyRestricted = window.isCandyRestricted;
-                    window.isCandyRestricted = function() { return false; };
-                }
-                
-                return "Candy restriction bypassed using fallback method (global flags set)";
-            }
-            
-            // Create a proxy to intercept candy usage
             scriptsPath.prototype._event_InvItem4custom = new Proxy(itemMoveFn, {
                 apply: function(originalFn, context, argumentsList) {
                     const inventoryOrder = bEngine.getGameAttribute("InventoryOrder");
                     try {
-                        // Check if this is a TIME_CANDY item
                         const itemDragID = context.actor.getValue("ActorEvents_38", "_ItemDragID");
                         const itemType = bEngine.getGameAttribute("ItemDefinitionsGET").h[inventoryOrder[itemDragID]]?.h?.Type;
                         
                         if (itemType === "TIME_CANDY") {
-                            // Store original values
                             let originalMap = bEngine.getGameAttribute("CurrentMap");
                             let originalTarget = bEngine.getGameAttribute("AFKtarget");
                             
-                            // Set a flag to indicate candy usage
                             bEngine.getGameAttribute("PixelHelperActor")[23].getValue("ActorEvents_577", "_GenINFO")[86] = 1;
                             
-                            // Handle special cases for Cooking/Laboratory
                             if (originalTarget === "Cooking" || originalTarget === "Laboratory") {
                                 let newTarget = {
                                     calls: 0,
@@ -113,13 +82,8 @@ class CandyUnlockPlugin(PluginBase):
                                 bEngine.setGameAttribute("AFKtarget", newTarget);
                             }
                             
-                            // Temporarily change map to allow candy usage
-                            bEngine.setGameAttribute("CurrentMap", 1);
-                            
-                            // Execute the original function
+                            bEngine.setGameAttribute("CurrentMap", 1);                            
                             let result = Reflect.apply(originalFn, context, argumentsList);
-                            
-                            // Restore original values
                             bEngine.setGameAttribute("CurrentMap", originalMap);
                             bEngine.setGameAttribute("AFKtarget", originalTarget);
                             
@@ -127,9 +91,7 @@ class CandyUnlockPlugin(PluginBase):
                         }
                     } catch (e) {
                         console.log("Candy bypass error:", e);
-                    }
-                    
-                    // For non-candy items, use original function
+                    }                    
                     return Reflect.apply(originalFn, context, argumentsList);
                 }
             });

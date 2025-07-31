@@ -55,7 +55,6 @@ class InstantMobRespawnPlugin(PluginBase):
         default_value=True
     )
     async def enable_instant_respawn(self, value: bool = None):
-        """Enable or disable instant mob respawn."""
         if value is not None:
             self.config["toggle"] = value
             self.save_to_global_config()
@@ -68,7 +67,6 @@ class InstantMobRespawnPlugin(PluginBase):
         default_value=True
     )
     async def enable_debug(self, value: bool = None):
-        """Enable or disable debug mode."""
         if value is not None:
             self.config["debug"] = value
             self.save_to_global_config()

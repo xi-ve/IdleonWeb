@@ -3,7 +3,7 @@ from plugin_system import plugin_command, js_export, PluginBase, console, ui_tog
 from config_manager import config_manager
 
 class PackageTogglePlugin(PluginBase):
-    VERSION = "1.0.1"
+    VERSION = "1.0.2"
     DESCRIPTION = "Toggle bought packages / bundles"
     PLUGIN_ORDER = 5
     CATEGORY = "Unlocks"
@@ -56,7 +56,6 @@ class PackageTogglePlugin(PluginBase):
             try:
                 result = await self.list_bought_packages(self.injector)
                 if value and value.strip():
-                    # Filter results based on input
                     lines = result.split('\n')
                     filtered_lines = []
                     query_lower = value.lower()
@@ -93,29 +92,60 @@ class PackageTogglePlugin(PluginBase):
     async def get_toggle_autocomplete(self, query: str = ""):
         if not hasattr(self, 'injector') or not self.injector:
             return []
-        
         try:
             result = await self.get_all_package_codes(self.injector)
             if not result or result.startswith("ERROR"):
                 return []
-            
             suggestions = []
             query_lower = query.lower()
-            
             lines = result.split('\n')
             for line in lines:
                 if ' : ' in line:
-                    # Extract package code from format "bun_a : Package Name"
                     parts = line.split(' : ')
                     if len(parts) >= 1:
                         package_code = parts[0].strip()
                         if query_lower in package_code.lower():
                             suggestions.append(package_code)
-            
             return suggestions[:10]
-            
         except Exception as e:
             return []
+
+    async def get_all_package_codes(self, injector=None, **kwargs):
+        bundle_definitions = [
+            ("Lava Supporter Pack", "bun_a"),
+            ("New Year Supporter Pack", "bun_b"),
+            ("Starter Pack", "bun_c"),
+            ("Easter Bundle", "bun_d"),
+            ("Totally Chill Pack", "bun_e"),
+            ("Summer Bundle", "bun_f"),
+            ("Dungeon Bundle", "bun_g"),
+            ("Giftmas Bundle", "bun_h"),
+            ("Auto Loot Pack", "bun_i"),
+            ("Outta This World Pack", "bun_j"),
+            ("Eggscellent Pack", "bun_k"),
+            ("Super Hot Fire Pack", "bun_l"),
+            ("Gem Motherlode Pack", "bun_m"),
+            ("Riftwalker Pack", "bun_n"),
+            ("Bloomin Pet Pack", "bun_o"),
+            ("Island Explorer Pack", "bun_p"),
+            ("Equinox Dreamer Pack", "bun_q"),
+            ("Calm Serenity Pack", "bun_r"),
+            ("Sacred Methods Pack", "bun_s"),
+            ("Timeless Pack", "bun_t"),
+            ("Ancient Echoes Pack", "bun_u"),
+            ("Deathbringer Pack", "bun_v"),
+            ("Windwalker Pack", "bun_w"),
+            ("Arcande Cultist Pack", "bun_x"),
+            ("Valenslime Day Pack", "bun_y"),
+            ("Fallen Spirits Pet Pack", "bun_z"),
+            ("Storage Ram Pack", "bon_a"),
+            ("Blazing Star Anniversary Pack", "bon_c"),
+            ("Midnight Tide Anniversary Pack", "bon_d"),
+            ("Lush Emerald Anniversary Pack", "bon_e"),
+            ("Eternal Hunter Pack", "bon_f"),
+            ("Gilded Treasure Pack", "bon_g")
+        ]
+        return '\n'.join([f"{code} : {name}" for name, code in bundle_definitions])
 
     @plugin_command(
         help="List all bought packages with their status.",
@@ -135,16 +165,12 @@ class PackageTogglePlugin(PluginBase):
         try {
             const ctx = window.__idleon_cheats__;
             if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
-            
             const bEngine = ctx["com.stencyl.Engine"].engine;
             const GemPopupBundleMessages = ctx["scripts.CustomMapsREAL"].GemPopupBundleMessages().h;
             const bundles_received = bEngine.gameAttributes.h.BundlesReceived.h;
-            
             const results = [];
             let owned_count = 0;
             let total_count = 0;
-            
-            // Get all available package codes from the cheats.js bundle definitions
             const bundleDefinitions = [
                 ["Lava Supporter Pack", "bun_a"],
                 ["New Year Supporter Pack", "bun_b"],
@@ -179,17 +205,14 @@ class PackageTogglePlugin(PluginBase):
                 ["Eternal Hunter Pack", "bon_f"],
                 ["Gilded Treasure Pack", "bon_g"]
             ];
-            
             for (const [displayName, code] of bundleDefinitions) {
                 total_count++;
                 const is_owned = bundles_received[code] === 1;
                 if (is_owned) owned_count++;
-                
                 const status = is_owned ? "**✓ OWNED**" : "○ NOT OWNED";
                 const status_emoji = is_owned ? "🟢" : "⚪";
                 results.push(`${status_emoji} **${code}** : ${displayName} ${status}`);
             }
-            
             const summary = `\\n\\n**Summary:** ${owned_count}/${total_count} packages owned`;
             return results.join("\\n") + summary;
         } catch (e) {
@@ -217,11 +240,8 @@ class PackageTogglePlugin(PluginBase):
         try {
             const ctx = window.__idleon_cheats__;
             if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
-            
             const bEngine = ctx["com.stencyl.Engine"].engine;
             const bundles_received = bEngine.gameAttributes.h.BundlesReceived.h;
-            
-            // Get all available package codes from the cheats.js bundle definitions
             const bundleDefinitions = [
                 ["Lava Supporter Pack", "bun_a"],
                 ["New Year Supporter Pack", "bun_b"],
@@ -256,26 +276,19 @@ class PackageTogglePlugin(PluginBase):
                 ["Eternal Hunter Pack", "bon_f"],
                 ["Gilded Treasure Pack", "bon_g"]
             ];
-            
             if (!package_code) {
                 return "Error: Package code is required";
             }
-            
-            // Find the package in our definitions
             const packageDef = bundleDefinitions.find(([name, code]) => code === package_code);
             if (!packageDef) {
                 return `Error: Package code '${package_code}' not found`;
             }
-            
             const [displayName, code] = packageDef;
             const is_owned = bundles_received[code] === 1;
-            
             if (is_owned) {
-                // Remove package
                 bundles_received[code] = 0;
                 return `✅ Removed package: **${displayName}**`;
             } else {
-                // Add package
                 bundles_received[code] = 1;
                 return `🎁 Added package: **${displayName}**`;
             }
@@ -304,10 +317,8 @@ class PackageTogglePlugin(PluginBase):
         try {
             const ctx = window.__idleon_cheats__;
             if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
-            
             const bEngine = ctx["com.stencyl.Engine"].engine;
             const bundles_received = bEngine.gameAttributes.h.BundlesReceived.h;
-            
             const bundleDefinitions = [
                 ["Lava Supporter Pack", "bun_a"],
                 ["New Year Supporter Pack", "bun_b"],
@@ -342,18 +353,14 @@ class PackageTogglePlugin(PluginBase):
                 ["Eternal Hunter Pack", "bon_f"],
                 ["Gilded Treasure Pack", "bon_g"]
             ];
-            
             if (!package_code) {
                 return "Error: Package code is required";
             }
-            
             const packageDef = bundleDefinitions.find(([name, code]) => code === package_code);
             if (!packageDef) {
                 return `Error: Package code '${package_code}' not found`;
             }
-            
             const [displayName, code] = packageDef;
-            
             bundles_received[code] = 1;
             return `🎁 Bought package: **${displayName}**`;
         } catch (e) {
@@ -381,10 +388,8 @@ class PackageTogglePlugin(PluginBase):
         try {
             const ctx = window.__idleon_cheats__;
             if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
-            
             const bEngine = ctx["com.stencyl.Engine"].engine;
             const bundles_received = bEngine.gameAttributes.h.BundlesReceived.h;
-            
             const bundleDefinitions = [
                 ["Lava Supporter Pack", "bun_a"],
                 ["New Year Supporter Pack", "bun_b"],
@@ -419,18 +424,14 @@ class PackageTogglePlugin(PluginBase):
                 ["Eternal Hunter Pack", "bon_f"],
                 ["Gilded Treasure Pack", "bon_g"]
             ];
-            
             if (!package_code) {
                 return "Error: Package code is required";
             }
-            
             const packageDef = bundleDefinitions.find(([name, code]) => code === package_code);
             if (!packageDef) {
                 return `Error: Package code '${package_code}' not found`;
             }
-            
             const [displayName, code] = packageDef;
-            
             bundles_received[code] = 0;
             return `✅ Removed package: **${displayName}**`;
         } catch (e) {
@@ -438,4 +439,4 @@ class PackageTogglePlugin(PluginBase):
         }
         '''
 
-plugin_class = PackageTogglePlugin 
+plugin_class = PackageTogglePlugin

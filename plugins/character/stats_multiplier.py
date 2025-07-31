@@ -19,7 +19,6 @@ class StatsMultiplierPlugin(PluginBase):
 
     async def update(self):
         self.debug = config_manager.get_path('plugin_configs.stats_multiplier.debug', False)
-        # Execute JS on every update to ensure multipliers are always applied
         if hasattr(self, 'injector') and self.injector and self.enabled:
             try:
                 self.run_js_export('stats_multiplier_js', self.injector, enabled=self.config.get('enabled', False))
@@ -201,7 +200,6 @@ class StatsMultiplierPlugin(PluginBase):
                 return "Error: Game engine not ready";
             }
             
-            // Store original functions if not already stored
             if (!window.__stats_multiplier_originals__) {
                 window.__stats_multiplier_originals__ = {
                     DamageDealt: events(12)._customBlock_DamageDealed,
@@ -218,7 +216,6 @@ class StatsMultiplierPlugin(PluginBase):
                 const pluginConfig = window.pluginConfigs['stats_multiplier'];
                 const originals = window.__stats_multiplier_originals__;
                 
-                // Damage multiplier
                 if (originals.DamageDealt && pluginConfig.damage_multiplier > 1.0) {
                     events(12)._customBlock_DamageDealed = function(...argumentsList) {
                         return argumentsList[0] == "Max" 
@@ -227,7 +224,6 @@ class StatsMultiplierPlugin(PluginBase):
                     };
                 }
                 
-                // Efficiency multiplier
                 if (originals.SkillStats && pluginConfig.efficiency_multiplier > 1.0) {
                     events(12)._customBlock_SkillStats = function(...argumentsList) {
                         const t = argumentsList[0];
@@ -248,14 +244,12 @@ class StatsMultiplierPlugin(PluginBase):
                     };
                 }
                 
-                // AFK rate multiplier
                 if (originals.AFKgainrates && pluginConfig.afk_multiplier > 1.0) {
                     events(124)._customBlock_AFKgainrates = function(...argumentsList) {
                         return originals.AFKgainrates(...argumentsList) * pluginConfig.afk_multiplier;
                     };
                 }
                 
-                // Drop rate multiplier
                 if (originals.TotalStats && pluginConfig.drop_multiplier > 1.0) {
                     events(12)._customBlock_TotalStats = function(...argumentsList) {
                         return originals.TotalStats(...argumentsList) * 
@@ -263,7 +257,6 @@ class StatsMultiplierPlugin(PluginBase):
                     };
                 }
                 
-                // Monster count multiplier
                 if (originals.getValueForScene && pluginConfig.monster_multiplier > 1.0) {
                     behavior.getValueForScene = function(...argumentsList) {
                         if (argumentsList[1] === "_NumberOfEnemies") {
@@ -273,7 +266,6 @@ class StatsMultiplierPlugin(PluginBase):
                     };
                 }
                 
-                // Printer multiplier
                 if (originals.Workbench && pluginConfig.printer_multiplier > 1.0) {
                     events(345)._customBlock_Workbench = function(...argumentsList) {
                         const t = argumentsList[0];
@@ -287,7 +279,6 @@ class StatsMultiplierPlugin(PluginBase):
                 
                 return `Stats multipliers applied: Damage(${pluginConfig.damage_multiplier}x), Efficiency(${pluginConfig.efficiency_multiplier}x), AFK(${pluginConfig.afk_multiplier}x), Drop(${pluginConfig.drop_multiplier}x), Monster(${pluginConfig.monster_multiplier}x), Printer(${pluginConfig.printer_multiplier}x)`;
             } else {
-                // Restore original functions
                 const originals = window.__stats_multiplier_originals__;
                 if (originals) {
                     if (originals.DamageDealt) events(12)._customBlock_DamageDealed = originals.DamageDealt;

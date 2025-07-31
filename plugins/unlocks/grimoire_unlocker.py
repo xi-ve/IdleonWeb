@@ -1,4 +1,4 @@
-from plugin_system import PluginBase, js_export, ui_toggle, ui_search_with_results, plugin_command, ui_autocomplete_input, console
+from plugin_system import PluginBase, js_export, ui_toggle, ui_button, ui_search_with_results, plugin_command, ui_autocomplete_input, console
 from config_manager import config_manager
 
 class GrimoireUnlockerPlugin(PluginBase):
@@ -293,59 +293,50 @@ class GrimoireUnlockerPlugin(PluginBase):
                 console.print(f"[grimoire_unlocker] Error in get_set_grimoire_upgrade_level_ui_autocomplete: {e}")
             return []
 
-    @ui_toggle(
+    @ui_button(
         label="Unlock All Grimoire Upgrades",
         description="Unlock all grimoire upgrades (sets level to 1, does not max level)",
-        config_key="unlock_all_upgrades",
-        default_value=False
+        category="Actions",
+        order=1
     )
-    async def unlock_all_grimoire_upgrades_ui(self, value: bool = None):
-        if value is not None:
-            self.config["unlock_all_upgrades"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    result = await self.unlock_all_grimoire_upgrades(self.injector)
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    return f"ERROR: Error unlocking grimoire upgrades: {str(e)}"
-        return f"Unlock all grimoire upgrades {'enabled' if self.config.get('unlock_all_upgrades', False) else 'disabled'}"
+    async def unlock_all_grimoire_upgrades_ui(self):
+        if hasattr(self, 'injector') and self.injector:
+            try:
+                result = await self.unlock_all_grimoire_upgrades(self.injector)
+                return f"SUCCESS: {result}"
+            except Exception as e:
+                return f"ERROR: Error unlocking grimoire upgrades: {str(e)}"
+        return "Injector not available"
 
-    @ui_toggle(
+    @ui_button(
         label="Max Level All Grimoire Upgrades",
         description="Set all grimoire upgrades to maximum level",
-        config_key="max_level_all_upgrades",
-        default_value=False
+        category="Actions",
+        order=2
     )
-    async def max_level_all_grimoire_upgrades_ui(self, value: bool = None):
-        if value is not None:
-            self.config["max_level_all_upgrades"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    result = await self.max_level_all_grimoire_upgrades(self.injector)
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    return f"ERROR: Error max leveling grimoire upgrades: {str(e)}"
-        return f"Max level all grimoire upgrades {'enabled' if self.config.get('max_level_all_upgrades', False) else 'disabled'}"
+    async def max_level_all_grimoire_upgrades_ui(self):
+        if hasattr(self, 'injector') and self.injector:
+            try:
+                result = await self.max_level_all_grimoire_upgrades(self.injector)
+                return f"SUCCESS: {result}"
+            except Exception as e:
+                return f"ERROR: Error max leveling grimoire upgrades: {str(e)}"
+        return "Injector not available"
 
-    @ui_toggle(
+    @ui_button(
         label="Reset All Grimoire Upgrades",
         description="Reset all grimoire upgrades to level 0",
-        config_key="reset_all_upgrades",
-        default_value=False
+        category="Actions",
+        order=3
     )
-    async def reset_all_grimoire_upgrades_ui(self, value: bool = None):
-        if value is not None:
-            self.config["reset_all_upgrades"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    result = await self.reset_all_grimoire_upgrades(self.injector)
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    return f"ERROR: Error resetting grimoire upgrades: {str(e)}"
-        return f"Reset all grimoire upgrades {'enabled' if self.config.get('reset_all_upgrades', False) else 'disabled'}"
+    async def reset_all_grimoire_upgrades_ui(self):
+        if hasattr(self, 'injector') and self.injector:
+            try:
+                result = await self.reset_all_grimoire_upgrades(self.injector)
+                return f"SUCCESS: {result}"
+            except Exception as e:
+                return f"ERROR: Error resetting grimoire upgrades: {str(e)}"
+        return "Injector not available"
 
     @plugin_command(
         help="Get grimoire status showing all upgrades and their levels.",
@@ -640,39 +631,6 @@ class GrimoireUnlockerPlugin(PluginBase):
             return "Error: " + e.message;
         }
         '''
-
-    @ui_autocomplete_input(
-        label="Set All Grimoire Upgrades to % of Max",
-        description="Set all grimoire upgrades to a percentage of their maximum level (capped at 999999). Enter a number 0-100 for percentage.",
-        button_text="Set Percentage",
-        placeholder="Enter percentage (0-100, e.g., '50' for 50%)",
-    )
-    async def set_all_grimoire_upgrades_percentage_ui(self, value: str = None):
-        if hasattr(self, 'injector') and self.injector:
-            try:
-                if self.debug:
-                    console.print(f"[grimoire_unlocker] Setting grimoire upgrades to percentage, input: {value}")
-                
-                if not value or not value.strip():
-                    return "Please provide a percentage value (0-100)"
-                
-                try:
-                    percentage = float(value.strip())
-                    if percentage < 0 or percentage > 100:
-                        return "Percentage must be between 0 and 100"
-                except ValueError:
-                    return "Percentage must be a valid number"
-                
-                result = await self.set_all_grimoire_upgrades_percentage(percentage)
-                if self.debug:
-                    console.print(f"[grimoire_unlocker] Result: {result}")
-                return f"SUCCESS: {result}"
-            except Exception as e:
-                if self.debug:
-                    console.print(f"[grimoire_unlocker] Error setting grimoire upgrades percentage: {e}")
-                return f"ERROR: Error setting grimoire upgrades percentage: {str(e)}"
-        else:
-            return "ERROR: No injector available - run 'inject' first to connect to the game"
 
     @plugin_command(
         help="Set all grimoire upgrades to a percentage of their maximum level (capped at 999999).",

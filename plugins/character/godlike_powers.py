@@ -246,16 +246,15 @@ class GodlikePowersPlugin(PluginBase):
             if (!ctx) {
                 return "Error: Game context not available";
             }
-            
+
             const engine = ctx["com.stencyl.Engine"].engine;
             const behavior = ctx["com.stencyl.behavior.Script"];
             const events = function(num) { return ctx["scripts.ActorEvents_" + num]; };
-            
+
             if (!engine || !behavior) {
                 return "Error: Game engine not ready";
             }
-            
-            // Store original functions if not already stored
+
             if (!window.__godlike_powers_originals__) {
                 window.__godlike_powers_originals__ = {
                     CritChance: events(12)._customBlock_CritChance,
@@ -265,38 +264,34 @@ class GodlikePowersPlugin(PluginBase):
                     atkMoveMap: ctx["scripts.CustomMaps"].atkMoveMap.h
                 };
             }
-            
+
             if (window.pluginConfigs && window.pluginConfigs['godlike_powers'] && window.pluginConfigs['godlike_powers'].enabled) {
                 const pluginConfig = window.pluginConfigs['godlike_powers'];
                 const originals = window.__godlike_powers_originals__;
-                
-                // Critical hit chance
+
                 if (originals.CritChance) {
                     events(12)._customBlock_CritChance = function(...argumentsList) {
                         if (pluginConfig.crit) return 100;
                         return originals.CritChance(...argumentsList);
                     };
                 }
-                
-                // Player reach
+
                 if (originals.PlayerReach) {
                     events(12)._customBlock_PlayerReach = function(...argumentsList) {
                         if (pluginConfig.reach) return 666;
                         return originals.PlayerReach(...argumentsList);
                     };
                 }
-                
-                // Arbitrary code modifications
+
                 if (originals.ArbitraryCode) {
                     events(12)._customBlock_ArbitraryCode = function(...argumentsList) {
                         const t = argumentsList[0];
-                        if (t == "FoodNOTconsume" && pluginConfig.food) return 100; // Food never consumed
-                        if (t == "HitChancePCT" && pluginConfig.hitchance) return 100; // 100% hit chance
+                        if (t == "FoodNOTconsume" && pluginConfig.food) return 100;
+                        if (t == "HitChancePCT" && pluginConfig.hitchance) return 100;
                         return originals.ArbitraryCode(...argumentsList);
                     };
                 }
-                
-                // HP invincibility
+
                 if (originals.PlayerHP) {
                     Object.defineProperty(engine.gameAttributes.h, "PlayerHP", {
                         get: function() {
@@ -312,7 +307,6 @@ class GodlikePowersPlugin(PluginBase):
                     });
                 }
 
-                // Ability modifications
                 if (originals.atkMoveMap) {
                     const CustomMaps = ctx["scripts.CustomMaps"];
                     if (pluginConfig.ability) {
@@ -334,8 +328,7 @@ class GodlikePowersPlugin(PluginBase):
                         CustomMaps.atkMoveMap.h = originals.atkMoveMap;
                     }
                 }
-                
-                // Weapon speed modifications
+
                 if (pluginConfig.weapon_speed && pluginConfig.weapon_speed > 1) {
                     const itemDefs = engine.getGameAttribute("ItemDefinitionsGET").h;
                     for (const [index, element] of Object.entries(itemDefs)) {
@@ -344,8 +337,7 @@ class GodlikePowersPlugin(PluginBase):
                         }
                     }
                 }
-                
-                // Card modifications
+
                 if (pluginConfig.card) {
                     const CList = engine.getGameAttribute("CustomLists").h;
                     const CardStuff = CList["CardStuff"];
@@ -358,10 +350,9 @@ class GodlikePowersPlugin(PluginBase):
                         }
                     }
                 }
-                
+
                 return `Godlike powers applied: Reach(${pluginConfig.reach ? 'ON' : 'OFF'}), Crit(${pluginConfig.crit ? 'ON' : 'OFF'}), Ability(${pluginConfig.ability ? 'ON' : 'OFF'}), Food(${pluginConfig.food ? 'ON' : 'OFF'}), HitChance(${pluginConfig.hitchance ? 'ON' : 'OFF'}), Intervention(${pluginConfig.intervention ? 'ON' : 'OFF'}), Speed(${pluginConfig.weapon_speed}), Card(${pluginConfig.card ? 'ON' : 'OFF'}), Poison(${pluginConfig.poison ? 'ON' : 'OFF'}), Respawn(${pluginConfig.respawn ? 'ON' : 'OFF'}), HP(${pluginConfig.hp ? 'ON' : 'OFF'})`;
             } else {
-                // Restore original functions
                 const originals = window.__godlike_powers_originals__;
                 if (originals) {
                     if (originals.CritChance) events(12)._customBlock_CritChance = originals.CritChance;

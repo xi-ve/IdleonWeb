@@ -1,4 +1,4 @@
-from plugin_system import PluginBase, js_export, ui_banner, ui_toggle, ui_search_with_results, plugin_command, ui_autocomplete_input, console
+from plugin_system import PluginBase, js_export, ui_banner, ui_toggle, ui_search_with_results, plugin_command, ui_autocomplete_input, console, ui_button
 from config_manager import config_manager
 
 class SneakingItemsPlugin(PluginBase):
@@ -46,41 +46,50 @@ class SneakingItemsPlugin(PluginBase):
             self.debug = value
         return f"Debug mode {'enabled' if self.config.get('debug', False) else 'disabled'}"
 
-    @ui_toggle(
+    @ui_button(
         label="Unlock All Sneaking Items",
         description="Unlock all sneaking items (hats, weapons, gloves, charms)",
-        config_key="unlock_all_items",
-        default_value=False
+        category="Actions",
+        order=1
     )
-    async def unlock_all_items_ui(self, value: bool = None):
-        if value is not None:
-            self.config["unlock_all_items"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    result = await self.unlock_all_items(self.injector)
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    return f"ERROR: Error unlocking all items: {str(e)}"
-        return f"Unlock All Items {'enabled' if self.config.get('unlock_all_items', False) else 'disabled'}"
+    async def unlock_all_items_ui(self):
+        if hasattr(self, 'injector') and self.injector:
+            try:
+                result = await self.unlock_all_items(self.injector)
+                return f"SUCCESS: {result}"
+            except Exception as e:
+                return f"ERROR: Error unlocking all items: {str(e)}"
+        return "Injector not available"
 
-    @ui_toggle(
+    @ui_button(
         label="Max All Item Levels",
         description="Set all sneaking items to maximum level",
-        config_key="max_item_levels",
-        default_value=False
+        category="Actions",
+        order=2
     )
-    async def max_item_levels_ui(self, value: bool = None):
-        if value is not None:
-            self.config["max_item_levels"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    result = await self.max_item_levels(self.injector)
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    return f"ERROR: Error maxing item levels: {str(e)}"
-        return f"Max Item Levels {'enabled' if self.config.get('max_item_levels', False) else 'disabled'}"
+    async def max_item_levels_ui(self):
+        if hasattr(self, 'injector') and self.injector:
+            try:
+                result = await self.max_item_levels(self.injector)
+                return f"SUCCESS: {result}"
+            except Exception as e:
+                return f"ERROR: Error maxing item levels: {str(e)}"
+        return "Injector not available"
+
+    @ui_button(
+        label="Clear All Items",
+        description="Remove all sneaking items from inventory",
+        category="Actions",
+        order=3
+    )
+    async def clear_all_items_ui(self):
+        if hasattr(self, 'injector') and self.injector:
+            try:
+                result = await self.clear_all_items(self.injector)
+                return f"SUCCESS: {result}"
+            except Exception as e:
+                return f"ERROR: Error clearing items: {str(e)}"
+        return "Injector not available"
 
     @ui_search_with_results(
         label="Sneaking Items Status",
@@ -186,24 +195,6 @@ class SneakingItemsPlugin(PluginBase):
         self._item_cache = fallback_items
         self._cache_timestamp = current_time
         return fallback_items
-
-    @ui_toggle(
-        label="Clear All Items",
-        description="Remove all sneaking items from inventory",
-        config_key="clear_all_items",
-        default_value=False
-    )
-    async def clear_all_items_ui(self, value: bool = None):
-        if value is not None:
-            self.config["clear_all_items"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    result = await self.clear_all_items(self.injector)
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    return f"ERROR: Error clearing all items: {str(e)}"
-        return f"Clear All Items {'enabled' if self.config.get('clear_all_items', False) else 'disabled'}"
 
     @plugin_command(
         help="Get current sneaking items status.",

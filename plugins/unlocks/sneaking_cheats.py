@@ -1,4 +1,4 @@
-from plugin_system import PluginBase, js_export, ui_banner, ui_toggle, ui_search_with_results, plugin_command, ui_autocomplete_input, console
+from plugin_system import PluginBase, js_export, ui_banner, ui_toggle, ui_button, ui_search_with_results, ui_autocomplete_input, plugin_command, console
 from config_manager import config_manager
 
 class SneakingCheatsPlugin(PluginBase):
@@ -45,109 +45,45 @@ class SneakingCheatsPlugin(PluginBase):
             self.debug = value
         return f"Debug mode {'enabled' if self.config.get('debug', False) else 'disabled'}"
 
-    @ui_toggle(
+    @ui_button(
         label="Max Jade Coins",
         description="Set Jade Coins to maximum amount (999,999,999)",
-        config_key="max_jade_coins",
-        default_value=False,
         category="Money Cheats",
         order=2
     )
-    async def max_jade_coins_ui(self, value: bool = None):
-        if value is not None:
-            self.config["max_jade_coins"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Setting max Jade Coins")
-                    result = await self.max_jade_coins(self.injector)
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Result: {result}")
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Error setting max Jade Coins: {e}")
-                    return f"ERROR: Error setting max Jade Coins: {str(e)}"
-        return f"Max Jade Coins {'enabled' if self.config.get('max_jade_coins', False) else 'disabled'}"
+    async def max_jade_coins_ui(self):
+        result = await self.max_jade_coins()
+        return f"Max Jade Coins executed! {result}"
 
-    @ui_toggle(
+    @ui_button(
         label="Unlock All Sneaking Floors",
         description="Unlock all sneaking floors and areas",
-        config_key="unlock_all_floors",
-        default_value=False,
         category="Unlock Cheats",
         order=3
     )
-    async def unlock_all_floors_ui(self, value: bool = None):
-        if value is not None:
-            self.config["unlock_all_floors"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Unlocking all floors")
-                    result = await self.unlock_all_floors(self.injector)
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Result: {result}")
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Error unlocking all floors: {e}")
-                    return f"ERROR: Error unlocking all floors: {str(e)}"
-        return f"Unlock All Floors {'enabled' if self.config.get('unlock_all_floors', False) else 'disabled'}"
+    async def unlock_all_floors_ui(self):
+        result = await self.unlock_all_floors()
+        return f"Unlock floors executed! {result}"
 
-    @ui_toggle(
+    @ui_button(
         label="Max All Sneaking Upgrades",
         description="Max level all sneaking upgrades and equipment",
-        config_key="max_all_upgrades",
-        default_value=False,
         category="Upgrade Cheats",
         order=4
     )
-    async def max_all_upgrades_ui(self, value: bool = None):
-        if value is not None:
-            self.config["max_all_upgrades"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Maxing all upgrades")
-                    result = await self.max_all_upgrades(self.injector)
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Result: {result}")
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Error maxing all upgrades: {e}")
-                    return f"ERROR: Error maxing all upgrades: {str(e)}"
-        return f"Max All Upgrades {'enabled' if self.config.get('max_all_upgrades', False) else 'disabled'}"
+    async def max_all_upgrades_ui(self):
+        result = await self.max_all_upgrades()
+        return f"Max upgrades executed! {result}"
 
-    @ui_toggle(
+    @ui_button(
         label="Unlock All Ninja Equipment",
         description="Unlock all ninja equipment and items",
-        config_key="unlock_all_equipment",
-        default_value=False,
         category="Equipment Cheats",
         order=5
     )
-    async def unlock_all_equipment_ui(self, value: bool = None):
-        if value is not None:
-            self.config["unlock_all_equipment"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Unlocking all equipment")
-                    result = await self.unlock_all_equipment(self.injector)
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Result: {result}")
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Error unlocking all equipment: {e}")
-                    return f"ERROR: Error unlocking all equipment: {str(e)}"
-        return f"Unlock All Equipment {'enabled' if self.config.get('unlock_all_equipment', False) else 'disabled'}"
+    async def unlock_all_equipment_ui(self):
+        result = await self.unlock_all_equipment()
+        return f"Unlock equipment executed! {result}"
 
     @ui_search_with_results(
         label="Sneaking Status",
@@ -258,31 +194,15 @@ class SneakingCheatsPlugin(PluginBase):
                     return f"ERROR: Error setting max sneaking experience: {str(e)}"
         return f"Max Sneaking Experience {'enabled' if self.config.get('max_sneaking_exp', False) else 'disabled'}"
 
-    @ui_toggle(
+    @ui_button(
         label="🔧 Fix Bricked Character",
-        description="⚠️ EMERGENCY FIX: Restore character data to working state (use if cheats broke the game) - This is a nuclear option that completely rebuilds your character data",
-        config_key="fix_bricked_character",
-        default_value=False,
+        description="⚠️ EMERGENCY FIX: Restore character data to working state",
         category="⚠️ Emergency Fixes",
         order=10
     )
-    async def fix_bricked_character_ui(self, value: bool = None):
-        if value is not None:
-            self.config["fix_bricked_character"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Fixing bricked character")
-                    result = await self.fix_bricked_character(self.injector)
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Result: {result}")
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Error fixing bricked character: {e}")
-                    return f"ERROR: Error fixing bricked character: {str(e)}"
-        return f"Fix Bricked Character {'enabled' if self.config.get('fix_bricked_character', False) else 'disabled'}"
+    async def fix_bricked_character_ui(self):
+        result = await self.fix_bricked_character()
+        return f"Fix character executed! {result}"
 
     @ui_toggle(
         label="🎯 Initialize Sneaking Game",
@@ -363,7 +283,7 @@ class SneakingCheatsPlugin(PluginBase):
         return f"Add Single Ninja {'enabled' if self.config.get('add_single_ninja', False) else 'disabled'}"
 
     @ui_toggle(
-        label="🗑️ Delete All Ninjas",
+        label="��️ Delete All Ninjas",
         description="Remove all ninja twins",
         config_key="delete_all_ninjas",
         default_value=False,

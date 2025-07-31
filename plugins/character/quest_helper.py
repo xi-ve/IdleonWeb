@@ -1,4 +1,4 @@
-from plugin_system import plugin_command, js_export, PluginBase, console, ui_toggle, ui_search_with_results, ui_autocomplete_input, ui_banner
+from plugin_system import plugin_command, js_export, PluginBase, console, ui_toggle, ui_button, ui_search_with_results, ui_autocomplete_input, ui_banner
 from config_manager import config_manager
 
 class QuestHelperPlugin(PluginBase):
@@ -30,37 +30,30 @@ class QuestHelperPlugin(PluginBase):
     async def warning_banner(self):
         return "Warning banner displayed"
 
-    @ui_toggle(
+    @ui_button(
         label="Auto-Complete All Quests",
         description="Instantly complete all ongoing quests",
-        config_key="auto_complete_all",
-        default_value=False
+        category="Actions",
+        order=0
     )
-    async def auto_complete_all_ui(self, value: bool = None):
-        if value is not None:
-            self.config["auto_complete_all"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    result = await self.auto_complete_all_quests(self.injector)
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    return f"ERROR: Error auto-completing quests: {str(e)}"
-        return f"Auto-complete all quests {'enabled' if self.config.get('auto_complete_all', False) else 'disabled'}"
+    async def auto_complete_all_ui(self):
+        if hasattr(self, 'injector') and self.injector:
+            try:
+                result = await self.auto_complete_all_quests(self.injector)
+                return f"SUCCESS: {result}"
+            except Exception as e:
+                return f"ERROR: Error auto-completing quests: {str(e)}"
+        return "Injector not available"
 
-    @ui_toggle("Fix Character Quest Requirements", "Fixes all completed quests to have their requirements properly set as fulfilled")
-    async def fix_character_ui(self, value: bool = None):
-        if value:
-            result = await self.fix_character_requirements()
-            return f"Character fixed! {result}"
-        return "Character fixer ready. Enable to fix quest requirements."
+    @ui_button("Fix Character Quest Requirements", "Fixes all completed quests to have their requirements properly set as fulfilled", category="Actions")
+    async def fix_character_ui(self):
+        result = await self.fix_character_requirements()
+        return f"Character fixed! {result}"
 
-    @ui_toggle("Reset All Quests to Uncompleted", "Resets all quests to uncompleted status")
-    async def reset_quests_ui(self, value: bool = None):
-        if value:
-            result = await self.reset_all_quests()
-            return f"Quests reset! {result}"
-        return "Quest resetter ready. Enable to reset all quests to uncompleted."
+    @ui_button("Reset All Quests to Uncompleted", "Resets all quests to uncompleted status", category="Actions")
+    async def reset_quests_ui(self):
+        result = await self.reset_all_quests()
+        return f"Quests reset! {result}"
 
     @plugin_command(
         help="Get list of all ongoing quests with completion options.",
@@ -125,36 +118,31 @@ class QuestHelperPlugin(PluginBase):
             let total_quests = 0;
             let requirements_filled = 0;
             
-            // Process ALL quests (not just completed ones)
             for (const [questKey, isCompleted] of Object.entries(questComplete)) {
                 total_quests++;
                 
-                // Ensure questStatus entry exists for this quest
                 if (!questStatus[questKey]) {
-                    questStatus[questKey] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; // Create with 10 requirement slots
+                    questStatus[questKey] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
                     fixed_count++;
                 }
                 
                 let quest_needs_fixing = false;
                 
-                // Set quest status to completed (2) regardless of current status
                 if (questStatus[questKey][0] !== 2) {
-                    questStatus[questKey][0] = 2; // Set to completed
+                    questStatus[questKey][0] = 2;
                     quest_needs_fixing = true;
                 }
                 
-                // Set ALL requirement slots to fulfilled (1) - maximum requirements
                 for (let i = 1; i < questStatus[questKey].length; i++) {
                     if (questStatus[questKey][i] !== 1) {
-                        questStatus[questKey][i] = 1; // Fulfill requirement
+                        questStatus[questKey][i] = 1;
                         requirements_filled++;
                         quest_needs_fixing = true;
                     }
                 }
                 
-                // Also set the quest as completed in QuestComplete
                 if (questComplete[questKey] !== 1) {
-                    questComplete[questKey] = 1; // Mark as completed
+                    questComplete[questKey] = 1;
                     quest_needs_fixing = true;
                 }
                 
@@ -163,7 +151,6 @@ class QuestHelperPlugin(PluginBase):
                 }
             }
             
-            // Update NPC dialogue to maximum for all NPCs
             let npc_dialogue_updated = 0;
             try {
                 for (const [npcName, dialogueState] of Object.entries(npcDialogue)) {
@@ -179,7 +166,6 @@ class QuestHelperPlugin(PluginBase):
                 console.log("NPC dialogue update error:", e);
             }
             
-            // Trigger UI refresh
             try {
                 const pixelHelper = bEngine.getGameAttribute("PixelHelperActor");
                 if (pixelHelper && pixelHelper[5]) {
@@ -189,26 +175,21 @@ class QuestHelperPlugin(PluginBase):
                     pixelHelper[1].shout("_customEvent_QuestComplete");
                 }
                 
-                // Additional quest popup triggers
                 try {
-                    // Trigger quest helper menu update
                     if (pixelHelper && pixelHelper[23]) {
                         pixelHelper[23].shout("_customEvent_QuestHelperUpdate");
                     }
                     
-                    // Trigger NPC dialogue refresh
                     if (pixelHelper && pixelHelper[38]) {
                         pixelHelper[38].shout("_customEvent_DialogueRefresh");
                     }
                     
-                    // Force quest UI refresh
                     bEngine.gameAttributes.h.QuestHelperMenu = bEngine.gameAttributes.h.QuestHelperMenu || [];
                     
                 } catch (e) {
                     console.log("Additional quest popup trigger error:", e);
                 }
                 
-                // Force UI refresh
                 bEngine.gameAttributes.h.DummyText = "CharacterFixed";
                 
             } catch (e) {
@@ -241,39 +222,33 @@ class QuestHelperPlugin(PluginBase):
             let reset_count = 0;
             let total_quests = 0;
             
-            // Reset ALL quests to uncompleted
             for (const [questKey, isCompleted] of Object.entries(questComplete)) {
                 total_quests++;
                 
-                // Reset quest completion status
                 if (questComplete[questKey] !== 0) {
-                    questComplete[questKey] = 0; // Mark as uncompleted
+                    questComplete[questKey] = 0;
                     reset_count++;
                 }
                 
-                // Reset quest status and requirements
                 if (questStatus[questKey]) {
-                    // Set quest status to not met (0)
                     if (questStatus[questKey][0] !== 0) {
-                        questStatus[questKey][0] = 0; // Set to not met
+                        questStatus[questKey][0] = 0;
                         reset_count++;
                     }
                     
-                    // Reset ALL requirement slots to unfulfilled (0)
                     for (let i = 1; i < questStatus[questKey].length; i++) {
                         if (questStatus[questKey][i] !== 0) {
-                            questStatus[questKey][i] = 0; // Reset requirement
+                            questStatus[questKey][i] = 0;
                             reset_count++;
                         }
                     }
                 }
             }
             
-            // Reset NPC dialogue to initial state
             try {
                 for (const [npcName, dialogueState] of Object.entries(npcDialogue)) {
                     if (dialogueState > 0) {
-                        npcDialogue[npcName] = 0; // Reset to initial dialogue
+                        npcDialogue[npcName] = 0;
                         reset_count++;
                     }
                 }
@@ -281,7 +256,6 @@ class QuestHelperPlugin(PluginBase):
                 console.log("NPC dialogue reset error:", e);
             }
             
-            // Trigger UI refresh
             try {
                 const pixelHelper = bEngine.getGameAttribute("PixelHelperActor");
                 if (pixelHelper && pixelHelper[5]) {
@@ -291,7 +265,6 @@ class QuestHelperPlugin(PluginBase):
                     pixelHelper[1].shout("_customEvent_QuestComplete");
                 }
                 
-                // Force UI refresh
                 bEngine.gameAttributes.h.DummyText = "QuestsReset";
                 
             } catch (e) {
@@ -331,7 +304,6 @@ class QuestHelperPlugin(PluginBase):
             let locked_count = 0;
             let total_count = 0;
             
-            // Count all quests first
             for (const [questKey, isCompleted] of Object.entries(questComplete)) {
                 total_count++;
                 if (isCompleted === 0) ongoing_count++;
@@ -339,7 +311,6 @@ class QuestHelperPlugin(PluginBase):
                 else locked_count++;
             }
             
-            // ACTIVE QUESTS SECTION
             results.push(`<div style="font-weight: bold; color: #ffa500; margin: 10px 0;">🟡 ACTIVE QUESTS (${ongoing_count})</div>`);
             results.push(`<div style="margin-left: 10px;">`);
             
@@ -357,7 +328,6 @@ class QuestHelperPlugin(PluginBase):
             }
             results.push(`</div><br>`);
             
-            // COMPLETED QUESTS SECTION
             results.push(`<div style="font-weight: bold; color: #28a745; margin: 10px 0;">✅ COMPLETED QUESTS (${completed_count})</div>`);
             results.push(`<div style="margin-left: 10px;">`);
             
@@ -377,7 +347,6 @@ class QuestHelperPlugin(PluginBase):
             }
             results.push(`</div><br>`);
             
-            // LOCKED QUESTS SECTION
             results.push(`<div style="font-weight: bold; color: #6c757d; margin: 10px 0;">🔒 LOCKED QUESTS (${locked_count})</div>`);
             results.push(`<div style="margin-left: 10px;">`);
             
@@ -397,7 +366,6 @@ class QuestHelperPlugin(PluginBase):
             }
             results.push(`</div><br>`);
             
-            // SUMMARY SECTION
             results.push(`<div style="border: 1px solid #ddd; padding: 10px; border-radius: 5px; margin: 10px 0;">`);
             results.push(`<div style="font-weight: bold; margin-bottom: 5px; color: inherit;">📊 SUMMARY</div>`);
             results.push(`<div style="color: inherit;">Active Quests: ${ongoing_count}</div>`);
@@ -406,7 +374,6 @@ class QuestHelperPlugin(PluginBase):
             results.push(`<div style="color: inherit;">Total Quests: ${total_count}</div>`);
             results.push(`</div>`);
             
-            // TIPS SECTION
             results.push(`<div style="border: 1px solid #007bff; padding: 10px; border-radius: 5px; margin: 10px 0;">`);
             results.push(`<div style="font-weight: bold; margin-bottom: 5px; color: inherit;">💡 TIPS</div>`);
             results.push(`<div style="color: inherit;">• Click any quest name to instantly complete it!</div>`);
@@ -438,47 +405,36 @@ class QuestHelperPlugin(PluginBase):
             
             const questName = questKey.replace(/_/g, ' ');
             
-            // Check if quest is already completed
             if (questComplete[questKey] === 1) {
                 return `Quest '${questName}' is already completed`;
             }
             
-            // Check if quest is locked (status -1 or other negative values)
             if (questComplete[questKey] < 0) {
                 return `Quest '${questName}' is locked and cannot be completed`;
             }
             
-            // Ensure questStatus entry exists for this quest
             if (!questStatus[questKey]) {
-                questStatus[questKey] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; // Create with 10 requirement slots
+                questStatus[questKey] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
             }
             
-            // Set quest requirements as fulfilled first
             if (questStatus[questKey]) {
-                // Set quest as active/requirements met
                 questStatus[questKey][0] = 1;
                 
-                // Set ALL requirement slots to fulfilled (1) - maximum requirements
                 for (let i = 1; i < questStatus[questKey].length; i++) {
-                    questStatus[questKey][i] = 1; // Fulfill all requirements
+                    questStatus[questKey][i] = 1;
                 }
             }
             
-            // Complete the quest
             questComplete[questKey] = 1;
             
-            // Update QuestStatus to completed
             if (questStatus[questKey]) {
-                questStatus[questKey][0] = 2; // Completed status
+                questStatus[questKey][0] = 2;
             }
             
-            // Find the NPC associated with this quest and update their dialogue
             try {
-                // Extract NPC name from quest key (e.g., "Scripticus1" -> "Scripticus")
                 const npcName = questKey.replace(/\\d+$/, '');
                 
                 if (npcDialogue[npcName] !== undefined) {
-                    // Advance NPC dialogue to next stage
                     const currentDialogue = npcDialogue[npcName];
                     if (dialogueDefGET[npcName] && dialogueDefGET[npcName][1]) {
                         const maxDialogue = dialogueDefGET[npcName][1].length - 1;
@@ -491,23 +447,18 @@ class QuestHelperPlugin(PluginBase):
                 console.log("NPC dialogue update error:", e);
             }
             
-            // Trigger quest completion events
             try {
-                // Trigger the quest completion event
                 const pixelHelper = bEngine.getGameAttribute("PixelHelperActor");
                 if (pixelHelper && pixelHelper[5]) {
                     pixelHelper[5].shout("_customEvent_QuestComplete");
                 }
                 
-                // Also trigger on other relevant actors
                 if (pixelHelper && pixelHelper[1]) {
                     pixelHelper[1].shout("_customEvent_QuestComplete");
                 }
                 
-                // Update quest helper menu if it exists
                 const questHelperMenu = bEngine.getGameAttribute("QuestHelperMenu");
                 if (questHelperMenu && questHelperMenu.length > 0) {
-                    // Remove completed quest from helper menu
                     for (let i = questHelperMenu.length - 1; i >= 0; i--) {
                         if (questHelperMenu[i] && questHelperMenu[i][0] === questKey) {
                             questHelperMenu.splice(i, 1);
@@ -516,22 +467,17 @@ class QuestHelperPlugin(PluginBase):
                     }
                 }
                 
-                // Force UI refresh and trigger quest popup updates
                 bEngine.gameAttributes.h.DummyText = "QuestCompleted";
                 
-                // Additional quest popup triggers
                 try {
-                    // Trigger quest helper menu update
                     if (pixelHelper && pixelHelper[23]) {
                         pixelHelper[23].shout("_customEvent_QuestHelperUpdate");
                     }
                     
-                    // Trigger NPC dialogue refresh
                     if (pixelHelper && pixelHelper[38]) {
                         pixelHelper[38].shout("_customEvent_DialogueRefresh");
                     }
                     
-                    // Force quest UI refresh
                     bEngine.gameAttributes.h.QuestHelperMenu = bEngine.gameAttributes.h.QuestHelperMenu || [];
                     
                 } catch (e) {
@@ -566,43 +512,34 @@ class QuestHelperPlugin(PluginBase):
             let skipped_locked = 0;
             let requirements_filled = 0;
             
-            // Complete ALL quests (not just active ones, but skip locked ones)
             for (const [questKey, isCompleted] of Object.entries(questComplete)) {
-                // Skip locked quests (status -1 or other negative values)
                 if (isCompleted < 0) {
                     skipped_locked++;
                     continue;
                 }
                 
-                if (isCompleted !== 1) { // Not already completed
+                if (isCompleted !== 1) {
                     const questName = questKey.replace(/_/g, ' ');
                     
-                    // Ensure questStatus entry exists for this quest
                     if (!questStatus[questKey]) {
-                        questStatus[questKey] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; // Create with 10 requirement slots
+                        questStatus[questKey] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
                     }
                     
-                    // Set quest requirements as fulfilled first
                     if (questStatus[questKey]) {
-                        // Set quest as active/requirements met
                         questStatus[questKey][0] = 1;
                         
-                        // Set ALL requirement slots to fulfilled (1) - maximum requirements
                         for (let i = 1; i < questStatus[questKey].length; i++) {
-                            questStatus[questKey][i] = 1; // Fulfill all requirements
+                            questStatus[questKey][i] = 1;
                             requirements_filled++;
                         }
                     }
                     
-                    // Complete the quest
                     questComplete[questKey] = 1;
                     
-                    // Update QuestStatus to completed
                     if (questStatus[questKey]) {
                         questStatus[questKey][0] = 2;
                     }
                     
-                    // Update NPC dialogue
                     try {
                         const npcName = questKey.replace(/\\d+$/, '');
                         if (npcDialogue[npcName] !== undefined) {
@@ -623,7 +560,6 @@ class QuestHelperPlugin(PluginBase):
                 }
             }
             
-            // Trigger completion events
             try {
                 const pixelHelper = bEngine.getGameAttribute("PixelHelperActor");
                 if (pixelHelper && pixelHelper[5]) {
@@ -633,10 +569,8 @@ class QuestHelperPlugin(PluginBase):
                     pixelHelper[1].shout("_customEvent_QuestComplete");
                 }
                 
-                // Update quest helper menu
                 const questHelperMenu = bEngine.getGameAttribute("QuestHelperMenu");
                 if (questHelperMenu && questHelperMenu.length > 0) {
-                    // Remove all completed quests from helper menu
                     for (let i = questHelperMenu.length - 1; i >= 0; i--) {
                         if (questHelperMenu[i] && questComplete[questHelperMenu[i][0]] === 1) {
                             questHelperMenu.splice(i, 1);
@@ -644,22 +578,17 @@ class QuestHelperPlugin(PluginBase):
                     }
                 }
                 
-                // Force UI refresh and trigger quest popup updates
                 bEngine.gameAttributes.h.DummyText = "AllQuestsCompleted";
                 
-                // Additional quest popup triggers
                 try {
-                    // Trigger quest helper menu update
                     if (pixelHelper && pixelHelper[23]) {
                         pixelHelper[23].shout("_customEvent_QuestHelperUpdate");
                     }
                     
-                    // Trigger NPC dialogue refresh
                     if (pixelHelper && pixelHelper[38]) {
                         pixelHelper[38].shout("_customEvent_DialogueRefresh");
                     }
                     
-                    // Force quest UI refresh
                     bEngine.gameAttributes.h.QuestHelperMenu = bEngine.gameAttributes.h.QuestHelperMenu || [];
                     
                 } catch (e) {

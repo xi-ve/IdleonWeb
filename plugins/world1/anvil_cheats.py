@@ -1,5 +1,5 @@
 import time
-from plugin_system import PluginBase, js_export, ui_toggle, ui_search_with_results, plugin_command, ui_autocomplete_input, console
+from plugin_system import PluginBase, js_export, ui_toggle, ui_search_with_results, plugin_command, ui_autocomplete_input, console, ui_button
 from config_manager import config_manager
 
 class AnvilCheatsPlugin(PluginBase):
@@ -147,59 +147,75 @@ class AnvilCheatsPlugin(PluginBase):
             return "ERROR: No injector available - run 'inject' first to connect to the game"
 
     @ui_autocomplete_input(
-        label="Max Anvil Level",
-        description="Set a specific anvil to maximum level",
-        button_text="Max Level",
-        placeholder="Enter anvil name (e.g., 'Anvil1', 'Anvil2')",
-        order=8
+        label="Unlock Recipe by Name",
+        description="Unlock a specific recipe by name, or use 'tab1', 'tab2', 'tab3', or 'all' to unlock entire tabs",
+        button_text="Unlock Recipe",
+        placeholder="Enter recipe name (e.g., 'IronBar', 'SteelArmor') or 'tab1'/'all'",
+        category="Recipe Unlocks",
+        order=5
     )
-    async def max_anvil_level_ui(self, value: str = None):
+    async def unlock_recipe_ui(self, value: str = None):
         if hasattr(self, 'injector') and self.injector:
             try:
                 if self.debug:
-                    console.print(f"[anvil_cheats] Maxing anvil level, input: {value}")
+                    console.print(f"[anvil_cheats] Unlocking recipe: {value}")
                 
                 if not value or not value.strip():
-                    return "Please provide an anvil name (e.g., 'Anvil1', 'Anvil2')"
+                    return "Please provide a recipe name, tab (e.g., 'tab1'), or 'all'"
                 
-                result = await self.max_anvil_level(value.strip())
+                result = await self.unlock_recipe(value.strip())
                 if self.debug:
                     console.print(f"[anvil_cheats] Result: {result}")
                 return f"SUCCESS: {result}"
             except Exception as e:
                 if self.debug:
-                    console.print(f"[anvil_cheats] Error maxing anvil level: {e}")
-                return f"ERROR: Error maxing anvil level: {str(e)}"
+                    console.print(f"[anvil_cheats] Error unlocking recipe: {e}")
+                return f"ERROR: Error unlocking recipe: {str(e)}"
         else:
             return "ERROR: No injector available - run 'inject' first to connect to the game"
 
-    def get_max_anvil_level_ui_autocomplete(self, query: str = None) -> list:
+    def get_unlock_recipe_ui_autocomplete(self, query: str = None) -> list:
         if not hasattr(self, 'injector') or not self.injector:
             return []
         
         try:
             if self.debug:
-                console.print(f"[anvil_cheats] Getting autocomplete for query: {query}")
+                console.print(f"[anvil_cheats] Getting unlock recipe autocomplete for query: {query}")
             
-            anvil_names = [
-                "Anvil1", "Anvil2", "Anvil3", "Anvil4", "Anvil5",
-                "Anvil6", "Anvil7", "Anvil8", "Anvil9", "Anvil10"
-            ]
+            # Get locked recipes from JavaScript
+            result = self.run_js_export('get_locked_recipes_js', self.injector)
+            if not result or result.startswith("Error:"):
+                return ["tab1", "tab2", "tab3", "all"]
+            
+            # Parse the result to get recipe names
+            import re
+            # Extract recipe names from format "Recipe: RecipeName | Req Level: X"
+            recipes = re.findall(r'Recipe:\s*([^|]+)', result)
+            
+            # Clean up recipe names and add tab options
+            recipe_names = []
+            for recipe in recipes:
+                clean_name = recipe.strip()
+                if clean_name and clean_name != "undefined":
+                    recipe_names.append(clean_name)
+            
+            # Add tab and all options at the beginning
+            options = ["all", "tab1", "tab2", "tab3"] + sorted(set(recipe_names))
             
             if query:
                 query_lower = query.lower()
-                filtered_names = [name for name in anvil_names if query_lower in name.lower()]
+                filtered_options = [opt for opt in options if query_lower in opt.lower()]
             else:
-                filtered_names = anvil_names[:5]
+                filtered_options = options[:15]
             
             if self.debug:
-                console.print(f"[anvil_cheats] Autocomplete found {len(filtered_names)} anvils")
+                console.print(f"[anvil_cheats] Unlock autocomplete found {len(filtered_options)} options")
             
-            return filtered_names[:10]
+            return filtered_options[:10]
         except Exception as e:
             if self.debug:
-                console.print(f"[anvil_cheats] Error in autocomplete: {e}")
-            return []
+                console.print(f"[anvil_cheats] Error in unlock autocomplete: {e}")
+            return ["all", "tab1", "tab2", "tab3"]
 
     @plugin_command(
         help="Get current anvil status.",
@@ -234,17 +250,140 @@ class AnvilCheatsPlugin(PluginBase):
         return result
 
     @plugin_command(
-        help="Max a specific anvil level.",
+        help="Unlock a specific recipe by name, or use 'tab1', 'tab2', 'tab3', or 'all' to unlock entire tabs.",
         params=[
-            {"name": "anvil_name", "type": str, "help": "Name of the anvil to max (e.g., 'Anvil1')"},
+            {"name": "recipe_name", "type": str, "help": "Name of the recipe to unlock (e.g., 'IronBar', 'SteelArmor') or 'tab1'/'all'"},
         ],
     )
-    async def max_anvil_level(self, anvil_name: str, **kwargs):
+    async def unlock_recipe(self, recipe_name: str):
         if hasattr(self, 'injector') and self.injector:
-            result = self.run_js_export('max_anvil_level_js', self.injector, anvil_name=anvil_name)
+            result = self.run_js_export('unlock_recipe_js', self.injector, recipe_name=recipe_name)
             return result
         else:
             return "ERROR: No injector available - run 'inject' first to connect to the game"
+
+    @ui_autocomplete_input(
+        label="Set Smithing Level",
+        description="Set smithing level to a specific value (this affects available points)",
+        button_text="Set Level",
+        placeholder="Enter level (e.g., '200')",
+        category="Points",
+        order=1
+    )
+    async def set_smithing_level_ui(self, value: str = None):
+        if hasattr(self, 'injector') and self.injector:
+            try:
+                if not value or not value.strip():
+                    return "Please provide a level amount"
+                
+                try:
+                    level = int(value.strip())
+                    if level < 0:
+                        return "Level must be positive"
+                except ValueError:
+                    return "Please enter a valid number"
+                
+                result = self.run_js_export('set_smithing_level_js', self.injector, level=level)
+                return f"SUCCESS: {result}"
+            except Exception as e:
+                return f"ERROR: {str(e)}"
+        return "Injector not available"
+
+    @ui_autocomplete_input(
+        label="Set Bonus EXP Points",
+        description="Set bonus EXP points to a specific value",
+        button_text="Set Points",
+        placeholder="Enter points amount (e.g., '1000')",
+        category="Points",
+        order=2
+    )
+    async def set_bonus_exp_points_ui(self, value: str = None):
+        if hasattr(self, 'injector') and self.injector:
+            try:
+                if not value or not value.strip():
+                    return "Please provide a points amount"
+                
+                try:
+                    points = int(value.strip())
+                    if points < 0:
+                        return "Points amount must be positive"
+                except ValueError:
+                    return "Please enter a valid number"
+                
+                result = self.run_js_export('set_bonus_exp_points_js', self.injector, points=points)
+                return f"SUCCESS: {result}"
+            except Exception as e:
+                return f"ERROR: {str(e)}"
+        return "Injector not available"
+
+    @ui_autocomplete_input(
+        label="Set Production Speed Points",
+        description="Set production speed points to a specific value",
+        button_text="Set Points",
+        placeholder="Enter points amount (e.g., '1000')",
+        category="Points",
+        order=3
+    )
+    async def set_production_speed_points_ui(self, value: str = None):
+        if hasattr(self, 'injector') and self.injector:
+            try:
+                if not value or not value.strip():
+                    return "Please provide a points amount"
+                
+                try:
+                    points = int(value.strip())
+                    if points < 0:
+                        return "Points amount must be positive"
+                except ValueError:
+                    return "Please enter a valid number"
+                
+                result = self.run_js_export('set_production_speed_points_js', self.injector, points=points)
+                return f"SUCCESS: {result}"
+            except Exception as e:
+                return f"ERROR: {str(e)}"
+        return "Injector not available"
+
+    @ui_autocomplete_input(
+        label="Set Capacity Points",
+        description="Set capacity points to a specific value",
+        button_text="Set Points",
+        placeholder="Enter points amount (e.g., '1000')",
+        category="Points",
+        order=4
+    )
+    async def set_capacity_points_ui(self, value: str = None):
+        if hasattr(self, 'injector') and self.injector:
+            try:
+                if not value or not value.strip():
+                    return "Please provide a points amount"
+                
+                try:
+                    points = int(value.strip())
+                    if points < 0:
+                        return "Points amount must be positive"
+                except ValueError:
+                    return "Please enter a valid number"
+                
+                result = self.run_js_export('set_capacity_points_js', self.injector, points=points)
+                return f"SUCCESS: {result}"
+            except Exception as e:
+                return f"ERROR: {str(e)}"
+        return "Injector not available"
+
+    @ui_button(
+        label="Reset All Anvil Stats",
+        description="Reset all anvil stats and fix negative points",
+        category="Points",
+        order=0
+    )
+    async def reset_anvil_stats_ui(self):
+        if hasattr(self, 'injector') and self.injector:
+            try:
+                result = self.run_js_export('reset_anvil_stats_js', self.injector)
+                return f"SUCCESS: {result}"
+            except Exception as e:
+                return f"ERROR: {str(e)}"
+        return "Injector not available"
 
     @js_export(params=["filter_query"])
     def get_anvil_status_js(self, filter_query=None):
@@ -254,87 +393,120 @@ class AnvilCheatsPlugin(PluginBase):
             if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
             
             const bEngine = ctx["com.stencyl.Engine"].engine;
-            const anvilStats = bEngine.getGameAttribute("AnvilPAstats");
+            const anvilStats = bEngine.getGameAttribute("AnvilPAstats"); // [ Pts , CostUpg1 , CostUpg2 , LvClicksT1 , LvClicksT2 , LvClicksT3 ]
             const itemToCraftName = bEngine.getGameAttribute("CustomLists").h.ItemToCraftNAME;
-            const itemToCraftCost = bEngine.getGameAttribute("CustomLists").h.ItemToCraftCostTYPE;
             const itemToCraftExp = bEngine.getGameAttribute("CustomLists").h.ItemToCraftEXP;
+            const anvilCraftStatus = bEngine.getGameAttribute("AnvilCraftStatus");
+            const smithLvl = bEngine.getGameAttribute("Lv0")[2] || 0;
             
-            if (!anvilStats || !itemToCraftName) {
-                return "Error: Anvil data not found";
+            if (!Array.isArray(anvilStats) || anvilStats.length < 6) {
+                return "Error: AnvilPAstats array not initialised";
             }
             
-            let output = "";
-            output += "<div style='font-weight: bold; font-size: 16px; margin-bottom: 10px;'>🔨 ANVIL STATUS</div>";
+            let html = "";
+            html += `<div style='font-weight:bold;font-size:16px;margin-bottom:10px;'>🔨 ANVIL – PRODUCTION & STATS</div>`;
             
-            const filterQuery = filter_query ? filter_query.toLowerCase() : "";
+            // --- CORE STATS ----------------------
+            html += `<div style='margin:10px 0;padding:10px;border:1px solid #666;border-radius:4px;'>`;
+            html += `<div style='font-weight:bold;margin-bottom:6px;'>Core Stats</div>`;
+            html += `<div>Anvil&nbsp;Points: ${anvilStats[0]}</div>`;
+            html += `<div>Bonus&nbsp;EXP&nbsp;Points: ${anvilStats[3]}</div>`;
+            html += `<div>Production&nbsp;Speed&nbsp;Points: ${anvilStats[4]}</div>`;
+            html += `<div>Capacity&nbsp;Points: ${anvilStats[5]}</div>`;
+            html += `<div style='margin-top:6px;color:#888;'>Current Smithing Level: ${smithLvl}</div>`;
+            html += `</div>`;
             
-            output += "<div style='margin: 10px 0; padding: 10px; background: rgba(0, 0, 0, 0.1); border-radius: 5px;'>";
-            output += "<div style='font-weight: bold; margin-bottom: 5px;'>⚒️ ANVIL LEVELS</div>";
-            
-            for (let i = 0; i < anvilStats.length; i++) {
-                const anvilLevel = anvilStats[i] || 0;
-                const anvilName = `Anvil${i + 1}`;
-                
-                if (!filterQuery || anvilName.toLowerCase().includes(filterQuery)) {
-                    const status = anvilLevel >= 100 ? "🟢 MAX" : anvilLevel > 0 ? "🟡 LEVELED" : "🔒 LOCKED";
-                    const bgColor = anvilLevel >= 100 ? "rgba(107, 207, 127, 0.1)" : anvilLevel > 0 ? "rgba(255, 217, 61, 0.1)" : "rgba(255, 107, 107, 0.1)";
-                    const borderColor = anvilLevel >= 100 ? "#6bcf7f" : anvilLevel > 0 ? "#ffd93d" : "#ff6b6b";
-                    
-                    output += "<div style='margin: 2px 0; padding: 3px 8px; background: " + bgColor + "; border-left: 3px solid " + borderColor + ";'>";
-                    output += anvilName + " | Level: " + anvilLevel + " | " + status + "</div>";
-                }
-            }
-            output += "</div>";
-            
+            // --- RECIPE PROGRESS ------------------
             if (itemToCraftName && itemToCraftName.length > 0) {
-                output += "<div style='margin: 10px 0; padding: 10px; background: rgba(0, 0, 0, 0.1); border-radius: 5px;'>";
-                output += "<div style='font-weight: bold; margin-bottom: 5px;'>📋 RECIPE TABS</div>";
+                const filter = (filter_query || "").toLowerCase();
+                html += `<div style='margin:14px 0;padding:10px;border:1px solid #666;border-radius:4px;'>`;
+                html += `<div style='font-weight:bold;margin-bottom:6px;'>📋 RECIPE TABS</div>`;
+                let totalRecipes = 0, totalUnlocked = 0, totalLocked = 0, totalStorageUnlocked = 0;
                 
-                let totalRecipes = 0;
-                let unlockedRecipes = 0;
-                
-                for (let tabIndex = 0; tabIndex < itemToCraftName.length; tabIndex++) {
-                    const tabRecipes = itemToCraftName[tabIndex];
-                    if (tabRecipes && tabRecipes.length > 0) {
-                        const tabName = `Smithing Tab ${tabIndex + 1}`;
+                for (let tab = 0; tab < itemToCraftName.length; tab++) {
+                    const recipes = itemToCraftName[tab] || [];
+                    if (recipes.length === 0) continue;
+                    
+                    const tabName = `Smithing Tab ${tab + 1}`;
+                    if (filter && !tabName.toLowerCase().includes(filter)) continue;
+                    
+                    let tabUnlocked = 0, tabLocked = 0, tabStorageUnlocked = 0;
+                    let unlockedRecipes = [], lockedRecipes = [];
+                    let maxTabLevel = 0;
+                    
+                    for (let i = 0; i < recipes.length; i++) {
+                        const recId = recipes[i];
+                        if (!recId || recId === "Blank") continue;
                         
-                        if (!filterQuery || tabName.toLowerCase().includes(filterQuery)) {
-                            output += "<div style='margin: 5px 0; padding: 5px; background: rgba(255, 255, 255, 0.05); border-radius: 3px;'>";
-                            output += "<div style='font-weight: bold;'>" + tabName + " (" + tabRecipes.length + " recipes)</div>";
-                            
-                            for (let recipeIndex = 0; recipeIndex < Math.min(tabRecipes.length, 5); recipeIndex++) {
-                                const recipeId = tabRecipes[recipeIndex];
-                                const recipeExp = itemToCraftExp && itemToCraftExp[tabIndex] ? itemToCraftExp[tabIndex][recipeIndex] || 0 : 0;
-                                const isUnlocked = recipeExp > 0;
-                                
-                                if (isUnlocked) unlockedRecipes++;
-                                totalRecipes++;
-                                
-                                const status = isUnlocked ? "🟢 UNLOCKED" : "🔒 LOCKED";
-                                output += "<div style='margin: 1px 0; padding: 2px 5px; font-size: 12px;'>";
-                                output += "Recipe " + (recipeIndex + 1) + " | EXP: " + recipeExp + " | " + status + "</div>";
+                        const expArr = itemToCraftExp[tab][i] || ["0","0"];
+                        const reqLvl = Number(expArr[0] || 0);
+                        maxTabLevel = Math.max(maxTabLevel, reqLvl);
+                        
+                        const meetsLevelReq = smithLvl >= reqLvl;
+                        const craftStatus = anvilCraftStatus?.[tab]?.[i] || -1;
+                        const isStorageUnlocked = craftStatus >= 0;
+                        
+                        if (isStorageUnlocked) {
+                            tabStorageUnlocked++;
+                            if (meetsLevelReq) {
+                                tabUnlocked++;
+                                if (i < 5) unlockedRecipes.push(`#${i + 1} – ${recId} (Lv${reqLvl})`);
+                            } else {
+                                tabLocked++;
+                                if (i < 5) lockedRecipes.push(`#${i + 1} – ${recId} (Lv${reqLvl}, Storage Unlocked)`);
                             }
-                            
-                            if (tabRecipes.length > 5) {
-                                output += "<div style='margin: 1px 0; padding: 2px 5px; font-size: 12px; color: #888;'>";
-                                output += "... and " + (tabRecipes.length - 5) + " more recipes</div>";
-                            }
-                            
-                            output += "</div>";
+                        } else {
+                            tabLocked++;
+                            if (i < 5) lockedRecipes.push(`#${i + 1} – ${recId} (Lv${reqLvl}, Storage Locked)`);
+                        }
+                        totalRecipes++;
+                    }
+                    
+                    totalUnlocked += tabUnlocked;
+                    totalLocked += tabLocked;
+                    totalStorageUnlocked += tabStorageUnlocked;
+                    
+                    html += `<div style='margin:6px 0;padding:6px;background:rgba(255,255,255,0.05);border-radius:3px;'>`;
+                    html += `<div style='font-weight:bold;'>${tabName} (${recipes.length} recipes)</div>`;
+                    html += `<div style='margin:4px 0;'>✅ Unlocked: ${tabUnlocked} | 🔒 Locked: ${tabLocked} | 📦 Storage Unlocked: ${tabStorageUnlocked} | 📊 Max Level: ${maxTabLevel}</div>`;
+                    
+                    // Show unlocked recipes
+                    if (unlockedRecipes.length > 0) {
+                        html += `<div style='margin:4px 0;color:#6bcf7f;'>✅ Unlocked:</div>`;
+                        for (const recipe of unlockedRecipes) {
+                            html += `<div style='font-size:12px;margin-left:10px;'>${recipe}</div>`;
                         }
                     }
+                    
+                    // Show locked recipes  
+                    if (lockedRecipes.length > 0) {
+                        html += `<div style='margin:4px 0;color:#ff6b6b;'>🔒 Locked:</div>`;
+                        for (const recipe of lockedRecipes) {
+                            html += `<div style='font-size:12px;margin-left:10px;'>${recipe}</div>`;
+                        }
+                    }
+                    
+                    if (recipes.length > 5) {
+                        html += `<div style='font-size:11px;color:#888;margin-top:4px;'>... and ${recipes.length - 5} more recipes</div>`;
+                    }
+                    html += `</div>`;
                 }
                 
-                output += "<div style='margin-top: 10px; padding: 8px; background: rgba(0, 0, 0, 0.1); border-radius: 3px;'>";
-                output += "<div style='font-weight: bold;'>📊 SUMMARY</div>";
-                output += "<div>Total Recipes: " + totalRecipes + "</div>";
-                output += "<div>Unlocked: " + unlockedRecipes + "/" + totalRecipes + " (" + Math.round(unlockedRecipes/totalRecipes*100) + "%)</div>";
-                output += "</div>";
-                
-                output += "</div>";
+                html += `<div style='margin-top:8px;padding:6px;background:rgba(0,150,255,0.1);border-radius:3px;'>`;
+                html += `<div style='font-weight:bold;'>📊 RECIPE SUMMARY</div>`;
+                html += `<div>Total Recipes: ${totalRecipes}</div>`;
+                if (totalRecipes > 0) {
+                    html += `<div style='color:#6bcf7f;'>✅ Unlocked: ${totalUnlocked} (${Math.round(totalUnlocked/totalRecipes*100)}%)</div>`;
+                    html += `<div style='color:#ff6b6b;'>🔒 Locked: ${totalLocked} (${Math.round(totalLocked/totalRecipes*100)}%)</div>`;
+                    html += `<div style='color:#ffd93d;'>📦 Storage Unlocked: ${totalStorageUnlocked} (${Math.round(totalStorageUnlocked/totalRecipes*100)}%)</div>`;
+                } else {
+                    html += `<div>No recipes found</div>`;
+                }
+                html += `</div>`;
+                html += `</div>`;
             }
             
-            return output;
+            return html;
         } catch (e) {
             return `Error: ${e.message}`;
         }
@@ -436,8 +608,137 @@ class AnvilCheatsPlugin(PluginBase):
         }
         '''
 
+    @js_export(params=["recipe_name"])
+    def unlock_recipe_js(self, recipe_name=None):
+        return '''
+        try {
+            const ctx = window.__idleon_cheats__;
+            if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
+            
+            const bEngine = ctx["com.stencyl.Engine"].engine;
+            const playerLevels = bEngine.getGameAttribute("Lv0") || [];
+            const currentSmithingLevel = playerLevels[2] || 0;
+            const itemToCraftName = bEngine.getGameAttribute("CustomLists").h.ItemToCraftNAME;
+            const itemToCraftExp = bEngine.getGameAttribute("CustomLists").h.ItemToCraftEXP;
+            const anvilCraftStatus = bEngine.getGameAttribute("AnvilCraftStatus");
+            
+            if (!itemToCraftName || !itemToCraftExp || !anvilCraftStatus) {
+                return "Error: Recipe data not found";
+            }
+            
+            const recipeName = recipe_name;
+            console.log("[anvil_cheats] Unlocking recipe: " + recipeName);
+            if (!recipeName) {
+                return "Error: No recipe name provided";
+            }
+            
+            let message = "Recipe not found or not applicable.";
+            let newLevel = currentSmithingLevel;
+            let unlockedCount = 0;
+            let storageUnlockedCount = 0;
+            
+            if (recipeName.toLowerCase() === "all") {
+                // Find the highest required level across all recipes
+                let maxRequiredLevel = 0;
+                for (let tab = 0; tab < itemToCraftExp.length; tab++) {
+                    const recipes = itemToCraftExp[tab] || [];
+                    for (let i = 0; i < recipes.length; i++) {
+                        const expArr = recipes[i] || ["0","0"];
+                        const reqLvl = Number(expArr[0] || 0);
+                        maxRequiredLevel = Math.max(maxRequiredLevel, reqLvl);
+                        
+                        // Also unlock the recipe in AnvilCraftStatus
+                        if (anvilCraftStatus[tab] && anvilCraftStatus[tab][i] !== undefined) {
+                            if (anvilCraftStatus[tab][i] === -1) {
+                                anvilCraftStatus[tab][i] = 0; // Set to unlocked but not crafted
+                                unlockedCount++;
+                                storageUnlockedCount++;
+                            }
+                        }
+                    }
+                }
+                newLevel = Math.max(maxRequiredLevel + 10, currentSmithingLevel);
+                playerLevels[2] = newLevel;
+                message = `🔓 Set Smithing level to ${newLevel} and unlocked ${unlockedCount} recipes! (${storageUnlockedCount} storage unlocks)`;
+            } else if (recipeName.toLowerCase().startsWith("tab")) {
+                const tabNumber = parseInt(recipeName.substring(3)) - 1;
+                if (tabNumber >= 0 && tabNumber < itemToCraftExp.length) {
+                    // Find the highest required level in this tab
+                    let maxTabLevel = 0;
+                    const recipes = itemToCraftExp[tabNumber] || [];
+                    for (let i = 0; i < recipes.length; i++) {
+                        const expArr = recipes[i] || ["0","0"];
+                        const reqLvl = Number(expArr[0] || 0);
+                        maxTabLevel = Math.max(maxTabLevel, reqLvl);
+                        
+                        // Also unlock the recipe in AnvilCraftStatus
+                        if (anvilCraftStatus[tabNumber] && anvilCraftStatus[tabNumber][i] !== undefined) {
+                            if (anvilCraftStatus[tabNumber][i] === -1) {
+                                anvilCraftStatus[tabNumber][i] = 0; // Set to unlocked but not crafted
+                                unlockedCount++;
+                                storageUnlockedCount++;
+                            }
+                        }
+                    }
+                    newLevel = Math.max(maxTabLevel + 5, currentSmithingLevel);
+                    playerLevels[2] = newLevel;
+                    message = `🔓 Set Smithing level to ${newLevel} and unlocked ${unlockedCount} recipes in Tab ${tabNumber + 1}! (${storageUnlockedCount} storage unlocks)`;
+                } else {
+                    message = `Invalid tab number. Available tabs: tab1 to tab${itemToCraftExp.length}`;
+                }
+            } else {
+                // Find specific recipe by name
+                let foundRecipe = false;
+                let requiredLevel = 0;
+                let foundTab = -1;
+                let foundIndex = -1;
+                let foundName = "";
+                
+                const searchName = recipeName.toLowerCase();
+                for (let tab = 0; tab < itemToCraftName.length; tab++) {
+                    const recipes = itemToCraftName[tab] || [];
+                    for (let i = 0; i < recipes.length; i++) {
+                        const recId = recipes[i];
+                        if (recId && recId.toLowerCase().includes(searchName)) {
+                            const expArr = itemToCraftExp[tab][i] || ["0","0"];
+                            requiredLevel = Number(expArr[0] || 0);
+                            foundRecipe = true;
+                            foundTab = tab;
+                            foundIndex = i;
+                            foundName = recId;
+                            break;
+                        }
+                    }
+                    if (foundRecipe) break;
+                }
+                
+                if (foundRecipe) {
+                    newLevel = Math.max(requiredLevel + 1, currentSmithingLevel);
+                    playerLevels[2] = newLevel;
+                    
+                    // Also unlock the recipe in AnvilCraftStatus
+                    if (anvilCraftStatus[foundTab] && anvilCraftStatus[foundTab][foundIndex] !== undefined) {
+                        if (anvilCraftStatus[foundTab][foundIndex] === -1) {
+                            anvilCraftStatus[foundTab][foundIndex] = 0; // Set to unlocked but not crafted
+                            unlockedCount++;
+                            storageUnlockedCount++;
+                        }
+                    }
+                    
+                    message = `🔓 Set Smithing level to ${newLevel} and unlocked recipe "${foundName}"! (Tab ${foundTab + 1}, Required: ${requiredLevel})`;
+                } else {
+                    message = `Recipe "${recipeName}" not found. Try using partial names like "copper", "iron", etc.`;
+                }
+            }
+            
+            return message;
+        } catch (e) {
+            return `Error: ${e.message}`;
+        }
+        '''
+
     @js_export()
-    def max_anvil_level_js(self, anvil_name=None):
+    def reset_anvil_stats_js(self):
         return '''
         try {
             const ctx = window.__idleon_cheats__;
@@ -446,28 +747,188 @@ class AnvilCheatsPlugin(PluginBase):
             const bEngine = ctx["com.stencyl.Engine"].engine;
             const anvilStats = bEngine.getGameAttribute("AnvilPAstats");
             
-            if (!anvilStats) {
-                return "Error: Anvil stats not found";
+            if (!Array.isArray(anvilStats) || anvilStats.length < 6) {
+                return "Error: AnvilPAstats array not initialized";
             }
             
-            if (!anvil_name || !anvil_name.trim()) {
-                return "Error: No anvil name provided";
+            // Reset all stats to 0
+            anvilStats[0] = 0;  // Anvil Points
+            anvilStats[1] = 0;  // Cost Reducer Tier 1
+            anvilStats[2] = 0;  // Cost Reducer Tier 2
+            anvilStats[3] = 0;  // Bonus EXP Points
+            anvilStats[4] = 0;  // Production Speed Points
+            anvilStats[5] = 0;  // Capacity Points
+            
+            return `Reset all anvil stats to 0`;
+        } catch (e) {
+            return `Error: ${e.message}`;
+        }
+        '''
+
+    @js_export(params=["level"])
+    def set_smithing_level_js(self, level=None):
+        return '''
+        try {
+            const ctx = window.__idleon_cheats__;
+            if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
+            
+            const bEngine = ctx["com.stencyl.Engine"].engine;
+            const playerLevels = bEngine.getGameAttribute("Lv0") || [];
+            const oldLevel = playerLevels[2] || 0;
+            
+            // Set new smithing level
+            playerLevels[2] = level;
+            
+            // Reset cost reducers to prevent point deductions
+            const anvilStats = bEngine.getGameAttribute("AnvilPAstats");
+            if (Array.isArray(anvilStats) && anvilStats.length >= 6) {
+                anvilStats[1] = 0;  // Cost Reducer Tier 1
+                anvilStats[2] = 0;  // Cost Reducer Tier 2
             }
             
-            const anvilMatch = anvil_name.match(/Anvil(\\d+)/i);
-            if (!anvilMatch) {
-                return "Error: Invalid anvil name format. Use 'Anvil1', 'Anvil2', etc.";
+            return `Set Smithing level from ${oldLevel} to ${level}`;
+        } catch (e) {
+            return `Error: ${e.message}`;
+        }
+        '''
+
+    @js_export(params=["points"])
+    def set_bonus_exp_points_js(self, points=None):
+        return '''
+        try {
+            const ctx = window.__idleon_cheats__;
+            if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
+            
+            const bEngine = ctx["com.stencyl.Engine"].engine;
+            const anvilStats = bEngine.getGameAttribute("AnvilPAstats");
+            const playerLevels = bEngine.getGameAttribute("Lv0") || [];
+            const currentSmithingLevel = playerLevels[2] || 0;
+            
+            if (!Array.isArray(anvilStats) || anvilStats.length < 6) {
+                return "Error: AnvilPAstats array not initialized";
             }
             
-            const anvilIndex = parseInt(anvilMatch[1]) - 1;
-            if (anvilIndex < 0 || anvilIndex >= anvilStats.length) {
-                return `Error: Anvil index ${anvilIndex + 1} out of range (1-${anvilStats.length})`;
+            const oldPoints = anvilStats[3];
+            anvilStats[3] = points;
+            
+            // Set smithing level high enough to support these points
+            const totalPoints = anvilStats[3] + anvilStats[4] + anvilStats[5];
+            const neededLevel = Math.max(currentSmithingLevel, totalPoints);
+            playerLevels[2] = neededLevel;
+            
+            // Reset cost reducers to prevent negative points
+            anvilStats[1] = 0;  // Cost Reducer Tier 1
+            anvilStats[2] = 0;  // Cost Reducer Tier 2
+            
+            return `Set Bonus EXP Points from ${oldPoints} to ${points} (Smithing level set to ${neededLevel})`;
+        } catch (e) {
+            return `Error: ${e.message}`;
+        }
+        '''
+
+    @js_export(params=["points"])
+    def set_production_speed_points_js(self, points=None):
+        return '''
+        try {
+            const ctx = window.__idleon_cheats__;
+            if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
+            
+            const bEngine = ctx["com.stencyl.Engine"].engine;
+            const anvilStats = bEngine.getGameAttribute("AnvilPAstats");
+            const playerLevels = bEngine.getGameAttribute("Lv0") || [];
+            const currentSmithingLevel = playerLevels[2] || 0;
+            
+            if (!Array.isArray(anvilStats) || anvilStats.length < 6) {
+                return "Error: AnvilPAstats array not initialized";
             }
             
-            const oldLevel = anvilStats[anvilIndex] || 0;
-            anvilStats[anvilIndex] = 100;
+            const oldPoints = anvilStats[4];
+            anvilStats[4] = points;
             
-            return `🔨 ${anvil_name} leveled to maximum! (was ${oldLevel}, now 100)`;
+            // Set smithing level high enough to support these points
+            const totalPoints = anvilStats[3] + anvilStats[4] + anvilStats[5];
+            const neededLevel = Math.max(currentSmithingLevel, totalPoints);
+            playerLevels[2] = neededLevel;
+            
+            // Reset cost reducers to prevent negative points
+            anvilStats[1] = 0;  // Cost Reducer Tier 1
+            anvilStats[2] = 0;  // Cost Reducer Tier 2
+            
+            return `Set Production Speed Points from ${oldPoints} to ${points} (Smithing level set to ${neededLevel})`;
+        } catch (e) {
+            return `Error: ${e.message}`;
+        }
+        '''
+
+    @js_export(params=["points"])
+    def set_capacity_points_js(self, points=None):
+        return '''
+        try {
+            const ctx = window.__idleon_cheats__;
+            if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
+            
+            const bEngine = ctx["com.stencyl.Engine"].engine;
+            const anvilStats = bEngine.getGameAttribute("AnvilPAstats");
+            const playerLevels = bEngine.getGameAttribute("Lv0") || [];
+            const currentSmithingLevel = playerLevels[2] || 0;
+            
+            if (!Array.isArray(anvilStats) || anvilStats.length < 6) {
+                return "Error: AnvilPAstats array not initialized";
+            }
+            
+            const oldPoints = anvilStats[5];
+            anvilStats[5] = points;
+            
+            // Set smithing level high enough to support these points
+            const totalPoints = anvilStats[3] + anvilStats[4] + anvilStats[5];
+            const neededLevel = Math.max(currentSmithingLevel, totalPoints);
+            playerLevels[2] = neededLevel;
+            
+            // Reset cost reducers to prevent negative points
+            anvilStats[1] = 0;  // Cost Reducer Tier 1
+            anvilStats[2] = 0;  // Cost Reducer Tier 2
+            
+            return `Set Capacity Points from ${oldPoints} to ${points} (Smithing level set to ${neededLevel})`;
+        } catch (e) {
+            return `Error: ${e.message}`;
+        }
+        '''
+
+    @js_export()
+    def get_locked_recipes_js(self):
+        return '''
+        try {
+            const ctx = window.__idleon_cheats__;
+            if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
+            
+            const bEngine = ctx["com.stencyl.Engine"].engine;
+            const itemToCraftName = bEngine.getGameAttribute("CustomLists").h.ItemToCraftNAME;
+            const itemToCraftExp = bEngine.getGameAttribute("CustomLists").h.ItemToCraftEXP;
+            const smithLvl = bEngine.getGameAttribute("Lv0")[2] || 0;
+            
+            if (!itemToCraftName || !itemToCraftExp) {
+                return "Error: Recipe data not found";
+            }
+            
+            let lockedRecipes = [];
+            for (let tab = 0; tab < itemToCraftName.length; tab++) {
+                const recipes = itemToCraftName[tab] || [];
+                for (let i = 0; i < recipes.length; i++) {
+                    const recId = recipes[i];
+                    const expArr = itemToCraftExp?.[tab]?.[i] || ["0","0"];
+                    const reqLvl = Number(expArr[0] || 0);
+                    
+                    if (recId && smithLvl < reqLvl) {
+                        lockedRecipes.push(`Recipe: ${recId} | Req Level: ${reqLvl}`);
+                    }
+                }
+            }
+            
+            if (lockedRecipes.length === 0) {
+                return "No recipes are currently locked.";
+            }
+            
+            return lockedRecipes.join(" | ");
         } catch (e) {
             return `Error: ${e.message}`;
         }
