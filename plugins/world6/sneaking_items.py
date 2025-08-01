@@ -2,10 +2,10 @@ from plugin_system import PluginBase, js_export, ui_banner, ui_toggle, ui_search
 from config_manager import config_manager
 
 class SneakingItemsPlugin(PluginBase):
-    VERSION = "1.0.0"
+    VERSION = "1.0.1"
     DESCRIPTION = "Comprehensive item cheats for the sneaking game including hats, weapons, gloves, and charms."
     PLUGIN_ORDER = 8
-    CATEGORY = "Character"
+    CATEGORY = "World 6"
 
     def __init__(self, config=None):
         super().__init__(config or {})        
@@ -25,9 +25,9 @@ class SneakingItemsPlugin(PluginBase):
 
     @ui_banner(
         label="⚠️ HIGH RISK WARNING",
-        description="This plugin is work-in-progress and has a high risk of bricking your quests permanently! Use at your own risk!",
+        description="This plugin is work-in-progress and has a high risk of bricking you permanently! Use at your own risk!",
         banner_type="warning",
-        category="General",
+        category="Actions",
         order=-100
     )
     async def warning_banner(self):

@@ -81,7 +81,6 @@ python launch.py
 - **Quest Helper** - List and complete quests instantly
 - **Spawn Item** - Drop any item in the game with autocomplete
 - **Stats Multiplier** - Multiply various game stats by configurable amounts
-- **Sneaking Items** - Item cheats for the sneaking game
 
 ### QoL (Quality of Life) Plugins
 - **Global Storage** - Provides global storage functionality
@@ -92,10 +91,15 @@ python launch.py
 - **Grimoire Unlocker** - Unlock and manage grimoire upgrades for Death Bringer class
 - **Package Toggle** - Toggle bought packages and bundles
 - **Vault Unlocker** - Unlock and manage vault upgrades with category-based controls
-- **Sneaking Cheats** - Comprehensive cheats for the sneaking game
 
 ### World-Specific Plugins
-- **Anvil Cheats** (World 1) - Cheats for anvil and smithing related features
+#### World 1
+- **Anvil Cheats** - Cheats for anvil and smithing related features
+- **Stamp Cheats** - Unlock and manage stamp upgrades & bribes with viewing, leveling, unlocking, and bribe purchasing tools
+
+#### World 6
+- **Sneaking Cheats** - Comprehensive cheats for the sneaking game including money, unlocks, upgrades, and more
+- **Sneaking Items** - Comprehensive item cheats for the sneaking game including hats, weapons, gloves, and charms
 
 ---
 
@@ -108,6 +112,7 @@ IdleonWeb/
 │   ├── qol/          # Quality of Life plugins
 │   ├── unlocks/      # Unlock-related plugins
 │   ├── world1/       # World 1 specific plugins
+│   ├── world6/       # World 1 specific plugins
 │   └── ...           # Additional plugin categories
 ├── core/             # Core system files
 ├── webui/            # Web interface files

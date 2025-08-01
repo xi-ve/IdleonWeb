@@ -2,15 +2,18 @@ from plugin_system import PluginBase, js_export, ui_banner, ui_toggle, ui_button
 from config_manager import config_manager
 
 class SneakingCheatsPlugin(PluginBase):
-    VERSION = "1.0.0"
+    VERSION = "1.0.1"
     DESCRIPTION = "Comprehensive cheats for the sneaking game including money, unlocks, upgrades, and more. ⚠️ HIGH RISK: These features may brick your account as the sneaking game data structure is complex and not fully explored. Use at your own risk!"
     PLUGIN_ORDER = 6
-    CATEGORY = "Unlocks"
+    CATEGORY = "World 6"
 
     def __init__(self, config=None):
         super().__init__(config or {})        
         self.debug = config.get('debug', False) if config else False
         self.name = 'sneaking_cheats'
+        self._talents_cache = None
+        self._cache_timestamp = 0
+        self._cache_duration = 300
 
     async def cleanup(self): pass
     async def update(self): pass
@@ -20,90 +23,147 @@ class SneakingCheatsPlugin(PluginBase):
             self.set_config(config)
     async def on_game_ready(self): pass
 
-    @ui_banner(
-        label="⚠️ HIGH RISK WARNING",
-        description="This plugin is work-in-progress and has a high risk of bricking your quests permanently! Use at your own risk!",
-        banner_type="warning",
-        category="Money Cheats",
-        order=-100
-    )
-    async def warning_banner(self):
-        return "Warning banner displayed"
+    async def get_cached_talents_list(self):
+        import time
+        if (not hasattr(self, '_talents_cache') or 
+            not hasattr(self, '_cache_timestamp') or 
+            not hasattr(self, '_cache_duration') or
+            time.time() - self._cache_timestamp > self._cache_duration):
+            
+            if self.debug:
+                console.print("[sneaking_cheats] Cache expired or missing, fetching talents list...")
+            try:
+                if not hasattr(self, 'injector') or not self.injector:
+                    if self.debug:
+                        console.print("[sneaking_cheats] No injector available")
+                    return []
+                
+                raw_result = self.run_js_export('get_talent_names_js', self.injector)
+                if self.debug:
+                    console.print(f"[sneaking_cheats] Raw JS result: {raw_result}")
+                
+                if not raw_result or raw_result.startswith("Error:"):
+                    if self.debug:
+                        console.print(f"[sneaking_cheats] No valid result from JS: {raw_result}")
+                    return []
+                
+                talent_items = []
+                lines = raw_result.strip().split('\n')
+                if self.debug:
+                    console.print(f"[sneaking_cheats] Processing {len(lines)} lines")
+                
+                # Fallback: Use indices as names
+                totalTalents = 20
+                talent_items = [f"Talent {i+1}" for i in range(totalTalents)]
+                self._talents_cache = talent_items
+                self._cache_timestamp = time.time()
+                self._cache_duration = 300
+                if self.debug:
+                    console.print(f"[sneaking_cheats] Cached {len(talent_items)} talents (indices)")
+                return talent_items
+            except Exception as e:
+                if self.debug:
+                    console.print(f"[sneaking_cheats] Error fetching talents list: {e}")
+                return []
+        else:
+            if self.debug:
+                console.print(f"[sneaking_cheats] Using cached talents list ({len(self._talents_cache)} items)")
+            return self._talents_cache
 
-    @ui_toggle(
-        label="Debug Mode",
-        description="Enable debug logging for sneaking cheats plugin",
-        config_key="debug",
-        default_value=False,
-        category="Debug Settings",
-        order=1
-    )
-    async def enable_debug(self, value: bool = None):
-        if value is not None:
-            self.config["debug"] = value
-            self.save_to_global_config()
-            self.debug = value
-        return f"Debug mode {'enabled' if self.config.get('debug', False) else 'disabled'}"
-
-    @ui_button(
-        label="Max Jade Coins",
-        description="Set Jade Coins to maximum amount (999,999,999)",
-        category="Money Cheats",
-        order=2
-    )
-    async def max_jade_coins_ui(self):
-        result = await self.max_jade_coins()
-        return f"Max Jade Coins executed! {result}"
-
-    @ui_button(
-        label="Unlock All Sneaking Floors",
-        description="Unlock all sneaking floors and areas",
-        category="Unlock Cheats",
-        order=3
-    )
-    async def unlock_all_floors_ui(self):
-        result = await self.unlock_all_floors()
-        return f"Unlock floors executed! {result}"
-
-    @ui_button(
-        label="Max All Sneaking Upgrades",
-        description="Max level all sneaking upgrades and equipment",
-        category="Upgrade Cheats",
-        order=4
-    )
-    async def max_all_upgrades_ui(self):
-        result = await self.max_all_upgrades()
-        return f"Max upgrades executed! {result}"
-
-    @ui_button(
-        label="Unlock All Ninja Equipment",
-        description="Unlock all ninja equipment and items",
-        category="Equipment Cheats",
-        order=5
-    )
-    async def unlock_all_equipment_ui(self):
-        result = await self.unlock_all_equipment()
-        return f"Unlock equipment executed! {result}"
+    async def get_set_talent_level_ui_autocomplete(self, query: str = ""):
+        if self.debug:
+            console.print(f"[sneaking_cheats] get_set_talent_level_ui_autocomplete called with query: '{query}'")
+        try:
+            if not hasattr(self, 'injector') or not self.injector:
+                if self.debug:
+                    console.print("[sneaking_cheats] No injector available for autocomplete")
+                return []
+            
+            talent_items = await self.get_cached_talents_list()
+            if self.debug:
+                console.print(f"[sneaking_cheats] Got {len(talent_items)} talent items from cache")
+            
+            if not talent_items:
+                if self.debug:
+                    console.print("[sneaking_cheats] No talent items found")
+                return []
+            
+            query_lower = query.lower()
+            suggestions = []
+            
+            # Accept index or 'Talent N' as input
+            for i, item in enumerate(talent_items):
+                if query_lower in item.lower() or query_lower == str(i+1):
+                    suggestions.append(item)
+                    if self.debug:
+                        console.print(f"[sneaking_cheats] Added suggestion: {item}")
+            
+            if self.debug:
+                console.print(f"[sneaking_cheats] Returning {len(suggestions)} suggestions: {suggestions}")
+            return suggestions[:10]
+        except Exception as e:
+            if self.debug:
+                console.print(f"[sneaking_cheats] Error in get_set_talent_level_ui_autocomplete: {e}")
+            return []
 
     @ui_search_with_results(
-        label="Sneaking Status",
-        description="Show current sneaking game status including Jade Coins, floors unlocked, upgrades, etc.",
-        button_text="Show Status",
+        label="Sneaking Talents Status",
+        description="Show all sneaking talents with their current levels and max levels",
+        button_text="Show Talents",
         placeholder="Enter filter term (leave empty to show all)",
-        category="Status & Info",
-        order=6
+        category="Talents",
+        order=6.5
     )
-    async def sneaking_status_ui(self, value: str = None):
+    async def sneaking_talents_status_ui(self, value: str = None):
         if hasattr(self, 'injector') and self.injector:
             try:
                 if self.debug:
-                    console.print(f"[sneaking_cheats] Getting sneaking status, filter: {value}")
-                result = self.run_js_export('get_sneaking_status_js', self.injector, filter_query=value or "")
+                    console.print(f"[sneaking_cheats] Getting sneaking talents status, filter: {value}")
+                result = self.run_js_export('get_sneaking_talents_status_js', self.injector, filter_query=value or "")
                 return result
             except Exception as e:
                 if self.debug:
-                    console.print(f"[sneaking_cheats] Error getting sneaking status: {e}")
-                return f"ERROR: Error getting sneaking status: {str(e)}"
+                    console.print(f"[sneaking_cheats] Error getting sneaking talents status: {e}")
+                return f"ERROR: Error getting sneaking talents status: {str(e)}"
+        else:
+            return "ERROR: No injector available - run 'inject' first to connect to the game"
+
+    @ui_autocomplete_input(
+        label="Set Talent Level",
+        description="Set a specific sneaking talent to a specific level. Syntax: 'talent_name level' (e.g., 'strength 100')",
+        button_text="Set Level",
+        placeholder="Enter: talent_name level (e.g., 'strength 100')",
+        category="Talents",
+        order=6.6
+    )
+    async def set_talent_level_ui(self, value: str = None):
+        if hasattr(self, 'injector') and self.injector:
+            try:
+                if self.debug:
+                    console.print(f"[sneaking_cheats] Setting talent level, input: {value}")
+                if not value or not value.strip():
+                    return "Please provide talent index and level (e.g., '1 100' or 'Talent 1 100')"
+                parts = value.strip().split()
+                if len(parts) < 2:
+                    return "Syntax: 'talent_index level' (e.g., '1 100' or 'Talent 1 100')"
+                level_str = parts[-1]
+                talent_name = ' '.join(parts[:-1])
+                if self.debug:
+                    console.print(f"[sneaking_cheats] Parsed - talent_name: '{talent_name}', level: {level_str}")
+                try:
+                    level_int = int(level_str)
+                    if level_int < 0:
+                        return "Level must be 0 or higher"
+                except ValueError:
+                    return "Level must be a valid number"
+                result = await self.set_talent_level(talent_name, level_int)
+                if self.debug:
+                    console.print(f"[sneaking_cheats] Result: {result}")
+                return f"SUCCESS: {result}"
+            except Exception as e:
+                if self.debug:
+                    console.print(f"[sneaking_cheats] Error setting talent level: {e}")
+                return f"ERROR: Error setting talent level: {str(e)}"
         else:
             return "ERROR: No injector available - run 'inject' first to connect to the game"
 
@@ -142,62 +202,10 @@ class SneakingCheatsPlugin(PluginBase):
         else:
             return "ERROR: No injector available - run 'inject' first to connect to the game"
 
-    @ui_toggle(
-        label="Infinite Stealth",
-        description="Set stealth to maximum (no detection chance)",
-        config_key="infinite_stealth",
-        default_value=False,
-        category="Gameplay Cheats",
-        order=8
-    )
-    async def infinite_stealth_ui(self, value: bool = None):
-        if value is not None:
-            self.config["infinite_stealth"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Setting infinite stealth")
-                    result = await self.infinite_stealth(self.injector)
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Result: {result}")
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Error setting infinite stealth: {e}")
-                    return f"ERROR: Error setting infinite stealth: {str(e)}"
-        return f"Infinite Stealth {'enabled' if self.config.get('infinite_stealth', False) else 'disabled'}"
-
-    @ui_toggle(
-        label="Max Sneaking Experience",
-        description="Set all ninja twins to maximum sneaking experience",
-        config_key="max_sneaking_exp",
-        default_value=False,
-        category="Experience Cheats",
-        order=9
-    )
-    async def max_sneaking_exp_ui(self, value: bool = None):
-        if value is not None:
-            self.config["max_sneaking_exp"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Setting max sneaking experience")
-                    result = await self.max_sneaking_exp(self.injector)
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Result: {result}")
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Error setting max sneaking experience: {e}")
-                    return f"ERROR: Error setting max sneaking experience: {str(e)}"
-        return f"Max Sneaking Experience {'enabled' if self.config.get('max_sneaking_exp', False) else 'disabled'}"
-
     @ui_button(
-        label="🔧 Fix Bricked Character",
-        description="⚠️ EMERGENCY FIX: Restore character data to working state",
-        category="⚠️ Emergency Fixes",
+        label="🚨 Fix Bricked Character ⚠️",
+        description="⚠️ EMERGENCY FIX: Restore character data to working state ⚠️",
+        category="Emergency Fixes",
         order=10
     )
     async def fix_bricked_character_ui(self):
@@ -205,11 +213,11 @@ class SneakingCheatsPlugin(PluginBase):
         return f"Fix character executed! {result}"
 
     @ui_toggle(
-        label="🎯 Initialize Sneaking Game",
-        description="⚠️ FIRST-TIME SETUP: Set up initial sneaking game state (use if you have no floor UI or player is NULL) - This sets up basic game data without nuking everything",
+        label="⚠️ Initialize Sneaking Game 🚨",
+        description="⚠️ FIRST-TIME SETUP: Set up initial sneaking game state (use if you have no floor UI or player is NULL) - This sets up basic game data without nuking everything ⚠️",
         config_key="initialize_sneaking",
         default_value=False,
-        category="⚠️ Emergency Fixes",
+        category="Emergency Fixes",
         order=11
     )
     async def initialize_sneaking_ui(self, value: bool = None):
@@ -230,109 +238,6 @@ class SneakingCheatsPlugin(PluginBase):
                     return f"ERROR: Error initializing sneaking game: {str(e)}"
         return f"Initialize Sneaking Game {'enabled' if self.config.get('initialize_sneaking', False) else 'disabled'}"
 
-    @ui_toggle(
-        label="🥷 Add Max Ninjas",
-        description="Add all 12 ninja twins with max levels",
-        config_key="add_max_ninjas",
-        default_value=False,
-        category="Ninja Management",
-        order=12
-    )
-    async def add_max_ninjas_ui(self, value: bool = None):
-        if value is not None:
-            self.config["add_max_ninjas"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Adding max ninjas")
-                    result = await self.add_max_ninjas(self.injector)
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Result: {result}")
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Error adding max ninjas: {e}")
-                    return f"ERROR: Error adding max ninjas: {str(e)}"
-        return f"Add Max Ninjas {'enabled' if self.config.get('add_max_ninjas', False) else 'disabled'}"
-
-    @ui_toggle(
-        label="➕ Add Single Ninja",
-        description="Add one ninja twin with specified level",
-        config_key="add_single_ninja",
-        default_value=False,
-        category="Ninja Management",
-        order=13
-    )
-    async def add_single_ninja_ui(self, value: bool = None):
-        if value is not None:
-            self.config["add_single_ninja"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Adding single ninja")
-                    result = await self.add_single_ninja(self.injector)
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Result: {result}")
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Error adding single ninja: {e}")
-                    return f"ERROR: Error adding single ninja: {str(e)}"
-        return f"Add Single Ninja {'enabled' if self.config.get('add_single_ninja', False) else 'disabled'}"
-
-    @ui_toggle(
-        label="��️ Delete All Ninjas",
-        description="Remove all ninja twins",
-        config_key="delete_all_ninjas",
-        default_value=False,
-        category="Ninja Management",
-        order=14
-    )
-    async def delete_all_ninjas_ui(self, value: bool = None):
-        if value is not None:
-            self.config["delete_all_ninjas"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Deleting all ninjas")
-                    result = await self.delete_all_ninjas(self.injector)
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Result: {result}")
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Error deleting all ninjas: {e}")
-                    return f"ERROR: Error deleting all ninjas: {str(e)}"
-        return f"Delete All Ninjas {'enabled' if self.config.get('delete_all_ninjas', False) else 'disabled'}"
-
-    @ui_toggle(
-        label="🎭 Spawn Ninja Actors",
-        description="Spawn ninja actors on the game board (visual)",
-        config_key="spawn_ninja_actors",
-        default_value=False,
-        category="Ninja Management",
-        order=15
-    )
-    async def spawn_ninja_actors_ui(self, value: bool = None):
-        if value is not None:
-            self.config["spawn_ninja_actors"] = value
-            self.save_to_global_config()
-            if hasattr(self, 'injector') and self.injector and value:
-                try:
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Spawning ninja actors")
-                    result = await self.spawn_ninja_actors(self.injector)
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Result: {result}")
-                    return f"SUCCESS: {result}"
-                except Exception as e:
-                    if self.debug:
-                        console.print(f"[sneaking_cheats] Error spawning ninja actors: {e}")
-                    return f"ERROR: Error spawning ninja actors: {str(e)}"
-        return f"Spawn Ninja Actors {'enabled' if self.config.get('spawn_ninja_actors', False) else 'disabled'}"
 
 
 
@@ -388,6 +293,44 @@ class SneakingCheatsPlugin(PluginBase):
             return result
         else:
             return "ERROR: No injector available - run 'inject' first to connect to the game"
+
+    @plugin_command(
+        help="Get sneaking talents status showing all talents and their levels.",
+        params=[],
+    )
+    async def get_sneaking_talents_status(self, injector=None, **kwargs):
+        result = self.run_js_export('get_sneaking_talents_status_js', injector)
+        return result
+
+    @plugin_command(
+        help="Set a specific sneaking talent to a specific level.",
+        params=[
+            {"name": "talent_name", "type": str, "help": "Name of the sneaking talent"},
+            {"name": "level", "type": int, "help": "Level to set (0 or higher)"},
+        ],
+    )
+    async def set_talent_level(self, talent_name: str, level: int, **kwargs):
+        if hasattr(self, 'injector') and self.injector:
+            result = self.run_js_export('set_talent_level_js', self.injector, talent_name=talent_name, level=level)
+            return result
+        else:
+            return "ERROR: No injector available - run 'inject' first to connect to the game"
+
+    @plugin_command(
+        help="Set all sneaking talents to maximum level.",
+        params=[],
+    )
+    async def max_all_talents(self, injector=None, **kwargs):
+        result = self.run_js_export('max_all_talents_js', injector)
+        return result
+
+    @plugin_command(
+        help="Reset all sneaking talents to level 0.",
+        params=[],
+    )
+    async def reset_all_talents(self, injector=None, **kwargs):
+        result = self.run_js_export('reset_all_talents_js', injector)
+        return result
 
     @plugin_command(
         help="Set infinite stealth (no detection).",
@@ -453,10 +396,189 @@ class SneakingCheatsPlugin(PluginBase):
         result = self.run_js_export('spawn_ninja_actors_js', injector)
         return result
 
-
-
     @js_export(params=["filter_query"])
     def get_sneaking_status_js(self, filter_query=None):
+        return '''
+        try {
+            const ctx = window.__idleon_cheats__;
+            if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
+            const bEngine = ctx["com.stencyl.Engine"].engine;
+            const ninja = bEngine.getGameAttribute("Ninja");
+            const ninjaInfo = bEngine.getGameAttribute("CustomLists").h.NinjaInfo;
+            if (!ninja || !ninjaInfo) {
+                return "Error: Sneaking data not found";
+            }
+            let output = "";
+            output += "<div style='font-weight: bold; font-size: 16px; margin-bottom: 10px;'>SNEAKING GAME STATUS</div>";
+            const jadeCoins = ninja[102] ? ninja[102][1] || 0 : 0;
+            const currentFloor = ninja[102] ? ninja[102][0] || 0 : 0;
+            const floorsUnlocked = ninjaInfo[3] ? ninjaInfo[3].length : 0;
+            const ninjaTwins = ninja.length > 0 ? ninja.length : 0;
+            output += "<div style='margin: 10px 0; padding: 10px; background: rgba(0, 0, 0, 0.1); border-radius: 5px;'>";
+            output += "<div style='font-weight: bold; margin-bottom: 5px;'>MONEY & PROGRESS</div>";
+            output += "<div>Jade Coins: " + jadeCoins.toLocaleString() + "</div>";
+            output += "<div>Current Floor: " + currentFloor + "</div>";
+            output += "<div>Total Floors: " + floorsUnlocked + "</div>";
+            output += "<div>Ninja Twins: " + ninjaTwins + "</div>";
+            output += "</div>";
+            if (ninjaInfo[3] && ninjaInfo[3].length > 0) {
+                output += "<div style='margin: 10px 0; padding: 10px; background: rgba(0, 0, 0, 0.1); border-radius: 5px;'>";
+                output += "<div style='font-weight: bold; margin-bottom: 5px;'>FLOORS</div>";
+                const filterQuery = filter_query ? filter_query.toLowerCase() : "";
+                for (let i = 0; i < ninjaInfo[3].length; i++) {
+                    const floorName = ninjaInfo[3][i] || "Unknown Floor " + (i + 1);
+                    const isUnlocked = i <= currentFloor;
+                    const status = isUnlocked ? "UNLOCKED" : "LOCKED";
+                    if (!filterQuery || floorName.toLowerCase().includes(filterQuery)) {
+                        output += "<div style='margin: 2px 0; padding: 3px 8px; background: " + (isUnlocked ? "rgba(107, 207, 127, 0.1)" : "rgba(255, 107, 107, 0.1)") + "; border-left: 3px solid " + (isUnlocked ? "#6bcf7f" : "#ff6b6b") + ";'>";
+                        output += floorName + " | " + status + "</div>";
+                    }
+                }
+                output += "</div>";
+            }
+            if (ninja.length > 0) {
+                output += "<div style='margin: 10px 0; padding: 10px; background: rgba(0, 0, 0, 0.1); border-radius: 5px;'>";
+                output += "<div style='font-weight: bold; margin-bottom: 5px;'>NINJA TWINS</div>";
+                for (let i = 0; i < Math.min(ninja.length, 12); i++) {
+                    const ninjaData = ninja[i];
+                    if (ninjaData && ninjaData.length > 0) {
+                        const level = ninjaData[0] || 0;
+                        const exp = ninjaData[1] || 0;
+                        const stealth = ninjaData[2] || 0;
+                        output += "<div style='margin: 2px 0; padding: 3px 8px; background: rgba(255, 217, 61, 0.1); border-left: 3px solid #ffd93d;'>";
+                        output += "Ninja " + (i + 1) + " | Level: " + level + " | EXP: " + exp.toLocaleString() + " | Stealth: " + stealth + "</div>";
+                    }
+                }
+                output += "</div>";
+            }
+            return output;
+        } catch (e) {
+            return `Error: ${e.message}`;
+        }
+        '''
+
+    @js_export(params=["filter_query"])
+    def get_sneaking_talents_status_js(self, filter_query=None):
+        return '''
+        try {
+            const ctx = window.__idleon_cheats__;
+            if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
+            const bEngine = ctx["com.stencyl.Engine"].engine;
+            const ninja = bEngine.getGameAttribute("Ninja");
+            const ninjaInfo = bEngine.getGameAttribute("CustomLists").h.NinjaInfo;
+            if (!ninja || !ninjaInfo) {
+                return "Error: Sneaking data not found";
+            }
+let output = "";
+            output += "<div style='font-weight: bold; font-size: 16px; margin-bottom: 10px;'>SNEAKING TALENTS STATUS</div>";
+            const talentLevels = ninja[103] || [];
+            const talentMaxLevels = ninjaInfo[28] || [];
+            const totalTalents = talentLevels.length || 20;
+            const talentNames = Array.from({length: totalTalents}, (_, i) => `Talent ${i + 1}`);
+            while (talentMaxLevels.length < talentLevels.length) talentMaxLevels.push(100);
+            let total_talents = talentLevels.length;
+            let unlocked_talents = 0;
+            let max_leveled_talents = 0;
+            const allTalents = [];
+            for (let i = 0; i < talentLevels.length; i++) {
+                const name = `Talent ${i + 1}`;
+                const level = talentLevels[i] || 0;
+                const maxLevel = talentMaxLevels[i] || 100;
+                const isUnlocked = level > 0;
+                if (isUnlocked) unlocked_talents++;
+                if (level === maxLevel) max_leveled_talents++;
+                allTalents.push({ name, level, maxLevel, isUnlocked, index: i });
+            }
+            const filterQuery = filter_query ? filter_query.toLowerCase() : "";
+            output += "<div style='margin: 10px 0; padding: 10px; background: rgba(0,0,0,0.07); border-radius: 5px;'>";
+            output += `<div style='font-weight:bold;margin-bottom:5px;'>All Sneaking Talents (${allTalents.length})</div>`;
+            for (const item of allTalents) {
+                if (filterQuery && !item.name.toLowerCase().includes(filterQuery)) continue;
+                let color = item.level === item.maxLevel ? '#6bcf7f' : item.isUnlocked ? '#ffd93d' : '#ff6b6b';
+                let bg = item.level === item.maxLevel ? 'rgba(107,207,127,0.1)' : item.isUnlocked ? 'rgba(255,217,61,0.1)' : 'rgba(255,107,107,0.1)';
+                let status = item.level === item.maxLevel ? 'MAX' : item.isUnlocked ? 'UNLOCKED' : 'LOCKED';
+                output += `<div style='margin:2px 0;padding:3px 8px;background:${bg};border-left:3px solid ${color};'>${item.name} | Level: ${item.level} | ${status}</div>`;
+            }
+            output += "</div>";
+            output += "<div style='margin-top: 15px; padding: 10px; background: rgba(0, 0, 0, 0.1); border-radius: 5px;'>";
+            output += "<div style='font-weight: bold; margin-bottom: 5px;'>SUMMARY</div>";
+            output += "<div>Total Talents: " + total_talents + "</div>";
+            output += "<div>Unlocked: " + unlocked_talents + "/" + total_talents + " (" + Math.round(unlocked_talents/total_talents*100) + "%)</div>";
+            output += "</div>";
+            return output;
+        } catch (e) {
+            return `[ERROR] ${e.message}`;
+        }
+        '''
+    @ui_autocomplete_input(
+        label="Set All Talents to Level",
+        description="Set all sneaking talents to a specific level (e.g., '50')",
+        button_text="Set All Levels",
+        placeholder="Enter level (e.g., '50')",
+        category="Talents",
+        order=6.7
+    )
+    async def set_all_talents_level_ui(self, value: str = None):
+        if hasattr(self, 'injector') and self.injector:
+            try:
+                if self.debug:
+                    console.print(f"[sneaking_cheats] Setting all talents to level: {value}")
+                if not value or not value.strip():
+                    return "Please provide a level (e.g., '50')"
+                try:
+                    level_int = int(value.strip())
+                    if level_int < 0:
+                        return "Level must be 0 or higher"
+                except ValueError:
+                    return "Level must be a valid number"
+                result = await self.set_all_talents_level(level_int)
+                if self.debug:
+                    console.print(f"[sneaking_cheats] Result: {result}")
+                return f"SUCCESS: {result}"
+            except Exception as e:
+                if self.debug:
+                    console.print(f"[sneaking_cheats] Error setting all talents level: {e}")
+                return f"ERROR: Error setting all talents level: {str(e)}"
+        else:
+            return "ERROR: No injector available - run 'inject' first to connect to the game"
+
+    @plugin_command(
+        help="Set all sneaking talents to a specific level.",
+        params=[
+            {"name": "level", "type": int, "help": "Level to set (0 or higher)"},
+        ],
+    )
+    async def set_all_talents_level(self, level: int, **kwargs):
+        if hasattr(self, 'injector') and self.injector:
+            result = self.run_js_export('set_all_talents_level_js', self.injector, level=level)
+            return result
+        else:
+            return "ERROR: No injector available - run 'inject' first to connect to the game"
+
+    @js_export(params=["level"])
+    def set_all_talents_level_js(self, level=None):
+        return '''
+        try {
+            const ctx = window.__idleon_cheats__;
+            if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
+            const bEngine = ctx["com.stencyl.Engine"].engine;
+            const ninja = bEngine.getGameAttribute("Ninja");
+            if (ninja?.[103]) {
+                for (let i = 0; i < ninja[103].length; i++) {
+                    ninja[103][i] = (typeof level === 'number' && !isNaN(level)) ? level : 999999;
+                }
+                console.log(`🎯 Set all ${ninja[103].length} ninja talents to level ${level}`);
+                return true;
+            }
+            return false;
+        } catch (e) {
+            console.error("Error setting all ninja talents:", e);
+            return false;
+        }
+        '''
+
+    @js_export(params=["talent_name", "level"])
+    def set_talent_level_js(self, talent_name=None, level=None):
         return '''
         try {
             const ctx = window.__idleon_cheats__;
@@ -470,59 +592,155 @@ class SneakingCheatsPlugin(PluginBase):
                 return "Error: Sneaking data not found";
             }
             
-            let output = "";
-            output += "<div style='font-weight: bold; font-size: 16px; margin-bottom: 10px;'>🥷 SNEAKING GAME STATUS</div>";
-            
-            const jadeCoins = ninja[102] ? ninja[102][1] || 0 : 0;
-            const currentFloor = ninja[102] ? ninja[102][0] || 0 : 0;
-            const floorsUnlocked = ninjaInfo[3] ? ninjaInfo[3].length : 0;
-            const ninjaTwins = ninja.length > 0 ? ninja.length : 0;
-            
-            output += "<div style='margin: 10px 0; padding: 10px; background: rgba(0, 0, 0, 0.1); border-radius: 5px;'>";
-            output += "<div style='font-weight: bold; margin-bottom: 5px;'>💰 MONEY & PROGRESS</div>";
-            output += "<div>Jade Coins: " + jadeCoins.toLocaleString() + "</div>";
-            output += "<div>Current Floor: " + currentFloor + "</div>";
-            output += "<div>Total Floors: " + floorsUnlocked + "</div>";
-            output += "<div>Ninja Twins: " + ninjaTwins + "</div>";
-            output += "</div>";
-            
-            if (ninjaInfo[3] && ninjaInfo[3].length > 0) {
-                output += "<div style='margin: 10px 0; padding: 10px; background: rgba(0, 0, 0, 0.1); border-radius: 5px;'>";
-                output += "<div style='font-weight: bold; margin-bottom: 5px;'>🏢 FLOORS</div>";
-                
-                const filterQuery = filter_query ? filter_query.toLowerCase() : "";
-                
-                for (let i = 0; i < ninjaInfo[3].length; i++) {
-                    const floorName = ninjaInfo[3][i] || "Unknown Floor " + (i + 1);
-                    const isUnlocked = i <= currentFloor;
-                    const status = isUnlocked ? "🟢 UNLOCKED" : "🔒 LOCKED";
-                    
-                    if (!filterQuery || floorName.toLowerCase().includes(filterQuery)) {
-                        output += "<div style='margin: 2px 0; padding: 3px 8px; background: " + (isUnlocked ? "rgba(107, 207, 127, 0.1)" : "rgba(255, 107, 107, 0.1)") + "; border-left: 3px solid " + (isUnlocked ? "#6bcf7f" : "#ff6b6b") + ";'>";
-                        output += floorName + " | " + status + "</div>";
-                    }
-                }
-                output += "</div>";
+            if (!talent_name || level === undefined || level === null) {
+                return "Error: Talent name and level are required";
             }
             
-            if (ninja.length > 0) {
-                output += "<div style='margin: 10px 0; padding: 10px; background: rgba(0, 0, 0, 0.1); border-radius: 5px;'>";
-                output += "<div style='font-weight: bold; margin-bottom: 5px;'>🥷 NINJA TWINS</div>";
-                
-                for (let i = 0; i < Math.min(ninja.length, 12); i++) {
-                    const ninjaData = ninja[i];
-                    if (ninjaData && ninjaData.length > 0) {
-                        const level = ninjaData[0] || 0;
-                        const exp = ninjaData[1] || 0;
-                        const stealth = ninjaData[2] || 0;
-                        output += "<div style='margin: 2px 0; padding: 3px 8px; background: rgba(255, 217, 61, 0.1); border-left: 3px solid #ffd93d;'>";
-                        output += "Ninja " + (i + 1) + " | Level: " + level + " | EXP: " + exp.toLocaleString() + " | Stealth: " + stealth + "</div>";
-                    }
-                }
-                output += "</div>";
+            if (level < 0) {
+                return "Error: Level must be 0 or higher";
             }
             
-            return output;
+            const talentLevels = ninja[103] || [];
+            const talentMaxLevels = ninjaInfo[28] || [];
+            const totalTalents = talentLevels.length || 20;
+            let found_index = -1;
+            let found_name = "";
+            // Accept either index or 'Talent N' as name
+            if (/^talent\\s*\\d+$/i.test(talent_name.trim())) {
+                found_index = parseInt(talent_name.trim().match(/\\d+/)[0], 10) - 1;
+                found_name = `Talent ${found_index + 1}`;
+            } else if (/^\\d+$/.test(talent_name.trim())) {
+                found_index = parseInt(talent_name.trim(), 10) - 1;
+                found_name = `Talent ${found_index + 1}`;
+            }
+            if (found_index < 0 || found_index >= totalTalents) {
+                return `Error: Talent '${talent_name}' not found (valid: 1-${totalTalents})`;
+            }
+            const maxLevel = talentMaxLevels[found_index] || 100;
+            const oldLevel = talentLevels[found_index] || 0;
+            if (level > maxLevel) {
+                return `Error: Level ${level} exceeds maximum level ${maxLevel} for '${found_name}'`;
+            }
+            while (talentLevels.length <= found_index) {
+                talentLevels.push(0);
+            }
+            talentLevels[found_index] = level;
+            ninja[103] = talentLevels;
+            if (level === 0) {
+                return `✅ Reset '${found_name}' to level 0 (was level ${oldLevel})`;
+            } else if (level === maxLevel) {
+                return `🚀 Set '${found_name}' to maximum level ${maxLevel} (was level ${oldLevel})`;
+            } else {
+                return `📈 Set '${found_name}' to level ${level} (was level ${oldLevel}, max is ${maxLevel})`;
+            }
+        } catch (e) {
+            return `Error: ${e.message}`;
+        }
+        '''
+
+    @js_export()
+    def max_all_talents_js(self):
+        return '''
+        try {
+            const ctx = window.__idleon_cheats__;
+            if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
+            
+            const bEngine = ctx["com.stencyl.Engine"].engine;
+            const ninja = bEngine.getGameAttribute("Ninja");
+            const ninjaInfo = bEngine.getGameAttribute("CustomLists").h.NinjaInfo;
+            
+            if (!ninja || !ninjaInfo) {
+                return "Error: Sneaking data not found";
+            }
+            
+            const talentLevels = ninja[103] || [];
+            const talentNames = ninjaInfo[27] || [];
+            const talentMaxLevels = ninjaInfo[28] || [];
+            
+            if (talentNames.length === 0) {
+                return "Error: No talent data found";
+            }
+            
+            let maxedCount = 0;
+            let alreadyMaxedCount = 0;
+            
+            while (talentLevels.length < talentNames.length) {
+                talentLevels.push(0);
+            }
+            
+            for (let i = 0; i < talentNames.length; i++) {
+                const maxLevel = talentMaxLevels[i] || 100;
+                const currentLevel = talentLevels[i] || 0;
+                
+                if (currentLevel < maxLevel) {
+                    talentLevels[i] = maxLevel;
+                    maxedCount++;
+                } else {
+                    alreadyMaxedCount++;
+                }
+            }
+            
+            ninja[103] = talentLevels;
+            
+            if (maxedCount === 0) {
+                return `✅ All talents are already at maximum level! (${alreadyMaxedCount} talents)`;
+            } else {
+                return `🚀 Set ${maxedCount} talents to maximum level! (${alreadyMaxedCount} were already maxed)`;
+            }
+        } catch (e) {
+            return `Error: ${e.message}`;
+        }
+        '''
+
+    @js_export()
+    def reset_all_talents_js(self):
+        return '''
+        try {
+            const ctx = window.__idleon_cheats__;
+            if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
+            
+            const bEngine = ctx["com.stencyl.Engine"].engine;
+            const ninja = bEngine.getGameAttribute("Ninja");
+            const ninjaInfo = bEngine.getGameAttribute("CustomLists").h.NinjaInfo;
+            
+            if (!ninja || !ninjaInfo) {
+                return "Error: Sneaking data not found";
+            }
+            
+            // Get talent data
+            const talentLevels = ninja[103] || [];
+            const talentNames = ninjaInfo[27] || [];
+            
+            if (talentNames.length === 0) {
+                return "Error: No talent data found";
+            }
+            
+            let resetCount = 0;
+            let alreadyResetCount = 0;
+            
+            // Ensure talent levels array is large enough
+            while (talentLevels.length < talentNames.length) {
+                talentLevels.push(0);
+            }
+            
+            for (let i = 0; i < talentNames.length; i++) {
+                const currentLevel = talentLevels[i] || 0;
+                
+                if (currentLevel > 0) {
+                    talentLevels[i] = 0;
+                    resetCount++;
+                } else {
+                    alreadyResetCount++;
+                }
+            }
+            
+            ninja[103] = talentLevels;
+            
+            if (resetCount === 0) {
+                return `✅ All talents are already reset! (${alreadyResetCount} talents)`;
+            } else {
+                return `🔄 Reset ${resetCount} talents to level 0! (${alreadyResetCount} were already reset)`;
+            }
         } catch (e) {
             return `Error: ${e.message}`;
         }
@@ -551,7 +769,7 @@ class SneakingCheatsPlugin(PluginBase):
             
             ninja[102][1] = newAmount;
             
-            return `💰 Set Jade Coins to maximum: ${newAmount.toLocaleString()} (was ${oldAmount.toLocaleString()})`;
+            return `Set Jade Coins to maximum: ${newAmount.toLocaleString()} (was ${oldAmount.toLocaleString()})`;
         } catch (e) {
             return `Error: ${e.message}`;
         }
@@ -580,7 +798,7 @@ class SneakingCheatsPlugin(PluginBase):
             
             ninja[102][0] = totalFloors - 1;
             
-            return `🏢 Unlocked all ${totalFloors} sneaking floors! (Set current floor to ${totalFloors - 1})`;
+            return `Unlocked all ${totalFloors} sneaking floors! (Set current floor to ${totalFloors - 1})`;
         } catch (e) {
             return `Error: ${e.message}`;
         }
@@ -615,7 +833,7 @@ class SneakingCheatsPlugin(PluginBase):
                 }
             }
             
-            return `⚡ Maxed ${upgradedCount} sneaking upgrades!`;
+            return `Maxed ${upgradedCount} sneaking upgrades!`;
         } catch (e) {
             return `Error: ${e.message}`;
         }
@@ -652,7 +870,7 @@ class SneakingCheatsPlugin(PluginBase):
                 }
             }
             
-            return `🥷 Unlocked ${unlockedCount} ninja equipment items!`;
+            return `Unlocked ${unlockedCount} ninja equipment items!`;
         } catch (e) {
             return `Error: ${e.message}`;
         }
@@ -685,68 +903,7 @@ class SneakingCheatsPlugin(PluginBase):
             
             ninja[102][1] = newAmount;
             
-            return `💰 Added ${amount.toLocaleString()} Jade Coins! New total: ${newAmount.toLocaleString()}`;
-        } catch (e) {
-            return `Error: ${e.message}`;
-        }
-        '''
-
-    @js_export()
-    def infinite_stealth_js(self):
-        return '''
-        try {
-            const ctx = window.__idleon_cheats__;
-            if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
-            
-            const bEngine = ctx["com.stencyl.Engine"].engine;
-            const ninja = bEngine.getGameAttribute("Ninja");
-            
-            if (!ninja) {
-                return "Error: Ninja data not found";
-            }
-            
-            let stealthSetCount = 0;
-            
-            for (let i = 0; i < ninja.length; i++) {
-                const ninjaData = ninja[i];
-                if (ninjaData && Array.isArray(ninjaData) && ninjaData.length > 2) {
-                    ninjaData[2] = 999;
-                    stealthSetCount++;
-                }
-            }
-            
-            return `🥷 Set infinite stealth for ${stealthSetCount} ninja twins! (No detection chance)`;
-        } catch (e) {
-            return `Error: ${e.message}`;
-        }
-        '''
-
-    @js_export()
-    def max_sneaking_exp_js(self):
-        return '''
-        try {
-            const ctx = window.__idleon_cheats__;
-            if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
-            
-            const bEngine = ctx["com.stencyl.Engine"].engine;
-            const ninja = bEngine.getGameAttribute("Ninja");
-            
-            if (!ninja) {
-                return "Error: Ninja data not found";
-            }
-            
-            let expSetCount = 0;
-            
-            for (let i = 0; i < ninja.length; i++) {
-                const ninjaData = ninja[i];
-                if (ninjaData && Array.isArray(ninjaData) && ninjaData.length > 1) {
-                    ninjaData[0] = 999;
-                    ninjaData[1] = 999999999;
-                    expSetCount++;
-                }
-            }
-            
-            return `📈 Set max sneaking experience for ${expSetCount} ninja twins!`;
+            return `Added ${amount.toLocaleString()} Jade Coins! New total: ${newAmount.toLocaleString()}`;
         } catch (e) {
             return `Error: ${e.message}`;
         }
@@ -1003,7 +1160,7 @@ class SneakingCheatsPlugin(PluginBase):
                 }
             }
             
-            return `🎯 INITIALIZED: Set up ${initializedCount} sneaking game arrays and spawned ninja actors! Game should now be functional with UI and visible ninjas.`;
+            return `INITIALIZED: Set up ${initializedCount} sneaking game arrays and spawned ninja actors! Game should now be functional with UI and visible ninjas.`;
         } catch (e) {
             return `Error: ${e.message}`;
         }
@@ -1036,7 +1193,7 @@ class SneakingCheatsPlugin(PluginBase):
                 }
             }
             
-            return `🥷 Added ${addedCount} ninja twins with max levels!`;
+            return `Added ${addedCount} ninja twins with max levels!`;
         } catch (e) {
             return `Error: ${e.message}`;
         }
@@ -1074,7 +1231,7 @@ class SneakingCheatsPlugin(PluginBase):
             ninja[ninjaIndex][2] = 100;
             ninja[ninjaIndex][3] = 50;
             
-            return `➕ Added ninja twin #${ninjaIndex + 1} with level 50!`;
+            return `Added ninja twin #${ninjaIndex + 1} with level 50!`;
         } catch (e) {
             return `Error: ${e.message}`;
         }
@@ -1107,7 +1264,7 @@ class SneakingCheatsPlugin(PluginBase):
                 }
             }
             
-            return `🗑️ Deleted ${deletedCount} ninja twins!`;
+            return `Deleted ${deletedCount} ninja twins!`;
         } catch (e) {
             return `Error: ${e.message}`;
         }
@@ -1186,7 +1343,7 @@ class SneakingCheatsPlugin(PluginBase):
                 }
             }
             
-            return `🎭 Spawned ${spawnedCount} ninja actors using game logic!`;
+            return `Spawned ${spawnedCount} ninja actors using game logic!`;
         } catch (e) {
             return `Error: ${e.message}`;
         }
@@ -1194,4 +1351,4 @@ class SneakingCheatsPlugin(PluginBase):
 
 
 
-plugin_class = SneakingCheatsPlugin 
+plugin_class = SneakingCheatsPlugin

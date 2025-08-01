@@ -9,8 +9,10 @@ from typing import Any, Dict, List, Optional, Type, Callable, Union
 import traceback
 import json
 from enum import Enum
-import ast
-
+import subprocess
+import tempfile
+import os
+        
 from rich.console import Console
 from config_manager import config_manager
 
@@ -23,10 +25,7 @@ command_registry = {}
 
 def check_js_syntax(js_code: str, plugin_name: str, function_name: str) -> tuple[bool, str]:
     try:
-        import subprocess
-        import tempfile
-        import os
-        
+
         with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False) as temp_file:
             temp_file.write(js_code)
             temp_file_path = temp_file.name
@@ -840,6 +839,7 @@ class PluginManager:
             plugin_name = getattr(plugin, 'name', plugin.__class__.__name__)
             plugin_has_errors = False
             plugin_error_details = []
+            js_function_count = 0
             
             namespace_init = f"window.{plugin_name} = window.{plugin_name} || {{}};\n"
             js_code += namespace_init
@@ -882,6 +882,8 @@ class PluginManager:
                             plugin_error_details.append(f"  • {js_name}: {error_msg}")
                             continue
                         
+                        js_function_count += 1
+                        
                         wrapped_js_body = f"""
                         try {{
                             await window.__idleon_wait_for_game_ready();
@@ -909,7 +911,8 @@ class PluginManager:
                 'name': plugin_name,
                 'success': not plugin_has_errors,
                 'error_details': plugin_error_details,
-                'js_size': len(plugin_js)
+                'js_size': len(plugin_js),
+                'function_count': js_function_count
             })
             
             if plugin_has_errors:
@@ -935,8 +938,7 @@ class PluginManager:
             status_text = "Success" if result['success'] else "Failed"
             js_size_kb = f"{result['js_size']/1024:.2f}"
             
-            plugin = self.plugins.get(result['name'])
-            func_count = len(plugin.get_commands()) if plugin else 0
+            func_count = result.get('function_count', 0)
             
             summary_table.add_row(
                 result['name'],
