@@ -182,24 +182,19 @@ class AnvilCheatsPlugin(PluginBase):
             if self.debug:
                 console.print(f"[anvil_cheats] Getting unlock recipe autocomplete for query: {query}")
             
-            # Get locked recipes from JavaScript
             result = self.run_js_export('get_locked_recipes_js', self.injector)
             if not result or result.startswith("Error:"):
                 return ["tab1", "tab2", "tab3", "all"]
-            
-            # Parse the result to get recipe names
+
             import re
-            # Extract recipe names from format "Recipe: RecipeName | Req Level: X"
             recipes = re.findall(r'Recipe:\s*([^|]+)', result)
             
-            # Clean up recipe names and add tab options
             recipe_names = []
             for recipe in recipes:
                 clean_name = recipe.strip()
                 if clean_name and clean_name != "undefined":
                     recipe_names.append(clean_name)
             
-            # Add tab and all options at the beginning
             options = ["all", "tab1", "tab2", "tab3"] + sorted(set(recipe_names))
             
             if query:
@@ -406,7 +401,6 @@ class AnvilCheatsPlugin(PluginBase):
             let html = "";
             html += `<div style='font-weight:bold;font-size:16px;margin-bottom:10px;'>🔨 ANVIL – PRODUCTION & STATS</div>`;
             
-            // --- CORE STATS ----------------------
             html += `<div style='margin:10px 0;padding:10px;border:1px solid #666;border-radius:4px;'>`;
             html += `<div style='font-weight:bold;margin-bottom:6px;'>Core Stats</div>`;
             html += `<div>Anvil&nbsp;Points: ${anvilStats[0]}</div>`;
@@ -415,96 +409,6 @@ class AnvilCheatsPlugin(PluginBase):
             html += `<div>Capacity&nbsp;Points: ${anvilStats[5]}</div>`;
             html += `<div style='margin-top:6px;color:#888;'>Current Smithing Level: ${smithLvl}</div>`;
             html += `</div>`;
-            
-            // --- RECIPE PROGRESS ------------------
-            if (itemToCraftName && itemToCraftName.length > 0) {
-                const filter = (filter_query || "").toLowerCase();
-                html += `<div style='margin:14px 0;padding:10px;border:1px solid #666;border-radius:4px;'>`;
-                html += `<div style='font-weight:bold;margin-bottom:6px;'>📋 RECIPE TABS</div>`;
-                let totalRecipes = 0, totalUnlocked = 0, totalLocked = 0, totalStorageUnlocked = 0;
-                
-                for (let tab = 0; tab < itemToCraftName.length; tab++) {
-                    const recipes = itemToCraftName[tab] || [];
-                    if (recipes.length === 0) continue;
-                    
-                    const tabName = `Smithing Tab ${tab + 1}`;
-                    if (filter && !tabName.toLowerCase().includes(filter)) continue;
-                    
-                    let tabUnlocked = 0, tabLocked = 0, tabStorageUnlocked = 0;
-                    let unlockedRecipes = [], lockedRecipes = [];
-                    let maxTabLevel = 0;
-                    
-                    for (let i = 0; i < recipes.length; i++) {
-                        const recId = recipes[i];
-                        if (!recId || recId === "Blank") continue;
-                        
-                        const expArr = itemToCraftExp[tab][i] || ["0","0"];
-                        const reqLvl = Number(expArr[0] || 0);
-                        maxTabLevel = Math.max(maxTabLevel, reqLvl);
-                        
-                        const meetsLevelReq = smithLvl >= reqLvl;
-                        const craftStatus = anvilCraftStatus?.[tab]?.[i] || -1;
-                        const isStorageUnlocked = craftStatus >= 0;
-                        
-                        if (isStorageUnlocked) {
-                            tabStorageUnlocked++;
-                            if (meetsLevelReq) {
-                                tabUnlocked++;
-                                if (i < 5) unlockedRecipes.push(`#${i + 1} – ${recId} (Lv${reqLvl})`);
-                            } else {
-                                tabLocked++;
-                                if (i < 5) lockedRecipes.push(`#${i + 1} – ${recId} (Lv${reqLvl}, Storage Unlocked)`);
-                            }
-                        } else {
-                            tabLocked++;
-                            if (i < 5) lockedRecipes.push(`#${i + 1} – ${recId} (Lv${reqLvl}, Storage Locked)`);
-                        }
-                        totalRecipes++;
-                    }
-                    
-                    totalUnlocked += tabUnlocked;
-                    totalLocked += tabLocked;
-                    totalStorageUnlocked += tabStorageUnlocked;
-                    
-                    html += `<div style='margin:6px 0;padding:6px;background:rgba(255,255,255,0.05);border-radius:3px;'>`;
-                    html += `<div style='font-weight:bold;'>${tabName} (${recipes.length} recipes)</div>`;
-                    html += `<div style='margin:4px 0;'>✅ Unlocked: ${tabUnlocked} | 🔒 Locked: ${tabLocked} | 📦 Storage Unlocked: ${tabStorageUnlocked} | 📊 Max Level: ${maxTabLevel}</div>`;
-                    
-                    // Show unlocked recipes
-                    if (unlockedRecipes.length > 0) {
-                        html += `<div style='margin:4px 0;color:#6bcf7f;'>✅ Unlocked:</div>`;
-                        for (const recipe of unlockedRecipes) {
-                            html += `<div style='font-size:12px;margin-left:10px;'>${recipe}</div>`;
-                        }
-                    }
-                    
-                    // Show locked recipes  
-                    if (lockedRecipes.length > 0) {
-                        html += `<div style='margin:4px 0;color:#ff6b6b;'>🔒 Locked:</div>`;
-                        for (const recipe of lockedRecipes) {
-                            html += `<div style='font-size:12px;margin-left:10px;'>${recipe}</div>`;
-                        }
-                    }
-                    
-                    if (recipes.length > 5) {
-                        html += `<div style='font-size:11px;color:#888;margin-top:4px;'>... and ${recipes.length - 5} more recipes</div>`;
-                    }
-                    html += `</div>`;
-                }
-                
-                html += `<div style='margin-top:8px;padding:6px;background:rgba(0,150,255,0.1);border-radius:3px;'>`;
-                html += `<div style='font-weight:bold;'>📊 RECIPE SUMMARY</div>`;
-                html += `<div>Total Recipes: ${totalRecipes}</div>`;
-                if (totalRecipes > 0) {
-                    html += `<div style='color:#6bcf7f;'>✅ Unlocked: ${totalUnlocked} (${Math.round(totalUnlocked/totalRecipes*100)}%)</div>`;
-                    html += `<div style='color:#ff6b6b;'>🔒 Locked: ${totalLocked} (${Math.round(totalLocked/totalRecipes*100)}%)</div>`;
-                    html += `<div style='color:#ffd93d;'>📦 Storage Unlocked: ${totalStorageUnlocked} (${Math.round(totalStorageUnlocked/totalRecipes*100)}%)</div>`;
-                } else {
-                    html += `<div>No recipes found</div>`;
-                }
-                html += `</div>`;
-                html += `</div>`;
-            }
             
             return html;
         } catch (e) {
@@ -638,7 +542,6 @@ class AnvilCheatsPlugin(PluginBase):
             let storageUnlockedCount = 0;
             
             if (recipeName.toLowerCase() === "all") {
-                // Find the highest required level across all recipes
                 let maxRequiredLevel = 0;
                 for (let tab = 0; tab < itemToCraftExp.length; tab++) {
                     const recipes = itemToCraftExp[tab] || [];
@@ -647,7 +550,6 @@ class AnvilCheatsPlugin(PluginBase):
                         const reqLvl = Number(expArr[0] || 0);
                         maxRequiredLevel = Math.max(maxRequiredLevel, reqLvl);
                         
-                        // Also unlock the recipe in AnvilCraftStatus
                         if (anvilCraftStatus[tab] && anvilCraftStatus[tab][i] !== undefined) {
                             if (anvilCraftStatus[tab][i] === -1) {
                                 anvilCraftStatus[tab][i] = 0; // Set to unlocked but not crafted
@@ -663,7 +565,6 @@ class AnvilCheatsPlugin(PluginBase):
             } else if (recipeName.toLowerCase().startsWith("tab")) {
                 const tabNumber = parseInt(recipeName.substring(3)) - 1;
                 if (tabNumber >= 0 && tabNumber < itemToCraftExp.length) {
-                    // Find the highest required level in this tab
                     let maxTabLevel = 0;
                     const recipes = itemToCraftExp[tabNumber] || [];
                     for (let i = 0; i < recipes.length; i++) {
@@ -671,7 +572,6 @@ class AnvilCheatsPlugin(PluginBase):
                         const reqLvl = Number(expArr[0] || 0);
                         maxTabLevel = Math.max(maxTabLevel, reqLvl);
                         
-                        // Also unlock the recipe in AnvilCraftStatus
                         if (anvilCraftStatus[tabNumber] && anvilCraftStatus[tabNumber][i] !== undefined) {
                             if (anvilCraftStatus[tabNumber][i] === -1) {
                                 anvilCraftStatus[tabNumber][i] = 0; // Set to unlocked but not crafted
@@ -687,7 +587,6 @@ class AnvilCheatsPlugin(PluginBase):
                     message = `Invalid tab number. Available tabs: tab1 to tab${itemToCraftExp.length}`;
                 }
             } else {
-                // Find specific recipe by name
                 let foundRecipe = false;
                 let requiredLevel = 0;
                 let foundTab = -1;
@@ -751,7 +650,6 @@ class AnvilCheatsPlugin(PluginBase):
                 return "Error: AnvilPAstats array not initialized";
             }
             
-            // Reset all stats to 0
             anvilStats[0] = 0;  // Anvil Points
             anvilStats[1] = 0;  // Cost Reducer Tier 1
             anvilStats[2] = 0;  // Cost Reducer Tier 2
@@ -779,11 +677,10 @@ class AnvilCheatsPlugin(PluginBase):
             // Set new smithing level
             playerLevels[2] = level;
             
-            // Reset cost reducers to prevent point deductions
             const anvilStats = bEngine.getGameAttribute("AnvilPAstats");
             if (Array.isArray(anvilStats) && anvilStats.length >= 6) {
-                anvilStats[1] = 0;  // Cost Reducer Tier 1
-                anvilStats[2] = 0;  // Cost Reducer Tier 2
+                anvilStats[1] = 0;
+                anvilStats[2] = 0;
             }
             
             return `Set Smithing level from ${oldLevel} to ${level}`;
@@ -811,15 +708,13 @@ class AnvilCheatsPlugin(PluginBase):
             const oldPoints = anvilStats[3];
             anvilStats[3] = points;
             
-            // Set smithing level high enough to support these points
             const totalPoints = anvilStats[3] + anvilStats[4] + anvilStats[5];
             const neededLevel = Math.max(currentSmithingLevel, totalPoints);
             playerLevels[2] = neededLevel;
             
-            // Reset cost reducers to prevent negative points
-            anvilStats[1] = 0;  // Cost Reducer Tier 1
-            anvilStats[2] = 0;  // Cost Reducer Tier 2
-            
+            anvilStats[1] = 0;
+            anvilStats[2] = 0;
+
             return `Set Bonus EXP Points from ${oldPoints} to ${points} (Smithing level set to ${neededLevel})`;
         } catch (e) {
             return `Error: ${e.message}`;
@@ -845,12 +740,10 @@ class AnvilCheatsPlugin(PluginBase):
             const oldPoints = anvilStats[4];
             anvilStats[4] = points;
             
-            // Set smithing level high enough to support these points
             const totalPoints = anvilStats[3] + anvilStats[4] + anvilStats[5];
             const neededLevel = Math.max(currentSmithingLevel, totalPoints);
             playerLevels[2] = neededLevel;
             
-            // Reset cost reducers to prevent negative points
             anvilStats[1] = 0;  // Cost Reducer Tier 1
             anvilStats[2] = 0;  // Cost Reducer Tier 2
             
@@ -879,12 +772,10 @@ class AnvilCheatsPlugin(PluginBase):
             const oldPoints = anvilStats[5];
             anvilStats[5] = points;
             
-            // Set smithing level high enough to support these points
             const totalPoints = anvilStats[3] + anvilStats[4] + anvilStats[5];
             const neededLevel = Math.max(currentSmithingLevel, totalPoints);
             playerLevels[2] = neededLevel;
             
-            // Reset cost reducers to prevent negative points
             anvilStats[1] = 0;  // Cost Reducer Tier 1
             anvilStats[2] = 0;  // Cost Reducer Tier 2
             
