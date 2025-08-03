@@ -75,31 +75,36 @@ python launch.py
 ## Available Plugins
 
 ### Character Plugins
-- **Godlike Powers** - Comprehensive character enhancements (reach, crit, abilities, invincibility)
-- **Instant Mob Respawn** - Toggle instant mob respawning
-- **Inventory Storage** - Unlock all inventory packages and storage spaces
-- **Quest Helper** - List and complete quests instantly
-- **Spawn Item** - Drop any item in the game with autocomplete
-- **Stats Multiplier** - Multiply various game stats by configurable amounts
+- **Currency Cheats** - Comprehensive currency management for Idleon: gems, coins, tokens, and all other currencies with display, add, set, and max functions
+- **Godlike Powers** - Provides godlike powers and abilities for the game
+- **Instant Mob Respawn** - Change the rates of the game
+- **Inventory Storage** - Automatically unlock all inventory packages and storage spaces
+- **⚠️ Quest Manager** - Comprehensive quest management system to view, unlock, and manage all quests. Provides status overview, individual quest unlocking with autocomplete, and quest reset functionality. ⚠️ MODERATE RISK: Use with caution as quest manipulation can affect game progression
+- **Spawn Item** - Spawn / List / Search items with autocomplete functionality
+- **Stats Multiplier** - Multiplies various game stats by configurable amounts
 
 ### QoL (Quality of Life) Plugins
 - **Global Storage** - Provides global storage functionality
 
 ### Unlocks Plugins
-- **Candy Unlock** - Use Time Candy anywhere, bypassing map restrictions
-- **Card Cheats** - Comprehensive card system cheats (set levels, add/remove cards)
+- **Candy Unlock** - Allows the use of Time Candy anywhere, bypassing all map restrictions, dark places, and activity-specific blocks like Cooking/Laboratory
+- **Card Cheats** - Comprehensive card system cheats: search, unlock, level management, stats viewer, and complete card collection tools
+- **⚠️ Class Unlock** - Set characters to any class, change characters classes, view class progression. ⚠️ DANGER: Class changes can corrupt your character (infinite/invalid HP/MP/stats). Emergency recovery: Use 'Complete Class Redo Token' item
 - **Grimoire Unlocker** - Unlock and manage grimoire upgrades for Death Bringer class
 - **Package Toggle** - Toggle bought packages and bundles
 - **Vault Unlocker** - Unlock and manage vault upgrades with category-based controls
 
 ### World-Specific Plugins
 #### World 1
-- **Anvil Cheats** - Cheats for anvil and smithing related features
-- **Stamp Cheats** - Unlock and manage stamp upgrades & bribes with viewing, leveling, unlocking, and bribe purchasing tools
+- **Anvil Cheats** - Cheats for World 1 - Anvil and Smithing related
+- **⚠️ Stamp Cheats** - Unlock and manage stamp upgrades & bribes. Includes stamp viewing, leveling, unlocking, and bribe purchasing tools. ⚠️ Use with caution as stamps and bribes affect multiple game systems!
+
+#### World 2
+- **Post Office Cheats** - Post Office cheats - complete orders and manage upgrades with detailed status
 
 #### World 6
-- **Sneaking Cheats** - Comprehensive cheats for the sneaking game including money, unlocks, upgrades, and more
-- **Sneaking Items** - Comprehensive item cheats for the sneaking game including hats, weapons, gloves, and charms
+- **⚠️ Sneaking Cheats** - Comprehensive cheats for the sneaking game including money, unlocks, upgrades, and more. ⚠️ HIGH RISK: These features may brick your account as the sneaking game data structure is complex and not fully explored. Use at your own risk!
+- **⚠️ Sneaking Items** - Comprehensive item cheats for the sneaking game including hats, weapons, gloves, and charms. ⚠️ HIGH RISK: These features may brick your account as the sneaking game data structure is complex and not fully explored. Use at your own risk!
 
 ---
 
@@ -112,7 +117,8 @@ IdleonWeb/
 │   ├── qol/          # Quality of Life plugins
 │   ├── unlocks/      # Unlock-related plugins
 │   ├── world1/       # World 1 specific plugins
-│   ├── world6/       # World 1 specific plugins
+│   ├── world2/       # World 2 specific plugins
+│   ├── world6/       # World 6 specific plugins
 │   └── ...           # Additional plugin categories
 ├── core/             # Core system files
 ├── webui/            # Web interface files
