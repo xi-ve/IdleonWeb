@@ -1,8 +1,8 @@
 from plugin_system import PluginBase, js_export, ui_toggle
 
 class CandyUnlockPlugin(PluginBase):
-    VERSION = "1.0.1"
-    DESCRIPTION = "Allows the use of Time Candy anywhere, bypassing all map restrictions."
+    VERSION = "1.1.0"
+    DESCRIPTION = "Allows the use of Time Candy anywhere, bypassing all map restrictions, dark places, and activity-specific blocks like Cooking/Laboratory."
     PLUGIN_ORDER = 3
     CATEGORY = "Unlocks"
 
@@ -19,7 +19,7 @@ class CandyUnlockPlugin(PluginBase):
 
     @ui_toggle(
         label="Unlock Candy Usage Everywhere",
-        description="Allows using Time Candy in all maps, including dark places and World 6.",
+        description="Allows using Time Candy in all maps, activities, and locations including dark places, World 6, Cooking, Laboratory, Worship, and any other restricted areas.",
         config_key="unlock_candy",
         default_value=True
     )
@@ -39,33 +39,35 @@ class CandyUnlockPlugin(PluginBase):
             if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
             const bEngine = ctx["com.stencyl.Engine"].engine;
             
-            let itemMoveFn = null;
-            let scriptsPath = null;
+            if (window.__candyUnlockPatched) {
+                return "Candy usage restrictions already removed!";
+            }
             
-            if (ctx["events"] && ctx["events"](38)) {
-                itemMoveFn = ctx["events"](38).prototype._event_InvItem4custom;
-                scriptsPath = ctx["events"](38);
-            }
-            else if (ctx["scripts"] && ctx["scripts"]["ActorEvents_38"]) {
-                itemMoveFn = ctx["scripts"]["ActorEvents_38"].prototype._event_InvItem4custom;
-                scriptsPath = ctx["scripts"]["ActorEvents_38"];
-            }
-            else if (window.ActorEvents_38) {
-                itemMoveFn = window.ActorEvents_38.prototype._event_InvItem4custom;
-                scriptsPath = window.ActorEvents_38;
-            }
-            scriptsPath.prototype._event_InvItem4custom = new Proxy(itemMoveFn, {
-                apply: function(originalFn, context, argumentsList) {
+            const itemDefs = bEngine.getGameAttribute("ItemDefinitionsGET").h;
+            const events = function (num) {
+                return ctx["scripts.ActorEvents_" + num];
+            };
+            
+            if (events(38) && events(38).prototype && events(38).prototype._event_InvItem4custom) {
+                const originalFn = events(38).prototype._event_InvItem4custom;
+                
+                events(38).prototype._event_InvItem4custom = function(...argumentsList) {
                     const inventoryOrder = bEngine.getGameAttribute("InventoryOrder");
+                    
                     try {
-                        const itemDragID = context.actor.getValue("ActorEvents_38", "_ItemDragID");
-                        const itemType = bEngine.getGameAttribute("ItemDefinitionsGET").h[inventoryOrder[itemDragID]]?.h?.Type;
+                        const itemIndex = this.actor.getValue("ActorEvents_38", "_ItemDragID");
+                        const itemName = inventoryOrder[itemIndex];
                         
-                        if (itemType === "TIME_CANDY") {
+                        if (itemDefs[itemName] && itemDefs[itemName].h.Type === "TIME_CANDY") {
                             let originalMap = bEngine.getGameAttribute("CurrentMap");
                             let originalTarget = bEngine.getGameAttribute("AFKtarget");
                             
-                            bEngine.getGameAttribute("PixelHelperActor")[23].getValue("ActorEvents_577", "_GenINFO")[86] = 1;
+                            try {
+                                bEngine.getGameAttribute("PixelHelperActor")[23]
+                                    .getValue("ActorEvents_577", "_GenINFO")[86] = 1;
+                            } catch (e) {
+                                console.log("Could not set PixelHelperActor flag:", e);
+                            }
                             
                             if (originalTarget === "Cooking" || originalTarget === "Laboratory") {
                                 let newTarget = {
@@ -82,21 +84,27 @@ class CandyUnlockPlugin(PluginBase):
                                 bEngine.setGameAttribute("AFKtarget", newTarget);
                             }
                             
-                            bEngine.setGameAttribute("CurrentMap", 1);                            
-                            let result = Reflect.apply(originalFn, context, argumentsList);
+                            bEngine.setGameAttribute("CurrentMap", 1);
+                            
+                            let result = originalFn.apply(this, argumentsList);
+                            
                             bEngine.setGameAttribute("CurrentMap", originalMap);
                             bEngine.setGameAttribute("AFKtarget", originalTarget);
                             
                             return result;
                         }
                     } catch (e) {
-                        console.log("Candy bypass error:", e);
-                    }                    
-                    return Reflect.apply(originalFn, context, argumentsList);
-                }
-            });
-            
-            return "Candy usage restriction bypassed using proper proxy method!";
+                        console.log("Error in candy unlock:", e);
+                    }
+                    
+                    return originalFn.apply(this, argumentsList);
+                };
+                
+                window.__candyUnlockPatched = true;
+                return "✅ Candy usage restrictions removed! Time Candy can now be used anywhere using the same method as the built-in cheats.";
+            } else {
+                throw new Error("Could not find _event_InvItem4custom function in ActorEvents_38");
+            }
         } catch (e) {
             return "Error unlocking candy usage: " + e.message;
         }

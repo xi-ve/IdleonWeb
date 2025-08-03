@@ -4,7 +4,7 @@ from config_manager import config_manager
 class SneakingCheatsPlugin(PluginBase):
     VERSION = "1.0.1"
     DESCRIPTION = "Comprehensive cheats for the sneaking game including money, unlocks, upgrades, and more. ⚠️ HIGH RISK: These features may brick your account as the sneaking game data structure is complex and not fully explored. Use at your own risk!"
-    PLUGIN_ORDER = 6
+    PLUGIN_ORDER = 7
     CATEGORY = "World 6"
 
     def __init__(self, config=None):

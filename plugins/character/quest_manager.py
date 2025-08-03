@@ -248,6 +248,35 @@ class QuestManagerPlugin(PluginBase):
         else:
             return "ERROR: No injector available - run 'inject' first to connect to the game"
 
+    @ui_autocomplete_input(
+        label="Set Quest to Ongoing",
+        description="Set a specific quest to ongoing/active status (with autocomplete). Makes the quest active without completing it.",
+        button_text="Set Ongoing",
+        placeholder="Start typing quest name...",
+        category="Quest Actions",
+        order=4.7
+    )
+    async def set_quest_ongoing_ui(self, value: str = None):
+        if hasattr(self, 'injector') and self.injector:
+            try:
+                if self.debug:
+                    console.print(f"[quest_manager] Setting quest to ongoing, input: {value}")
+                if not value or not value.strip():
+                    return "Please provide a quest name"
+                quest_name = value.strip()
+                if self.debug:
+                    console.print(f"[quest_manager] Parsed quest name: '{quest_name}'")
+                result = await self.set_quest_ongoing(quest_name)
+                if self.debug:
+                    console.print(f"[quest_manager] Result: {result}")
+                return f"SUCCESS: {result}"
+            except Exception as e:
+                if self.debug:
+                    console.print(f"[quest_manager] Error setting quest to ongoing: {e}")
+                return f"ERROR: Error setting quest to ongoing: {str(e)}"
+        else:
+            return "ERROR: No injector available - run 'inject' first to connect to the game"
+
     @ui_button(
         label="🔓 Unlock All Quests",
         description="Unlock all quests in the game (makes them available/active)",
@@ -379,6 +408,19 @@ class QuestManagerPlugin(PluginBase):
     async def complete_quest_requirements_only(self, quest_name: str, **kwargs):
         if hasattr(self, 'injector') and self.injector:
             result = self.run_js_export('complete_quest_requirements_only_js', self.injector, quest_name=quest_name)
+            return result
+        else:
+            return "ERROR: No injector available - run 'inject' first to connect to the game"
+
+    @plugin_command(
+        help="Set a specific quest to ongoing/active status.",
+        params=[
+            {"name": "quest_name", "type": str, "help": "Name of the quest to set to ongoing"},
+        ],
+    )
+    async def set_quest_ongoing(self, quest_name: str, **kwargs):
+        if hasattr(self, 'injector') and self.injector:
+            result = self.run_js_export('set_quest_ongoing_js', self.injector, quest_name=quest_name)
             return result
         else:
             return "ERROR: No injector available - run 'inject' first to connect to the game"
@@ -755,6 +797,55 @@ class QuestManagerPlugin(PluginBase):
                     questStatus.h[questName] = [9999];
                     return `✅ Initialized and completed requirements for quest '${questName}' (quest status: ${statusText})`;
                 }
+            }
+        } catch (e) {
+            return `Error: ${e.message}`;
+        }
+        '''
+
+    @js_export(params=["quest_name"])
+    def set_quest_ongoing_js(self, quest_name=None):
+        return '''
+        try {
+            const ctx = window.__idleon_cheats__;
+            if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
+            const bEngine = ctx["com.stencyl.Engine"].engine;
+            
+            const questComplete = bEngine.getGameAttribute("QuestComplete");
+            const questStatus = bEngine.getGameAttribute("QuestStatus");
+            
+            if (!questComplete || !questComplete.h) {
+                return "Error: Quest completion data not found";
+            }
+            
+            if (!quest_name || quest_name.trim() === "") {
+                return "Error: Quest name is required";
+            }
+            
+            const questName = quest_name.trim();
+            
+            if (!(questName in questComplete.h)) {
+                return `Error: Quest '${questName}' not found. Available quests: ${Object.keys(questComplete.h).slice(0, 10).join(', ')}...`;
+            }
+            
+            const currentStatus = questComplete.h[questName];
+            let previousStatusText = "unknown";
+            if (currentStatus === 1) previousStatusText = "completed";
+            else if (currentStatus === 0) previousStatusText = "already ongoing";
+            else if (currentStatus === -1) previousStatusText = "locked";
+            
+            // Set quest to ongoing (status 0)
+            questComplete.h[questName] = 0;
+            
+            // Initialize quest status/progress if it doesn't exist
+            if (questStatus && questStatus.h && !(questName in questStatus.h)) {
+                questStatus.h[questName] = [0]; // Initialize with basic progress array
+            }
+            
+            if (currentStatus === 0) {
+                return `🔄 Quest '${questName}' is already ongoing/active!`;
+            } else {
+                return `🔄 Set quest '${questName}' to ongoing/active status (was ${previousStatusText})`;
             }
         } catch (e) {
             return `Error: ${e.message}`;
