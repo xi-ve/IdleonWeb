@@ -773,13 +773,6 @@ class PluginManager:
             except Exception as e:
                 logger.error(f"Error notifying plugin of cheat execution: {e}")
 
-    async def notify_page_load(self) -> None:
-        for plugin in self.plugins.values():
-            try:
-                await plugin.on_page_load()
-            except Exception as e:
-                logger.error(f"Error notifying plugin of page load: {e}")
-
     async def notify_config_changed(self, config: Dict[str, Any], plugin_name: str = None) -> None:
         if plugin_name and plugin_name in self.plugins:
             try:

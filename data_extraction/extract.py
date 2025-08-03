@@ -7,7 +7,7 @@ Can blacklist image lines to avoid processing image data/references.
 
 # Configuration parameters
 DEFAULT_OUTPUT_FILE = None  # If None, will generate based on input filename
-DEFAULT_SEARCH_TERM = "Postoffice"
+DEFAULT_SEARCH_TERM = "Talent"
 BLACKLIST_IMAGE_LINES = True  # Skip lines that appear to contain image data/references
 IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp', '.ico', '.tiff'}
 IMAGE_KEYWORDS = {'base64', 'data:image', 'blob:', 'image/', 'img src', 'background-image'}

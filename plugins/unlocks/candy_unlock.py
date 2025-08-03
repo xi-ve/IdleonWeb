@@ -19,7 +19,7 @@ class CandyUnlockPlugin(PluginBase):
 
     @ui_toggle(
         label="Unlock Candy Usage Everywhere",
-        description="Allows using Time Candy in all maps, activities, and locations including dark places, World 6, Cooking, Laboratory, Worship, and any other restricted areas.",
+        description="Allows using Time Candy in all maps, activities, and locations including dark places, World 6, Cooking, Laboratory, Worship, Void, and any other restricted areas.",
         config_key="unlock_candy",
         default_value=True
     )
@@ -69,7 +69,10 @@ class CandyUnlockPlugin(PluginBase):
                                 console.log("Could not set PixelHelperActor flag:", e);
                             }
                             
-                            if (originalTarget === "Cooking" || originalTarget === "Laboratory") {
+                            const restrictedTargets = ["Cooking", "Laboratory", "Void", "void", "VOID", "Dark"];
+                            const isRestrictedTarget = restrictedTargets.includes(originalTarget);
+                            
+                            if (isRestrictedTarget) {
                                 let newTarget = {
                                     calls: 0,
                                     [Symbol.toPrimitive](hint) {
@@ -101,7 +104,7 @@ class CandyUnlockPlugin(PluginBase):
                 };
                 
                 window.__candyUnlockPatched = true;
-                return "✅ Candy usage restrictions removed! Time Candy can now be used anywhere using the same method as the built-in cheats.";
+                return "✅ Candy usage restrictions removed";
             } else {
                 throw new Error("Could not find _event_InvItem4custom function in ActorEvents_38");
             }
