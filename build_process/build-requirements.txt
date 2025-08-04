@@ -1,0 +1,20 @@
+# Build Requirements for IdleonWeb Standalone Compilation
+# Install with: pip install -r build-requirements.txt
+
+# Core build tool
+pyinstaller>=6.0.0
+
+# Additional build tools (optional but recommended)
+# For creating better executables
+auto-py-to-exe>=2.4.0
+
+# For cross-platform compatibility
+wheel>=0.41.0
+setuptools>=68.0.0
+
+# For icon handling
+pillow>=10.0.0
+
+# For creating installers (optional)
+# nsis>=0.1.0  # Windows installer creation
+# dmgbuild>=1.6.0  # macOS DMG creation

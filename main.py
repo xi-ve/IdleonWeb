@@ -215,6 +215,25 @@ def cmd_darkmode(args=None, plugin_manager=None):
         status = "enabled" if new_state else "disabled"
         console.print(f"[green]Dark mode {status}[/green]")
 
+def cmd_auto_inject(args=None, plugin_manager=None):
+    """Toggle or set auto-inject on startup."""
+    if args:
+        if args[0].lower() in ['on', 'true', '1', 'yes']:
+            config_manager.set_auto_inject(True)
+            console.print("[green]Auto-inject enabled[/green]")
+        elif args[0].lower() in ['off', 'false', '0', 'no']:
+            config_manager.set_auto_inject(False)
+            console.print("[green]Auto-inject disabled[/green]")
+        else:
+            console.print("[red]Invalid argument. Use 'on' or 'off'[/red]")
+    else:
+        # Toggle current state
+        current = config_manager.get_auto_inject()
+        new_state = not current
+        config_manager.set_auto_inject(new_state)
+        status = "enabled" if new_state else "disabled"
+        console.print(f"[green]Auto-inject {status}[/green]")
+
 def cmd_plugins(args=None, plugin_manager=None):
     table = Table(title="Loaded Plugins")
     table.add_column("Plugin Name", style="bold green")
@@ -488,6 +507,18 @@ def main():
     
     # Check for unused plugins and recommend enabling them
     check_unused_plugins(plugin_manager, startup_msgs)
+    
+    # Check if auto inject is enabled
+    if config_manager.get_auto_inject():
+        startup_msgs.append("[cyan]Auto-inject is enabled. Starting injection automatically...[/cyan]")
+        console.print("[cyan]Auto-inject is enabled. Starting injection automatically...[/cyan]")
+        try:
+            cmd_inject(plugin_manager=plugin_manager)
+            startup_msgs.append("[green]Auto-injection completed successfully[/green]")
+        except Exception as e:
+            startup_msgs.append(f"[red]Auto-injection failed: {e}[/red]")
+            console.print(f"[red]Auto-injection failed: {e}[/red]")
+    
     startup_text = Text()
     for msg in startup_msgs:
         startup_text.append(Text.from_markup(msg))
@@ -498,6 +529,7 @@ def main():
         'config': {'func': cmd_config, 'help': 'Show current injector config.'},
         'injector_config': {'func': cmd_injector_config, 'help': 'Show injector-specific configuration.'},
         'darkmode': {'func': cmd_darkmode, 'help': 'Toggle or set dark mode for web UI (on/off).'},
+        'auto_inject': {'func': cmd_auto_inject, 'help': 'Toggle or set auto-inject on startup (on/off).'},
         'plugins': {'func': cmd_plugins, 'help': 'List loaded plugins.'},
         'reload_config': {'func': cmd_reload_config, 'help': 'Reload plugin configurations from conf.json.'},
         'web_ui': {'func': cmd_web_ui, 'help': 'Start the plugin web UI server.'},

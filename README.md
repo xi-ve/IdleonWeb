@@ -74,8 +74,9 @@ If you don't have Python or Node.js installed, download and install them first:
    ```bash
    python launch.py
    ```
-6. Type `inject` and press Enter to launch the game with enhancements
-7. Open `http://localhost:8080` in your browser to configure plugins
+6. The application will automatically discover available plugins and ask if you want to enable them
+7. Auto-injection will run automatically (enabled by default) - the game will launch with enhancements
+8. Open `http://localhost:8080` in your browser to configure plugins
 
 ---
 
@@ -87,10 +88,20 @@ python launch.py
 ```
 
 ### Launching the Game
-1. In the launcher, type `inject` and press Enter
-2. The game will open in a browser window
-3. Open `http://localhost:8080` in another browser tab
-4. Configure your plugins using the web interface
+**Automatic Mode (Default):**
+- The game will launch automatically after plugin discovery
+- Auto-injection runs immediately when the launcher starts
+- To disable: use the `auto_inject off` command
+
+**Manual Mode:**
+1. Disable auto-injection: `auto_inject off`
+2. In the launcher, type `inject` and press Enter
+3. The game will open in a browser window
+
+### Configuration
+1. Open `http://localhost:8080` in your browser
+2. Configure your plugins using the web interface
+3. Changes take effect immediately
 
 > **Note:** On first launch, if the game requires you to log in, the injection process may fail. Simply close the browser, then run the `inject` command again in the launcher after logging in. This is normal for the first run.
 
@@ -154,6 +165,8 @@ IdleonWeb/
 │   └── ...           # Additional plugin categories
 ├── core/             # Core system files
 ├── webui/            # Web interface files
+├── build_process/    # Build scripts for standalone executables
+├── integration_tests/# Automated testing suite
 ├── main.py           # Main launcher
 ├── setup.py          # Universal setup script
 └── README.md         # This file

@@ -1,0 +1,153 @@
+# WARNING: This is a manual-only build workflow. 
+# The main build pipeline is in combined-tests-and-release.yml
+# This workflow should only be used for emergency builds or testing.
+
+name: Manual Build Multi-Platform Releases
+
+on:
+  workflow_dispatch:  # Allow manual trigger only
+    inputs:
+      version:
+        description: 'Version tag (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+      skip_tests:
+        description: 'Skip integration tests (not recommended)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    name: Build for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            artifact-name: IdleonWeb-linux
+            executable-name: IdleonWeb
+          - os: windows-latest
+            platform: windows
+            artifact-name: IdleonWeb-windows
+            executable-name: IdleonWeb.exe
+          - os: macos-latest
+            platform: macos
+            artifact-name: IdleonWeb-macos
+            executable-name: IdleonWeb
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Create virtual environment
+      run: |
+        python -m venv .venv
+        
+    - name: Activate virtual environment and install dependencies (Linux/macOS)
+      if: runner.os != 'Windows'
+      run: |
+        source .venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r build_process/build-requirements.txt
+
+    - name: Activate virtual environment and install dependencies (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        .venv\Scripts\activate
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r build_process/build-requirements.txt
+
+    - name: Build standalone executable (Linux/macOS)
+      if: runner.os != 'Windows'
+      run: |
+        source .venv/bin/activate
+        python build_process/build_standalone.py --platform ${{ matrix.platform }} --output release_build
+
+    - name: Build standalone executable (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        .venv\Scripts\activate
+        python build_process/build_standalone.py --platform ${{ matrix.platform }} --output release_build
+
+    - name: Verify build output
+      run: |
+        ls -la release_build/dist/${{ matrix.platform }}/
+      shell: bash
+
+    - name: Create archive (Linux/macOS)
+      if: runner.os != 'Windows'
+      run: |
+        cd release_build/dist/${{ matrix.platform }}
+        tar -czf ../../../${{ matrix.artifact-name }}.tar.gz ${{ matrix.executable-name }}
+
+    - name: Create archive (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        cd release_build/dist/${{ matrix.platform }}
+        7z a ../../../${{ matrix.artifact-name }}.zip ${{ matrix.executable-name }}
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.artifact-name }}
+        path: |
+          ${{ matrix.artifact-name }}.tar.gz
+          ${{ matrix.artifact-name }}.zip
+        if-no-files-found: ignore
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts/
+
+    - name: Display artifact structure
+      run: ls -la artifacts/
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.event.inputs.version || github.ref_name }}
+        name: Release ${{ github.event.inputs.version || github.ref_name }}
+        draft: false
+        prerelease: false
+        files: |
+          artifacts/**/*.tar.gz
+          artifacts/**/*.zip
+        body: |
+          ## IdleonWeb Release ${{ github.event.inputs.version || github.ref_name }}
+          
+          ### Downloads
+          - **Linux**: IdleonWeb-linux.tar.gz
+          - **Windows**: IdleonWeb-windows.zip  
+          - **macOS**: IdleonWeb-macos.tar.gz
+          
+          ### Installation
+          1. Download the appropriate file for your operating system
+          2. Extract the archive
+          3. Run the executable directly (no installation required)
+          
+          ### Changes
+          See the commit history for detailed changes in this release.
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

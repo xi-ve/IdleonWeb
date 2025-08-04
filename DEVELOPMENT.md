@@ -46,6 +46,11 @@ This document contains technical documentation for developers who want to unders
   - [Architecture](#architecture)
   - [Template Structure](#template-structure)
   - [API Endpoints](#api-endpoints)
+- [Build and Release Pipeline](#build-and-release-pipeline)
+  - [Integration Testing Pipeline](#integration-testing-pipeline)
+  - [Automated Build Process](#automated-build-process)
+  - [Cross-Platform Support](#cross-platform-support)
+  - [Manual Build Workflow](#manual-build-workflow)
 - [Troubleshooting](#troubleshooting)
   - [Development Issues](#development-issues)
   - [Common Error Messages](#common-error-messages)
@@ -1077,18 +1082,62 @@ def get_item_list_js(self):
 The application uses a centralized configuration system in `core/conf.json`. Key configuration sections:
 
 **Global Settings:**
-- `debug`: Enable/disable debug logging
-- `interactive`: Enable/disable interactive CLI mode
-- `openDevTools`: Open browser DevTools on injection
+- `debug`: Enable/disable debug logging (default: false)
+- `interactive`: Enable/disable interactive CLI mode (default: true)
+- `openDevTools`: Open browser DevTools on injection (default: false)
+
+**Web UI Settings:**
+- `webui.darkmode`: Enable/disable dark mode for web interface (default: false)
 
 **Injector Settings:**
 - `injector.cdp_port`: Chrome DevTools Protocol port (default: 32123)
 - `injector.njs_pattern`: Pattern for intercepting game JavaScript (default: "*N.js")
+- `injector.idleon_url`: Idleon game URL (default: "https://www.legendsofidleon.com/ytGl5oc/")
+- `injector.timeout`: Injection timeout in milliseconds (default: 120000)
+- `injector.autoInject`: Automatically run injection after plugin discovery (default: true)
 - `injector.idleon_url`: Game URL to launch (default: "https://www.legendsofidleon.com/ytGl5oc/")
+- `injector.timeout`: Injection timeout in milliseconds (default: 120000)
 
 **Plugin Configuration:**
-- `plugins`: List of enabled plugin names
-- `plugin_configs`: Per-plugin configuration settings
+- `plugins`: List of enabled plugin names (auto-populated by plugin discovery)
+- `plugin_configs`: Per-plugin configuration settings (auto-created as plugins are enabled)
+
+**Example Configuration Structure:**
+```json
+{
+  "openDevTools": false,
+  "interactive": true,
+  "debug": false,
+  "webui": {
+    "darkmode": false
+  },
+  "injector": {
+    "cdp_port": 32123,
+    "njs_pattern": "*N.js",
+    "idleon_url": "https://www.legendsofidleon.com/ytGl5oc/",
+    "timeout": 120000,
+    "autoInject": true
+  },
+    "idleon_url": "https://www.legendsofidleon.com/ytGl5oc/",
+    "timeout": 120000
+  },
+  "plugins": [
+    "spawn_item",
+    "instant_mob_respawn"
+  ],
+  "plugin_configs": {
+    "spawn_item": {
+      "debug": false
+    },
+    "instant_mob_respawn": {
+      "debug": false,
+      "toggle": false
+    }
+  }
+}
+```
+
+**Note:** The `plugins` list and `plugin_configs` are no longer included in the default configuration. The plugin auto-discovery system will automatically detect available plugins and offer to enable them on first run.
 
 ### Configuration Management
 
@@ -1116,6 +1165,47 @@ config_manager.set_path('plugin_configs.my_plugin.enabled', True)
 
 ---
 
+## Application Startup Flow
+
+### Startup Sequence
+
+1. **Configuration Loading**: Load configuration from `core/conf.json` or create default config
+2. **Plugin Discovery**: Scan `plugins/` directory for available plugins (including subdirectories)
+3. **Plugin Loading**: Load enabled plugins from configuration
+4. **Plugin Auto-Discovery**: Check for new/unused plugins and offer to enable them
+5. **Auto-Injection** (if enabled): Automatically run injection process
+6. **CLI Initialization**: Start interactive command-line interface
+
+### Plugin Auto-Discovery
+
+The system automatically scans the `plugins/` directory to find available plugins:
+
+- Searches in root `plugins/` directory for `.py` files
+- Recursively searches subdirectories (e.g., `plugins/character/`, `plugins/world1/`)
+- Compares found plugins with enabled plugins in configuration
+- Offers to enable any unused plugins on startup
+
+**User Options:**
+- **`all`**: Enable all discovered plugins
+- **`none`**: Skip enabling unused plugins
+- **Plugin names**: Enable specific plugins (space-separated)
+
+### Auto-Injection Feature
+
+Auto-injection runs automatically after plugin discovery and before CLI starts:
+
+- **Default**: Enabled (`injector.autoInject: true`)
+- **Control**: Use `auto_inject on/off` CLI command
+- **Timing**: Runs after plugin discovery, before CLI becomes interactive
+- **Feedback**: Shows status in startup summary
+
+**Benefits:**
+- Streamlined user experience
+- Immediate game enhancement on startup
+- Can be disabled for manual control
+
+---
+
 ## CLI Interface
 
 ### Available Commands
@@ -1126,7 +1216,8 @@ config_manager.set_path('plugin_configs.my_plugin.enabled', True)
 - **`plugins`**: List loaded plugins
 - **`reload_config`**: Reload plugin configurations from conf.json
 - **`reload`**: Reload all plugins and regenerate JavaScript
-- **`darkmode`**: Toggle dark mode for the web UI
+- **`darkmode`**: Toggle dark mode for the web UI (on/off)
+- **`auto_inject`**: Toggle auto-inject on startup (on/off)
 - **`web_ui`**: Start the plugin web UI server
 - **`help`**: Show help menu
 - **`exit`**: Exit the CLI
@@ -1174,4 +1265,138 @@ webui/templates/
 
 - `GET /` - Main UI page
 - `POST /api/ui_action` - Execute UI actions
-- `
+- `GET /api/plugin_config` - Get plugin configuration
+- `POST /api/plugin_config` - Update plugin configuration
+
+---
+
+## Build and Release Pipeline
+
+IdleonWeb features a fully automated CI/CD pipeline that runs integration tests and builds standalone executables for multiple platforms.
+
+### Integration Testing Pipeline
+
+The main pipeline (`combined-tests-and-release.yml`) automatically triggers on:
+- **Push to main branch**: Full integration tests + release build
+- **Pull requests**: Integration tests only (no release)
+
+**Integration Test Matrix:**
+- 🐧 **Arch Linux**: Docker-based testing environment
+- 🐧 **Ubuntu**: Docker-based testing environment  
+- 🪟 **Windows**: Native Windows runner testing
+
+**Test Process:**
+1. **Code Quality Checks**: Syntax validation, import analysis
+2. **Platform Testing**: Full functionality tests across all supported OS
+3. **Plugin System Testing**: All plugins load and function correctly
+4. **Integration Validation**: End-to-end workflow testing
+
+### Automated Build Process
+
+After all integration tests pass successfully:
+
+**Build Matrix:**
+- 🐧 **Linux**: Native PyInstaller build (guaranteed)
+- 🪟 **Windows**: Cross-compile attempt (fallback to manual)
+- 🍎 **macOS**: Cross-compile attempt (fallback to manual)
+
+**Build Features:**
+- **Standalone Executables**: No Python installation required
+- **Embedded Runtime**: Python 3.11 runtime included
+- **Config Persistence**: Configuration files stored alongside executable
+- **Auto-Migration**: Automatic config format updates
+- **Size Optimized**: ~27MB per platform
+- **Timeout Protection**: 15-minute build timeout per platform
+
+### Cross-Platform Support
+
+**Primary Platform (Linux):**
+- ✅ Full native builds guaranteed
+- ✅ All features supported
+- ✅ Complete integration testing
+
+**Secondary Platforms (Windows/macOS):**
+- 🔄 Cross-compilation attempted during CI
+- 🏗️ Manual build workflow available
+- 📦 GitHub Actions runners for native builds
+
+**Platform-Specific Features:**
+```json
+{
+  "linux": {
+    "build_method": "native",
+    "executable_format": "elf",
+    "archive_format": "tar.gz"
+  },
+  "windows": {
+    "build_method": "cross_compile_or_native",
+    "executable_format": "exe", 
+    "archive_format": "zip"
+  },
+  "macos": {
+    "build_method": "cross_compile_or_native",
+    "executable_format": "app",
+    "archive_format": "tar.gz"
+  }
+}
+```
+
+### Manual Build Workflow
+
+For emergency builds or testing, use the manual workflow:
+
+```bash
+# Trigger manual build via GitHub Actions
+# 1. Go to GitHub Actions tab
+# 2. Select "Manual Build Multi-Platform Releases"
+# 3. Click "Run workflow"
+# 4. Specify version (e.g., v1.2.3)
+```
+
+**Local Build Process:**
+```bash
+# Setup build environment
+python -m venv .venv
+source .venv/bin/activate  # Linux/macOS
+# .venv\Scripts\activate   # Windows
+
+# Install build dependencies
+pip install -r requirements.txt
+pip install -r build_process/build-requirements.txt
+
+# Build standalone executable
+python build_process/build_standalone.py --platform linux --output my_build --clean
+```
+
+**Build Configuration:**
+- **PyInstaller**: v6.0+ for executable creation
+- **Node.js**: v20+ for JavaScript bundling
+- **Virtual Environment**: Isolated Python environment
+- **Clean Builds**: Fresh compilation each time
+
+### Release Artifacts
+
+Each successful release includes:
+
+**Executable Downloads:**
+- `IdleonWeb-linux-v{version}.tar.gz` - Linux standalone
+- `IdleonWeb-windows-v{version}.zip` - Windows standalone (if available)
+- `IdleonWeb-macos-v{version}.tar.gz` - macOS standalone (if available)
+
+**Source Code:**
+- `IdleonWeb-source-v{version}.zip` - Complete source with documentation
+
+**Release Metadata:**
+- ✅ Integration test results for all platforms
+- 📊 Build success/failure status per platform
+- 📝 Automated version bumping
+- 🏷️ Semantic versioning (major.minor.patch)
+
+**Installation Instructions (included in release):**
+1. Download appropriate platform archive
+2. Extract to desired location
+3. Run executable directly (no installation required)
+4. Application creates `conf.json` in executable directory
+5. Configuration persists between runs
+
+---

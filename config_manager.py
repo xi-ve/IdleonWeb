@@ -1,5 +1,7 @@
 import json
 import logging
+import os
+import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
 from rich.console import Console
@@ -19,7 +21,7 @@ class ConfigManager:
     def __init__(self, conf_path: Optional[Path] = None):
         if self._initialized:
             return
-        self.conf_path = conf_path or Path(__file__).parent / 'core' / 'conf.json'
+        self.conf_path = conf_path or self._get_config_path()
         self._config = self._load_config()
         self._initialized = True
         if 'plugin_configs' not in self._config:
@@ -28,6 +30,47 @@ class ConfigManager:
             self._config['plugins'] = []
         if 'debug' not in self._config:
             self._config['debug'] = False
+        
+        # Migrate autoInject to injector section if it exists at root level
+        if 'autoInject' in self._config and 'injector' in self._config:
+            if 'autoInject' not in self._config['injector']:
+                self._config['injector']['autoInject'] = self._config['autoInject']
+            del self._config['autoInject']
+            self._save_config()  # Save the migrated config
+        elif 'autoInject' in self._config:
+            # Create injector section and move autoInject there
+            if 'injector' not in self._config:
+                self._config['injector'] = {}
+            self._config['injector']['autoInject'] = self._config['autoInject']
+            del self._config['autoInject']
+            self._save_config()  # Save the migrated config
+        
+        # Ensure injector section exists with autoInject
+        if 'injector' not in self._config:
+            self._config['injector'] = {}
+        if 'autoInject' not in self._config['injector']:
+            self._config['injector']['autoInject'] = True
+
+    def _get_config_path(self) -> Path:
+        """Determine the correct config path based on execution mode."""
+        # Check if running as a standalone PyInstaller executable
+        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            # Running as PyInstaller executable
+            executable_dir = Path(sys.executable).parent
+            config_path = executable_dir / 'conf.json'
+            logger.info(f"Standalone mode detected, using config at: {config_path}")
+            return config_path
+        elif os.environ.get("IDLEONWEB_STANDALONE") == "1":
+            # Running in standalone mode (even if not frozen)
+            executable_dir = Path(sys.executable).parent
+            config_path = executable_dir / 'conf.json'
+            logger.info(f"Standalone environment detected, using config at: {config_path}")
+            return config_path
+        else:
+            # Running in development mode
+            config_path = Path(__file__).parent / 'core' / 'conf.json'
+            logger.info(f"Development mode detected, using config at: {config_path}")
+            return config_path
 
     def _load_config(self) -> Dict[str, Any]:
         try:
@@ -47,8 +90,6 @@ class ConfigManager:
         return {
             "openDevTools": False,
             "interactive": True,
-            "plugins": [],
-            "plugin_configs": {},
             "debug": False,
             "webui": {
                 "darkmode": False
@@ -57,7 +98,8 @@ class ConfigManager:
                 "cdp_port": 32123,
                 "njs_pattern": "*N.js",
                 "idleon_url": "https://www.legendsofidleon.com/ytGl5oc/",
-                "timeout": 120000
+                "timeout": 120000,
+                "autoInject": True
             }
         }
 
@@ -211,5 +253,12 @@ class ConfigManager:
         self._config['webui'] = webui_config
         self._save_config()
         logger.info("Updated webui configuration")
+
+    def get_auto_inject(self) -> bool:
+        return self.get_path('injector.autoInject', True)
+
+    def set_auto_inject(self, enabled: bool) -> None:
+        self.set_path('injector.autoInject', enabled)
+        logger.info(f"Updated auto inject setting: {enabled}")
 
 config_manager = ConfigManager() 

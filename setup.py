@@ -275,61 +275,12 @@ def create_initial_config():
     config = {
         "openDevTools": False,
         "interactive": True,
-        "plugins": [
-            "spawn_item",
-            "instant_mob_respawn",
-            "package_toggle",
-            "inventory_storage",
-            "candy_unlock",
-            "quest_helper",
-            "vault_unlocker",
-            "grimoire_unlocker",
-            "sneaking_cheats",
-            "sneaking_items",
-            "anvil_cheats"
-        ],
-        "plugin_configs": {
-            "spawn_item": {
-                "debug": False
-            },
-            "instant_mob_respawn": {
-                "debug": False,
-                "toggle": False
-            },
-            "package_toggle": {
-                "debug": False
-            },
-            "inventory_storage": {
-                "debug": False
-            },
-            "candy_unlock": {
-                "debug": False,
-                "unlock_candy": True
-            },
-            "quest_helper": {
-                "debug": False
-            },
-            "vault_unlocker": {
-                "debug": False
-            },
-            "grimoire_unlocker": {
-                "debug": False
-            },
-            "sneaking_cheats": {
-                "debug": False
-            },
-            "sneaking_items": {
-                "debug": False
-            },
-            "anvil_cheats": {
-                "debug": False
-            }
-        },
         "debug": False,
         "injector": {
             "cdp_port": 32123,
             "njs_pattern": "*N.js",
-            "idleon_url": "https://www.legendsofidleon.com/ytGl5oc/"
+            "idleon_url": "https://www.legendsofidleon.com/ytGl5oc/",
+            "autoInject": True
         }
     }
     

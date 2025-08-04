@@ -2,6 +2,8 @@
 
 Want to create a plugin for IdleonWeb? This guide will get you up and running in minutes!
 
+> **💡 Auto-Discovery**: Once you create your plugin, the system will automatically detect it on next startup and offer to enable it. No manual configuration needed!
+
 ## Table of Contents
 
 - [1. Copy the Template](#1-copy-the-template)
@@ -168,13 +170,19 @@ def spawn_item_js(self, item=None, amount=None):  # ← Must end with _js
    python main.py
    ```
 
-2. **Type `inject` to launch the game**
+2. **Plugin Auto-Discovery:**
+   - The system will automatically detect your new plugin
+   - You'll be prompted to enable it - choose "yes" or type your plugin name
 
-3. **Open the web UI:**
+3. **Launch the game:**
+   - If auto-inject is enabled (default), the game launches automatically
+   - Or manually type `inject` to launch the game
+
+4. **Open the web UI:**
    - Go to `http://localhost:8080`
    - Your plugin should appear in the appropriate category
 
-4. **Test your UI elements:**
+5. **Test your UI elements:**
    - Click buttons
    - Toggle switches
    - Adjust sliders
