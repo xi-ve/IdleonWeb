@@ -33,6 +33,23 @@ web_server_task = None
 
 def ensure_node_dependencies(startup_msgs=None):
     node_modules_path = CORE_DIR / 'node_modules'
+    
+    # In standalone mode, node_modules should be bundled
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        if not node_modules_path.exists():
+            msg = "[bold red]Node.js dependencies missing from standalone build.[/bold red]"
+            if startup_msgs:
+                startup_msgs.append(msg)
+            console.print(msg)
+            # Don't exit in standalone mode, just warn
+            return
+        else:
+            msg = "[bold green]Node.js dependencies found in standalone build.[/bold green]"
+            if startup_msgs:
+                startup_msgs.append(msg)
+            return
+    
+    # Development mode - install if needed
     if not node_modules_path.exists():
         msg = "[bold yellow]Node.js dependencies not found. Installing...[/bold yellow]"
         if startup_msgs:
@@ -47,6 +64,11 @@ def ensure_node_dependencies(startup_msgs=None):
             if startup_msgs:
                 startup_msgs.append(msg)
             sys.exit(1)
+        except FileNotFoundError:
+            msg = "[bold red]npm not found. Please install Node.js and npm.[/bold red]"
+            if startup_msgs:
+                startup_msgs.append(msg)
+            sys.exit(1)
         if startup_msgs:
             startup_msgs.append(msg)
     else:
@@ -55,16 +77,25 @@ def ensure_node_dependencies(startup_msgs=None):
             startup_msgs.append(msg)
 
 def run_injector():
-    process = subprocess.Popen(
-        [NODE_PATH, str(INJECTOR_PATH)],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        text=True,
-        encoding='utf-8',
-        errors='replace',
-        creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
-    )
-    process.wait()
+    try:
+        process = subprocess.Popen(
+            [NODE_PATH, str(INJECTOR_PATH)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
+        )
+        process.wait()
+    except FileNotFoundError:
+        console.print(f"[bold red]Error: Node.js not found at '{NODE_PATH}'. Please install Node.js or check your PATH.[/bold red]")
+        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            console.print("[yellow]Note: Standalone builds require Node.js to be installed on the system.[/yellow]")
+        raise
+    except Exception as e:
+        console.print(f"[bold red]Error running injector: {e}[/bold red]")
+        raise
 
 def collect_plugin_js(plugin_manager, include_core=True):
     js_code, plugin_sizes = plugin_manager.collect_all_plugin_js_with_sizes()

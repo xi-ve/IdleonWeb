@@ -190,17 +190,16 @@ def bundle_core_files(temp_dir: Path) -> bool:
         print_warning("Core directory not found, skipping core bundling")
         return True
     
-    # Copy core files but exclude node_modules to prevent OpenSSL conflicts
+    # Copy core files including node_modules for standalone functionality  
     if core_dest.exists():
         shutil.rmtree(core_dest)
     
-    # Copy core files selectively, excluding node_modules
-    print_status("Copying core files (excluding node_modules)...")
-    shutil.copytree(core_src, core_dest, ignore=shutil.ignore_patterns('node_modules', '*.log', '.npm'))
+    # Copy core files including node_modules
+    print_status("Copying core files (including node_modules)...")
+    shutil.copytree(core_src, core_dest, ignore=shutil.ignore_patterns('*.log', '.npm', '__pycache__'))
     
-    # Note: We don't install npm dependencies in the build
-    # The standalone executable will require Node.js to be installed on the target system
-    print_status("Core files bundled (Node.js will be required on target system)")
+    # Node.js dependencies are included in the build for standalone functionality
+    print_status("Core files bundled with Node.js dependencies")
     
     return True
 
@@ -245,14 +244,24 @@ def copy_config_to_output(output_dir: Path):
     """Copy the default config file to the output directory for standalone use."""
     print_status("Copying standalone config...")
     
-    # Copy the core config file to the output directory
+    # Try to copy the core config file first
     core_config = Path("core/conf.json")
+    root_config = Path("conf.json")
+    
+    config_source = None
     if core_config.exists():
+        config_source = core_config
+        print_status(f"Using core config: {core_config}")
+    elif root_config.exists():
+        config_source = root_config
+        print_status(f"Using root config: {root_config}")
+    
+    if config_source:
         output_config = output_dir / "conf.json"
-        shutil.copy2(core_config, output_config)
-        print_status(f"Copied config to {output_config}")
+        shutil.copy2(config_source, output_config)
+        print_status(f"Copied config from {config_source} to {output_config}")
     else:
-        print_warning("Core config file not found, creating default config")
+        print_warning("No config file found, creating default config")
         # Create a minimal default config
         default_config = {
             "openDevTools": False,
