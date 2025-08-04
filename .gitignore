@@ -19,6 +19,10 @@ package-lock.json
 /main.js
 /test_js_gen.py
 
+# Extracted data files
+data_extraction/extracted_*.txt
+data_extraction/dumped_N.js
+
 # Node.js dependencies
 /node_modules
 **/node_modules/
