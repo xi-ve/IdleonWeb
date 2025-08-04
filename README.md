@@ -38,7 +38,34 @@ A modern, user-friendly launcher and plugin system for enhancing Legends of Idle
 
 ## Quick Start
 
-### Windows Setup (if dependencies are missing)
+### Option 1: Pre-compiled Binaries (Easiest) ⭐
+
+**Download and run - no setup required!**
+
+1. Go to the [Releases page](https://github.com/xi-ve/IdleonWeb/releases)
+2. Download the appropriate file for your system:
+   - 🐧 **Linux**: `IdleonWeb-linux-v{version}.tar.gz`
+   - 🪟 **Windows**: `IdleonWeb-windows-v{version}.zip` 
+   - 🍎 **macOS**: `IdleonWeb-macos-v{version}.tar.gz`
+3. Extract the archive to a folder
+4. **Install Node.js** (required): [Download Node.js](https://nodejs.org/en/download/) - Get the LTS version
+5. Run the executable:
+   - **Linux/macOS**: `./IdleonWeb`
+   - **Windows**: `IdleonWeb.exe`
+6. Node.js dependencies will install automatically on first run
+7. Open `http://localhost:8080` in your browser to configure plugins
+
+**Requirements:**
+- Node.js must be installed on your system
+- No Python or manual setup required!
+
+---
+
+### Option 2: Manual Setup (From Source)
+
+**For developers or if pre-compiled binaries are unavailable for your platform.**
+
+#### Windows Setup (if dependencies are missing)
 If you don't have Python or Node.js installed, download and install them first:
 
 **Required Downloads:**
@@ -57,8 +84,8 @@ If you don't have Python or Node.js installed, download and install them first:
 5. If commands are not recognized, restart your terminal and try again
 6. Follow the Universal Setup steps below
 
-### Universal Setup (Recommended)
-1. Download and extract the IdleonWeb files to a folder
+#### Universal Setup (Recommended for source installations)
+1. Download and extract the IdleonWeb source files to a folder
 2. Open your terminal:
    - **Windows**: Open Command Prompt (cmd.exe) or PowerShell
    - **Linux**: Open Terminal
@@ -166,11 +193,20 @@ IdleonWeb/
 ├── core/             # Core system files
 ├── webui/            # Web interface files
 ├── build_process/    # Build scripts for standalone executables
+├── .github/workflows/# Automated CI/CD for multi-platform builds
 ├── integration_tests/# Automated testing suite
 ├── main.py           # Main launcher
 ├── setup.py          # Universal setup script
 └── README.md         # This file
 ```
+
+### Automated Builds
+
+This project features automated multi-platform builds via GitHub Actions:
+- **Integration Tests**: All platforms tested on every commit
+- **Native Builds**: Linux, Windows, and macOS executables built automatically
+- **Releases**: Triggered on successful tests, includes all platform binaries
+- **Quality Assurance**: Only tested code reaches releases
 
 ---
 
@@ -178,22 +214,30 @@ IdleonWeb/
 
 ### Common Issues
 
-**Game doesn't launch?**
-- Make sure you have Chrome or Chromium installed
-- Try running `inject` again after a few seconds
+**Pre-compiled Binary Issues:**
+- **"Node.js not found"**: Install Node.js from [nodejs.org](https://nodejs.org/) and restart the executable
+- **"Permission denied" (Linux/macOS)**: Run `chmod +x IdleonWeb` to make the file executable
+- **Dependencies installing slowly**: This is normal on first run, subsequent starts will be faster
+- **Binary won't start**: Try downloading the source code and using manual setup instead
 
-**Web interface not loading?**
-- Check that the launcher shows "Plugin UI web server started"
-- Try refreshing the browser page
+**General Issues:**
+- **Game doesn't launch?**
+  - Make sure you have Chrome or Chromium installed
+  - Try running `inject` again after a few seconds
 
-**Plugins not working?**
-- Ensure you typed `inject` in the launcher
-- Check the browser console for error messages
+- **Web interface not loading?**
+  - Check that the launcher shows "Plugin UI web server started"
+  - Try refreshing the browser page
+
+- **Plugins not working?**
+  - Ensure you typed `inject` in the launcher
+  - Check the browser console for error messages
 
 **Setup fails?**
-- Make sure Python 3.8+ and Node.js are installed
+- Make sure Python 3.8+ and Node.js are installed (for manual setup)
 - Try running `python setup.py` - it can automatically install missing dependencies using package managers
 - Run as administrator if needed (Windows)
+- Consider using pre-compiled binaries instead
 
 ### Getting Help
 

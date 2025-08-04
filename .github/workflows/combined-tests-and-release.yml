@@ -364,8 +364,17 @@ jobs:
       - name: Prepare release files
         id: prepare
         run: |
+          # Debug: List all downloaded artifacts
+          echo "Downloaded artifacts structure:"
+          find artifacts -type f -name "*.tar.gz" -o -name "*.zip" 2>/dev/null || echo "No archives found in artifacts"
+          ls -la artifacts/ 2>/dev/null || echo "No artifacts directory"
+          
           # Move artifacts to root and list them
           find artifacts -name "*.tar.gz" -o -name "*.zip" -exec mv {} . \; 2>/dev/null || true
+          
+          # Debug: List what we have after moving
+          echo "Files in root after moving:"
+          ls -la *.tar.gz *.zip 2>/dev/null || echo "No archives found in root"
           
           # Create source code archive
           zip -r IdleonWeb-source-v${{ needs.build-linux.outputs.version }}.zip . \
@@ -374,25 +383,40 @@ jobs:
           # Generate build status for release notes
           BUILD_STATUS=""
           
-          # Check Linux build (always available since release depends on it)
-          if [ -f "IdleonWeb-linux-v${{ needs.build-linux.outputs.version }}.tar.gz" ]; then
-            BUILD_STATUS+="- 🐧 **Linux**: ✅ \`IdleonWeb-linux-v${{ needs.build-linux.outputs.version }}.tar.gz\`"$'\n'
+          # Check Linux build - since release depends on it, it should always succeed
+          LINUX_FILE="IdleonWeb-linux-v${{ needs.build-linux.outputs.version }}.tar.gz"
+          echo "Checking for Linux file: $LINUX_FILE"
+          echo "Linux build result: ${{ needs.build-linux.result }}"
+          if [[ "${{ needs.build-linux.result }}" == "success" ]] && [ -f "$LINUX_FILE" ]; then
+            BUILD_STATUS+="- 🐧 **Linux**: ✅ \`$LINUX_FILE\`"$'\n'
+            echo "✅ Linux file found and build succeeded"
           else
             BUILD_STATUS+="- 🐧 **Linux**: ❌ Build failed"$'\n'
+            echo "❌ Linux file missing or build failed"
           fi
           
-          # Check Windows build based on job result
-          if [[ "${{ needs.build-windows.result }}" == "success" ]] && [ -f "IdleonWeb-windows-v${{ needs.build-linux.outputs.version }}.zip" ]; then
-            BUILD_STATUS+="- 🪟 **Windows**: ✅ \`IdleonWeb-windows-v${{ needs.build-linux.outputs.version }}.zip\`"$'\n'
+          # Check Windows build
+          WINDOWS_FILE="IdleonWeb-windows-v${{ needs.build-linux.outputs.version }}.zip"
+          echo "Checking for Windows file: $WINDOWS_FILE"
+          echo "Windows build result: ${{ needs.build-windows.result }}"
+          if [[ "${{ needs.build-windows.result }}" == "success" ]] && [ -f "$WINDOWS_FILE" ]; then
+            BUILD_STATUS+="- 🪟 **Windows**: ✅ \`$WINDOWS_FILE\`"$'\n'
+            echo "✅ Windows file found and build succeeded"
           else
             BUILD_STATUS+="- 🪟 **Windows**: ❌ Build failed"$'\n'
+            echo "❌ Windows file missing or build failed"
           fi
           
-          # Check macOS build based on job result
-          if [[ "${{ needs.build-macos.result }}" == "success" ]] && [ -f "IdleonWeb-macos-v${{ needs.build-linux.outputs.version }}.tar.gz" ]; then
-            BUILD_STATUS+="- 🍎 **macOS**: ✅ \`IdleonWeb-macos-v${{ needs.build-linux.outputs.version }}.tar.gz\`"$'\n'
+          # Check macOS build
+          MACOS_FILE="IdleonWeb-macos-v${{ needs.build-linux.outputs.version }}.tar.gz"
+          echo "Checking for macOS file: $MACOS_FILE"
+          echo "macOS build result: ${{ needs.build-macos.result }}"
+          if [[ "${{ needs.build-macos.result }}" == "success" ]] && [ -f "$MACOS_FILE" ]; then
+            BUILD_STATUS+="- 🍎 **macOS**: ✅ \`$MACOS_FILE\`"$'\n'
+            echo "✅ macOS file found and build succeeded"
           else
             BUILD_STATUS+="- 🍎 **macOS**: ❌ Build failed"$'\n'
+            echo "❌ macOS file missing or build failed"
           fi
           
           BUILD_STATUS+=""$'\n'
