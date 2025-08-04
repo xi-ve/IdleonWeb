@@ -373,7 +373,9 @@ jobs:
             if [ -d "$artifact_dir" ]; then
               echo "Processing: $artifact_dir"
               ls -la "$artifact_dir"
-              find "$artifact_dir" -name "*.tar.gz" -o -name "*.zip" -exec mv {} . \; 2>/dev/null || true
+              # Use cp instead of mv and handle each file type explicitly
+              cp "$artifact_dir"/*.tar.gz . 2>/dev/null || true
+              cp "$artifact_dir"/*.zip . 2>/dev/null || true
             fi
           done
           
