@@ -1,6 +1,0 @@
-{
-    "python.analysis.addHoverSummaries": true,
-    "python.analysis.diagnosticSeverityOverrides": {
-        "reportArgumentType": "none"
-    }    
-}

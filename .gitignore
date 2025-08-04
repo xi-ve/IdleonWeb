@@ -9,6 +9,10 @@
 *.pyd
 package-lock.json
 
+# IDE folders
+.idea/
+.vscode/
+
 # Generated JavaScript files
 /cheats.js
 /dumped_N.js
