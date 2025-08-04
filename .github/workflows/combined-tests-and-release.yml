@@ -260,7 +260,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m venv .venv
-          .venv\Scripts\activate
+          .venv\Scripts\Activate.ps1
           pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r build_process\build-requirements.txt
@@ -273,7 +273,7 @@ jobs:
 
       - name: Build Windows executable
         run: |
-          .venv\Scripts\activate
+          .venv\Scripts\Activate.ps1
           python build_process\build_standalone.py --platform windows --output release_windows --clean
         timeout-minutes: 15
 
@@ -359,12 +359,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+        continue-on-error: true
 
       - name: Prepare release files
         id: prepare
         run: |
           # Move artifacts to root and list them
-          find artifacts -name "*.tar.gz" -o -name "*.zip" -exec mv {} . \;
+          find artifacts -name "*.tar.gz" -o -name "*.zip" -exec mv {} . \; 2>/dev/null || true
           
           # Create source code archive
           zip -r IdleonWeb-source-v${{ needs.build-linux.outputs.version }}.zip . \
@@ -380,15 +381,15 @@ jobs:
             BUILD_STATUS+="- 🐧 **Linux**: ❌ Build failed"$'\n'
           fi
           
-          # Check Windows build
-          if [ -f "IdleonWeb-windows-v${{ needs.build-linux.outputs.version }}.zip" ]; then
+          # Check Windows build based on job result
+          if [[ "${{ needs.build-windows.result }}" == "success" ]] && [ -f "IdleonWeb-windows-v${{ needs.build-linux.outputs.version }}.zip" ]; then
             BUILD_STATUS+="- 🪟 **Windows**: ✅ \`IdleonWeb-windows-v${{ needs.build-linux.outputs.version }}.zip\`"$'\n'
           else
             BUILD_STATUS+="- 🪟 **Windows**: ❌ Build failed"$'\n'
           fi
           
-          # Check macOS build
-          if [ -f "IdleonWeb-macos-v${{ needs.build-linux.outputs.version }}.tar.gz" ]; then
+          # Check macOS build based on job result
+          if [[ "${{ needs.build-macos.result }}" == "success" ]] && [ -f "IdleonWeb-macos-v${{ needs.build-linux.outputs.version }}.tar.gz" ]; then
             BUILD_STATUS+="- 🍎 **macOS**: ✅ \`IdleonWeb-macos-v${{ needs.build-linux.outputs.version }}.tar.gz\`"$'\n'
           else
             BUILD_STATUS+="- 🍎 **macOS**: ❌ Build failed"$'\n'
@@ -405,7 +406,7 @@ jobs:
           } >> $GITHUB_OUTPUT
           
           echo "Release files created:"
-          ls -la *.tar.gz *.zip 2>/dev/null || echo "Some builds may have failed"
+          ls -la *.tar.gz *.zip 2>/dev/null || echo "Listing available files..."
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

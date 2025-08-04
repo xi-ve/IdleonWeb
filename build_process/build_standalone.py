@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """
 IdleonWeb Standalone Build Script
-Builds standalone executables for multiple platforms using PyInstaller.
+Builds standalone executables using PyInstaller on native platforms.
 
-Supported platforms:
-- Windows (.exe)
-- Linux (binary)
-- macOS (.app)
+Supported platforms (native builds only):
+- Windows (.exe) - build on Windows runner
+- Linux (binary) - build on Linux runner  
+- macOS (.app) - build on macOS runner
+
+Note: PyInstaller cannot cross-compile between different operating systems.
+Each platform must be built on its native environment for compatibility.
 
 Requirements:
 - PyInstaller
@@ -14,12 +17,13 @@ Requirements:
 - Python virtual environment with all dependencies
 
 Usage:
-    python build_standalone.py --platform all --output build
-    python build_standalone.py --platform linux --output myapp_v1.0
-    python build_standalone.py --platform windows --optimize --clean
+    python build_standalone.py --platform linux --output release_linux
+    python build_standalone.py --platform windows --output release_windows  
+    python build_standalone.py --platform macos --output release_macos
 """
 
 import argparse
+import os
 import subprocess
 import sys
 import shutil
@@ -85,7 +89,15 @@ def check_platform_compatibility(target_platform: str) -> bool:
         print_warning("The build may fail or produce an incompatible executable.")
         print_warning("For best results, build on the target platform.")
         
-        # Ask user if they want to continue
+        # Check if running in CI environment (GitHub Actions, etc.)
+        ci_environment = os.environ.get('CI') or os.environ.get('GITHUB_ACTIONS') or os.environ.get('JENKINS_URL')
+        
+        if ci_environment:
+            print_status("CI environment detected - skipping cross-compilation")
+            print_status("Cross-platform builds should use native runners for each platform")
+            return False
+        
+        # Ask user if they want to continue in interactive mode
         try:
             response = input("Continue anyway? (y/N): ").strip().lower()
             if response not in ['y', 'yes']:
@@ -117,12 +129,13 @@ def check_dependencies():
         print_error("Node.js not found. Please install Node.js")
         return False
     
-    # Check npm
+    # Check npm (use npm.cmd on Windows)
+    npm_command = "npm.cmd" if platform.system().lower() == "windows" else "npm"
     try:
-        result = subprocess.run(["npm", "--version"], capture_output=True, text=True, check=True)
+        result = subprocess.run([npm_command, "--version"], capture_output=True, text=True, check=True)
         print_success(f"npm {result.stdout.strip()} found")
     except (subprocess.CalledProcessError, FileNotFoundError):
-        print_error("npm not found. Please install npm")
+        print_error(f"{npm_command} not found. Please install npm")
         return False
     
     return True
@@ -177,20 +190,17 @@ def bundle_core_files(temp_dir: Path) -> bool:
         print_warning("Core directory not found, skipping core bundling")
         return True
     
-    # Copy core files
+    # Copy core files but exclude node_modules to prevent OpenSSL conflicts
     if core_dest.exists():
         shutil.rmtree(core_dest)
-    shutil.copytree(core_src, core_dest)
     
-    # Install dependencies if package.json exists
-    package_json = core_dest / "package.json"
-    if package_json.exists():
-        print_status("Installing core dependencies...")
-        try:
-            run_command(["npm", "install"], cwd=core_dest)
-        except subprocess.CalledProcessError:
-            print_error("Failed to install core dependencies")
-            return False
+    # Copy core files selectively, excluding node_modules
+    print_status("Copying core files (excluding node_modules)...")
+    shutil.copytree(core_src, core_dest, ignore=shutil.ignore_patterns('node_modules', '*.log', '.npm'))
+    
+    # Note: We don't install npm dependencies in the build
+    # The standalone executable will require Node.js to be installed on the target system
+    print_status("Core files bundled (Node.js will be required on target system)")
     
     return True
 
@@ -325,7 +335,17 @@ def get_pyinstaller_args(platform: str, temp_dir: Path, launcher_script: Path, o
         f"--workpath={temp_dir / 'work'}",
         f"--specpath={temp_dir}",
         f"--name=IdleonWeb",
+        "--noupx",    # Disable UPX compression (can cause issues)
     ]
+    
+    # Add compatibility flags for Linux builds
+    if platform == "linux":
+        args.extend([
+            "--strip",  # Strip debug symbols to reduce size
+            "--exclude-module=tkinter",  # Remove GUI modules
+            "--exclude-module=matplotlib",
+            "--exclude-module=PIL",
+        ])
     
     # Add icon if available
     icon_files = ["icon.ico", "icon.png", "icon.icns"]
