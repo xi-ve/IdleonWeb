@@ -23,13 +23,13 @@ class ExamplePlugin(PluginBase):
         label="Enable Feature",
         description="Turn this feature on/off",
         config_key="enabled",
-        default_value=True
+        default_value=False
     )
     async def enable_feature_ui(self, value=None):
         if value is not None:
             self.config["enabled"] = value
             self.save_to_global_config()
-        return f"Feature {'enabled' if self.config.get('enabled', True) else 'disabled'}"
+        return f"Feature {'enabled' if self.config.get('enabled', False) else 'disabled'}"
 
     @ui_slider(
         label="Speed",

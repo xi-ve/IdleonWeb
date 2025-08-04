@@ -12,7 +12,7 @@ class SpawnItemPlugin(PluginBase):
         super().__init__(config or {})
         self.injector = None
         self.name = 'spawn_item'
-        self.debug = config_manager.get_path('plugin_configs.spawn_item.debug', True)
+        self.debug = config_manager.get_path('plugin_configs.spawn_item.debug', False)
         self._item_cache = None
         self._cache_timestamp = 0
         self._cache_duration = 300
@@ -24,7 +24,7 @@ class SpawnItemPlugin(PluginBase):
         pass
 
     async def on_config_changed(self, config: Dict[str, Any]) -> None:
-        self.debug = config_manager.get_path('plugin_configs.spawn_item.debug', True)
+        self.debug = config_manager.get_path('plugin_configs.spawn_item.debug', False)
         if self.debug:
             console.print(f"[spawn_item] Config changed: {config}")
         if hasattr(self, 'injector') and self.injector:
@@ -37,13 +37,13 @@ class SpawnItemPlugin(PluginBase):
         label="Debug Mode",
         description="Enable debug logging for spawn item plugin",
         config_key="debug",
-        default_value=True
+        default_value=False
     )
     async def enable_debug(self, value: bool = None):
         if value is not None:
             self.config["debug"] = value
             self.save_to_global_config()
-        return f"Debug mode {'enabled' if self.config.get('debug', True) else 'disabled'}"
+        return f"Debug mode {'enabled' if self.config.get('debug', False) else 'disabled'}"
 
     @ui_autocomplete_input(
         label="Spawn Item",

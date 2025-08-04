@@ -14,21 +14,21 @@ class InstantMobRespawnPlugin(PluginBase):
         super().__init__(config or {})
         self.injector = None
         self.name = 'instant_mob_respawn'
-        self.debug = config_manager.get_path('plugin_configs.instant_mob_respawn.debug', True)
+        self.debug = config_manager.get_path('plugin_configs.instant_mob_respawn.debug', False)
         self.last_update = 0
 
     async def cleanup(self) -> None:
         pass
 
     async def update(self) -> None:
-        self.debug = config_manager.get_path('plugin_configs.instant_mob_respawn.debug', True)
+        self.debug = config_manager.get_path('plugin_configs.instant_mob_respawn.debug', False)
         if self.last_update < time.time() - 10:
             self.last_update = time.time()
             if hasattr(self, 'injector') and self.injector and config_manager.get_path('plugin_configs.instant_mob_respawn.enabled', False):
                 try:
                     proxy_status = self.run_js_export('check_proxy_status_js', self.injector)
                     if not proxy_status:
-                        self.run_js_export('setup_proxy_mob_respawn_rate_js', self.injector, enabled=self.config.get('toggle', True))
+                        self.run_js_export('setup_proxy_mob_respawn_rate_js', self.injector, enabled=self.config.get('toggle', False))
                 except Exception as e:
                     if self.debug:
                         console.print(f"[instant_mob_respawn] Error checking proxy status: {e}")
@@ -42,7 +42,7 @@ class InstantMobRespawnPlugin(PluginBase):
                 console.print(f"[instant_mob_respawn] Error setting up mob spawn rate proxy: {e}")
 
     async def on_config_changed(self, config: Dict[str, Any]) -> None:
-        self.debug = config_manager.get_path('plugin_configs.instant_mob_respawn.debug', True)
+        self.debug = config_manager.get_path('plugin_configs.instant_mob_respawn.debug', False)
         if  self.debug:
             console.print(f"[instant_mob_respawn] Config changed: {config}")
         if hasattr(self, 'injector') and self.injector:
@@ -52,25 +52,25 @@ class InstantMobRespawnPlugin(PluginBase):
         label="Enable Instant Mob Respawn",
         description="Toggle instant mob respawn functionality",
         config_key="toggle",
-        default_value=True
+        default_value=False
     )
     async def enable_instant_respawn(self, value: bool = None):
         if value is not None:
             self.config["toggle"] = value
             self.save_to_global_config()
-        return f"Instant mob respawn {'enabled' if self.config.get('toggle', True) else 'disabled'}"
+        return f"Instant mob respawn {'enabled' if self.config.get('toggle', False) else 'disabled'}"
 
     @ui_toggle(
         label="Debug Mode",
         description="Enable debug logging for mob respawn plugin",
         config_key="debug",
-        default_value=True
+        default_value=False
     )
     async def enable_debug(self, value: bool = None):
         if value is not None:
             self.config["debug"] = value
             self.save_to_global_config()
-        return f"Debug mode {'enabled' if self.config.get('debug', True) else 'disabled'}"
+        return f"Debug mode {'enabled' if self.config.get('debug', False) else 'disabled'}"
 
     @plugin_command(
         help="Set instant mob respawn.",
@@ -80,7 +80,7 @@ class InstantMobRespawnPlugin(PluginBase):
     )
     async def set(self, toggle=False, injector=None, **kwargs):
         config_manager.set_path('plugin_configs.instant_mob_respawn.toggle', toggle)
-        self.debug = config_manager.get_path('plugin_configs.instant_mob_respawn.debug', True)
+        self.debug = config_manager.get_path('plugin_configs.instant_mob_respawn.debug', False)
         self.set_config(config_manager.get_plugin_config(self.name))
 
     @js_export()

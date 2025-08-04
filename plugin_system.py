@@ -496,7 +496,7 @@ class PluginManager:
         self.failed_plugins = set()
 
     async def load_plugins(self, injector, plugin_configs: Dict[str, Any] = None, 
-                          global_debug: bool = True) -> None:
+                          global_debug: bool = False) -> None:
         config_manager.reload()
         
         if plugin_configs is None:
@@ -522,7 +522,7 @@ class PluginManager:
                     logger.debug(traceback.format_exc())
 
     async def _load_plugin(self, plugin_name: str, plugin_config: Dict, 
-                          injector, global_debug: bool = True) -> None:
+                          injector, global_debug: bool = False) -> None:
         plugin_class = await self._load_external_plugin(plugin_name)
         
         if not plugin_class:

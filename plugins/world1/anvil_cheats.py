@@ -16,7 +16,7 @@ class AnvilCheatsPlugin(PluginBase):
 
     async def cleanup(self): pass
     async def update(self): 
-        self.debug = config_manager.get_path('plugin_configs.anvil_cheats.debug', True)
+        self.debug = config_manager.get_path('plugin_configs.anvil_cheats.debug', False)
         if self.last_update < time.time() - 10:
             self.last_update = time.time()
             if hasattr(self, 'injector') and self.injector and config_manager.get_path('plugin_configs.anvil_cheats.free_recipe_costs', False):

@@ -21,7 +21,7 @@ class CandyUnlockPlugin(PluginBase):
         label="Unlock Candy Usage Everywhere",
         description="Allows using Time Candy in all maps, activities, and locations including dark places, World 6, Cooking, Laboratory, Worship, Void, and any other restricted areas.",
         config_key="unlock_candy",
-        default_value=True
+        default_value=False
     )
     async def unlock_candy_ui(self, value: bool = None):
         if value is not None:

@@ -12,7 +12,7 @@ class InventoryStoragePlugin(PluginBase):
         super().__init__(config or {})
         self.injector = None
         self.name = 'inventory_storage'
-        self.debug = config_manager.get_path('plugin_configs.inventory_storage.debug', True)
+        self.debug = config_manager.get_path('plugin_configs.inventory_storage.debug', False)
         self._cache_timestamp = 0
         self._cache_duration = 300
 
@@ -23,7 +23,7 @@ class InventoryStoragePlugin(PluginBase):
         pass
 
     async def on_config_changed(self, config: Dict[str, Any]) -> None:
-        self.debug = config_manager.get_path('plugin_configs.inventory_storage.debug', True)
+        self.debug = config_manager.get_path('plugin_configs.inventory_storage.debug', False)
         if self.debug:
             console.print(f"[inventory_storage] Config changed: {config}")
         if hasattr(self, 'injector') and self.injector:
@@ -36,13 +36,13 @@ class InventoryStoragePlugin(PluginBase):
         label="Debug Mode",
         description="Enable debug logging for inventory storage plugin",
         config_key="debug",
-        default_value=True
+        default_value=False
     )
     async def enable_debug(self, value: bool = None):
         if value is not None:
             self.config["debug"] = value
             self.save_to_global_config()
-        return f"Debug mode {'enabled' if self.config.get('debug', True) else 'disabled'}"
+        return f"Debug mode {'enabled' if self.config.get('debug', False) else 'disabled'}"
 
     @ui_button(
         label="Unlock All Inventory Packages",

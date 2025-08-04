@@ -431,7 +431,7 @@ def check_unused_plugins(plugin_manager, startup_msgs):
                         asyncio.run(plugin_manager.load_plugins(
                             None, 
                             plugin_configs=config_manager.get_all_plugin_configs(), 
-                            global_debug=config_manager.get_path('debug', True)
+                            global_debug=config_manager.get_path('debug', False)
                         ))
                         startup_msgs.append(f"[green]Successfully loaded {len(plugin_manager.plugins)} plugins (including newly enabled ones)[/green]")
                         console.print(f"[green]Successfully loaded {len(plugin_manager.plugins)} plugins![/green]")
@@ -467,7 +467,7 @@ def check_unused_plugins(plugin_manager, startup_msgs):
                             asyncio.run(plugin_manager.load_plugins(
                                 None, 
                                 plugin_configs=config_manager.get_all_plugin_configs(), 
-                                global_debug=config_manager.get_path('debug', True)
+                                global_debug=config_manager.get_path('debug', False)
                             ))
                             startup_msgs.append(f"[green]Successfully loaded {len(plugin_manager.plugins)} plugins (including newly enabled ones)[/green]")
                             console.print(f"[green]Successfully loaded {len(plugin_manager.plugins)} plugins![/green]")
@@ -519,7 +519,7 @@ def main():
     startup_msgs.append(f"[cyan]Configuration loaded from [white]{config_manager.conf_path}[/white][/cyan]")
     startup_msgs.append(f"[cyan]Plugins directory: [white]{PLUGINS_DIR}[/white][/cyan]")
     
-    log_level = logging.INFO if config_manager.get_path("debug", True) else logging.WARNING
+    log_level = logging.INFO if config_manager.get_path("debug", False) else logging.WARNING
     logging.basicConfig(level=log_level)
     import plugin_system
     plugin_system.GLOBAL_DEBUG = config_manager.get_path('debug', False)
@@ -530,7 +530,7 @@ def main():
         asyncio.run(plugin_manager.load_plugins(
             None, 
             plugin_configs=plugin_configs, 
-            global_debug=config_manager.get_path('debug', True)
+            global_debug=config_manager.get_path('debug', False)
         ))
         startup_msgs.append(f"[green]Successfully loaded {len(plugin_manager.plugins)} plugins[/green]")
     except Exception as e:
