@@ -110,6 +110,12 @@ If you don't have Python or Node.js installed, download and install them first:
 ## How to Use
 
 ### Starting the Launcher
+
+**For Standalone Binaries (Recommended):**
+- **Linux/macOS**: `./IdleonWeb`
+- **Windows**: `IdleonWeb.exe`
+
+**For Source Installation:**
 ```bash
 python launch.py
 ```
@@ -118,11 +124,11 @@ python launch.py
 **Automatic Mode (Default):**
 - The game will launch automatically after plugin discovery
 - Auto-injection runs immediately when the launcher starts
-- To disable: use the `auto_inject off` command
+- To disable: use the `auto_inject off` command in the CLI
 
 **Manual Mode:**
 1. Disable auto-injection: `auto_inject off`
-2. In the launcher, type `inject` and press Enter
+2. In the launcher CLI, type `inject` and press Enter
 3. The game will open in a browser window
 
 ### Configuration
