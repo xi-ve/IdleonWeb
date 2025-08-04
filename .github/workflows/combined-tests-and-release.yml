@@ -364,12 +364,22 @@ jobs:
       - name: Prepare release files
         id: prepare
         run: |
+          # Debug: Show artifact structure
+          echo "Artifact directory structure:"
+          ls -la artifacts/
+          
           # Move artifacts from subdirectories to root
           for artifact_dir in artifacts/*/; do
             if [ -d "$artifact_dir" ]; then
+              echo "Processing: $artifact_dir"
+              ls -la "$artifact_dir"
               find "$artifact_dir" -name "*.tar.gz" -o -name "*.zip" -exec mv {} . \; 2>/dev/null || true
             fi
           done
+          
+          # Debug: Show what we have now
+          echo "Files in root after extraction:"
+          ls -la *.tar.gz *.zip 2>/dev/null || echo "No archives found"
           
           # Create source code archive
           zip -r IdleonWeb-source-v${{ needs.build-linux.outputs.version }}.zip . \

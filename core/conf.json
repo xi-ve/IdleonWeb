@@ -3,111 +3,183 @@
   "interactive": true,
   "plugins": [
     "character.godlike_powers",
+    "character.currency_cheats",
     "character.inventory_storage",
-    "character.quest_helper",
     "character.instant_mob_respawn",
-    "character.instant_afk_time",
     "character.spawn_item",
+    "character.quest_manager",
     "character.stats_multiplier",
-    "character.sneaking_items",
-    "unlocks.sneaking_cheats",
     "unlocks.candy_unlock",
+    "unlocks.class_unlock",
     "unlocks.vault_unlocker",
     "unlocks.card_cheats",
     "unlocks.grimoire_unlocker",
     "unlocks.package_toggle",
     "qol.global_storage",
-    "world1.anvil_cheats"
+    "world1.anvil_cheats",
+    "world1.stamp_cheats",
+    "world6.sneaking_cheats",
+    "world6.sneaking_items",
+    "world2.post_office_cheats"
   ],
   "plugin_configs": {
-    "spawn_item": {
-      "debug": false,
-      "spawn_item_ui": "Crystal6",
-      "search_items_ui": "crab",
-      "list_all_items_ui": "W7"
+    "godlike_powers": {
+      "enabled": true,
+      "reach": true,
+      "crit": true,
+      "ability": true,
+      "hitchance": true,
+      "food": true,
+      "weapon_speed": 14,
+      "card": true,
+      "hp": false,
+      "poison": true
+    },
+    "character.godlike_powers": {
+      "enabled": true,
+      "reach": true,
+      "crit": true,
+      "ability": true,
+      "hitchance": true,
+      "food": true,
+      "weapon_speed": 14,
+      "card": true,
+      "hp": false,
+      "poison": true
+    },
+    "inventory_storage": {
+      "debug": false
+    },
+    "character.inventory_storage": {
+      "debug": false
     },
     "instant_mob_respawn": {
       "debug": false,
       "toggle": true
     },
-    "global_storage": {
-      "enabled": true
-    },
-    "stats_multiplier": {
-      "enabled": true,
+    "character.instant_mob_respawn": {
       "debug": false,
-      "damage_multiplier": 44,
-      "efficiency_multiplier": 1,
-      "afk_multiplier": 5,
-      "drop_multiplier": 1,
-      "monster_multiplier": 1,
-      "printer_multiplier": 1
+      "toggle": true
     },
-    "godlike_powers": {
-      "ability": true,
-      "card": true,
-      "crit": true,
-      "enabled": true,
-      "reach": true,
-      "weapon_speed": 14,
-      "hitchance": true,
-      "food": true
-    },
-    "package_toggle": {
-      "list_bought_packages_ui": "",
-      "toggle_package_ui": "bun_i",
+    "spawn_item": {
       "debug": false
     },
-    "inventory_storage": {
-      "check_storage_status_ui": "",
-      "complete_storage_list_ui": "",
-      "max_inventory_slots": false,
-      "max_chest_slots": false,
-      "unlock_storage_boxes": false,
-      "unlock_inventory_bags": false,
+    "character.spawn_item": {
       "debug": false,
-      "auto_unlock_packages": false
+      "list_all_items_ui": "egg",
+      "spawn_item_ui": "Timecandy6 55"
     },
-    "quest_helper": {
-      "quest_helper_ui": "",
-      "auto_complete_all": false,
-      "fix_character_ui": false,
-      "reset_quests_ui": false
+    "stats_multiplier": {
+      "afk_multiplier": 1,
+      "damage_multiplier": 6,
+      "enabled": true,
+      "monster_multiplier": 1
+    },
+    "character.stats_multiplier": {
+      "afk_multiplier": 1,
+      "damage_multiplier": 6,
+      "enabled": true,
+      "monster_multiplier": 1
     },
     "candy_unlock": {
       "unlock_candy": true
     },
-    "vault_unlocker": {
-      "vault_status_ui": "",
-      "set_vault_item_level_ui": "Wicked Smart 500",
-      "unlock_all_categories": false,
-      "max_level_all_categories": false,
-      "debug": false
-    },
-    "grimoire_unlocker": {
-      "grimoire_status_ui": "",
-      "unlock_all_upgrades": false,
-      "set_grimoire_upgrade_level_ui": "Wraith Accuracy 500",
-      "max_level_all_upgrades": false,
-      "reset_all_upgrades": false,
-      "set_all_grimoire_upgrades_percentage_ui": "50"
+    "unlocks.candy_unlock": {
+      "unlock_candy": true
     },
     "card_cheats": {
-      "set_all_cards_to_max": false,
-      "free_card_upgrades": true,
-      "unlock_all_card_slots": false,
-      "card_status_ui": "",
-      "set_card_level_ui": "mushP",
+      "free_card_upgrades": true
+    },
+    "unlocks.card_cheats": {
+      "free_card_upgrades": true
+    },
+    "global_storage": {
+      "enabled": true
+    },
+    "qol.global_storage": {
+      "enabled": true
+    },
+    "anvil_cheats": {
+      "free_recipe_costs": true,
+      "free_anvil_upgrades": true,
+      "instant_anvil_production": true,
       "debug": false
+    },
+    "world1.anvil_cheats": {
+      "free_recipe_costs": true,
+      "free_anvil_upgrades": true,
+      "instant_anvil_production": true,
+      "debug": false
+    },
+    "world6.jade_emporium_cheats": {
+      "emporium_status_ui": ""
+    },
+    "stamp_cheats": {
+      "debug": false
+    },
+    "world1.stamp_cheats": {
+      "debug": false
+    },
+    "character.currency_cheats": {
+      "currency_status_ui": "",
+      "set_currency_ui": "gems 50000"
+    },
+    "world2.post_office_cheats": {
+      "current_orders_ui": "",
+      "post_office_status_ui": "",
+      "upgrade_points": 11,
+      "order_type": "all",
+      "set_upgrade_level_ui": "Civil_War_Memory_Box 400",
+      "completed_orders_count": 1000,
+      "free_order_completion": true
+    },
+    "post_office_cheats": {
+      "current_orders_ui": "",
+      "post_office_status_ui": "",
+      "upgrade_points": 11,
+      "order_type": "all",
+      "set_upgrade_level_ui": "Civil_War_Memory_Box 400",
+      "completed_orders_count": 1000,
+      "free_order_completion": true
+    },
+    "unlocks.grimoire_unlocker": {
+      "grimoire_status_ui": ""
+    },
+    "unlocks.class_unlock": {
+      "debug": false,
+      "class_status_ui": "",
+      "set_character_class_ui": "Bubonic Conjuror",
+      "set_beginner_class_ui": "Beginner",
+      "set_advanced_class_ui": "Nebulyte",
+      "set_special_class_ui": "Voidwalker",
+      "set_mage_class_ui": "Arcane",
+      "class_progression_banner_ui": "",
+      "auto_display_banner": true,
+      "set_archer_class_ui": "Wind Walker",
+      "check_class_systems_ui": "",
+      "debug_class_detection_ui": ""
+    },
+    "class_unlock": {
+      "debug": false,
+      "class_status_ui": "",
+      "set_character_class_ui": "Archer",
+      "set_beginner_class_ui": "Beginner",
+      "set_advanced_class_ui": "Nebulyte",
+      "set_special_class_ui": "Voidwalker",
+      "set_mage_class_ui": "Arcane",
+      "class_progression_banner_ui": "",
+      "auto_display_banner": true
     }
   },
   "debug": false,
+  "webui": {
+    "darkmode": true
+  },
   "injector": {
     "cdp_port": 32123,
     "njs_pattern": "*N.js",
-    "idleon_url": "https://www.legendsofidleon.com/ytGl5oc/"
-  },
-  "webui": {
-    "darkmode": true
+    "idleon_url": "https://www.legendsofidleon.com/ytGl5oc/",
+    "timeout": 120000,
+    "autoInject": true
   }
 }
