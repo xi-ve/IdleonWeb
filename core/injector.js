@@ -14,6 +14,7 @@ class ConfigManager {
         this.njsPattern = this.injectorConfig.njs_pattern || '*N.js';
         this.idleonUrl = this.injectorConfig.idleon_url || 'https://www.legendsofidleon.com/ytGl5oc/';
         this.timeout = this.injectorConfig.timeout || 120_000;
+        this.profileInitTimeout = this.injectorConfig.profile_init_timeout || 5000;
     }
 
     loadConfig() {
@@ -49,6 +50,7 @@ class BrowserLauncher {
             'C:/Users/' + process.env.USERNAME + '/AppData/Local/Google/Chrome/Application/chrome.exe',
             'C:/Users/' + process.env.USERNAME + '/AppData/Local/Microsoft/Edge/Application/msedge.exe',
         ];
+        this.userDataDir = path.join(process.cwd(), 'idleon-chromium-profile');
     }
 
     findChromiumPath() {
@@ -60,12 +62,134 @@ class BrowserLauncher {
         throw new Error("Could not find Chromium/Chrome executable. Please install Chromium or Google Chrome.");
     }
 
-    launch() {
+    isProfileNew() {
+        if (!fs.existsSync(this.userDataDir)) {
+            return true;
+        }
+        
+        const profileIndicators = [
+            path.join(this.userDataDir, 'Default', 'Preferences'),
+            path.join(this.userDataDir, 'Default', 'Cookies'),
+            path.join(this.userDataDir, 'Default', 'Login Data')
+        ];
+        
+        return !profileIndicators.some(file => fs.existsSync(file));
+    }
+
+    async initializeProfile() {
+        if (!this.isProfileNew()) {
+            console.log('[Injector] Chrome profile already exists and initialized.');
+            return;
+        }
+
+        console.log('[Injector] Fresh Chrome profile detected. Initializing profile for login...');
+        
         const chromiumCmd = this.findChromiumPath();
-        const userDataDir = path.join(process.cwd(), 'idleon-chromium-profile');
         const args = [
             `--remote-debugging-port=${this.config.cdpPort}`,
-            `--user-data-dir=${userDataDir}`,
+            `--user-data-dir=${this.userDataDir}`,
+            '--no-first-run',
+            '--no-default-browser-check',
+            '--remote-allow-origins=*',
+        ];
+        
+        if (process.platform === 'linux') {
+            args.push('--disable-gpu');
+        }
+        
+        args.push(this.config.idleonUrl);
+        
+        console.log('[Injector] Opening browser for profile initialization...');
+        const initProcess = spawn(chromiumCmd, args, { detached: true, stdio: 'ignore' });
+        
+        console.log(`[Injector] Waiting ${this.config.profileInitTimeout/1000} seconds for profile initialization...`);
+        await new Promise(resolve => setTimeout(resolve, this.config.profileInitTimeout));
+        
+        console.log('[Injector] Closing initialization browser via CDP...');
+        try {
+            await new Promise((resolve, reject) => {
+                const start = Date.now();
+                const check = () => {
+                    require('http').get(`http://localhost:${this.config.cdpPort}/json/version`, res => {
+                        let data = '';
+                        res.on('data', chunk => data += chunk);
+                        res.on('end', () => {
+                            try {
+                                const json = JSON.parse(data);
+                                if (json.webSocketDebuggerUrl) {
+                                    resolve();
+                                    return;
+                                }
+                            } catch {}
+                            retry();
+                        });
+                    }).on('error', retry);
+                };
+                
+                const retry = () => {
+                    if (Date.now() - start > 10000) {
+                        reject(new Error('CDP not available for browser close'));
+                    } else {
+                        setTimeout(check, 200);
+                    }
+                };
+                check();
+            });
+            
+            const CDP = require('chrome-remote-interface');
+            const targets = await CDP.List({ port: this.config.cdpPort });
+            
+            for (const target of targets) {
+                if (target.type === 'page') {
+                    try {
+                        const client = await CDP({ target, port: this.config.cdpPort });
+                        await client.Browser.close();
+                        await client.close();
+                        console.log('[Injector] Browser closed via CDP');
+                        break;
+                    } catch (e) {
+                    }
+                }
+            }
+            
+            try {
+                const browserTarget = targets.find(t => t.type === 'browser');
+                if (browserTarget) {
+                    const client = await CDP({ target: browserTarget, port: this.config.cdpPort });
+                    await client.Browser.close();
+                    await client.close();
+                    console.log('[Injector] Browser closed via CDP (browser target)');
+                }
+            } catch (e) {
+                console.log('[Injector] CDP browser close failed, trying fallback...');
+                if (process.platform === 'win32') {
+                    exec('taskkill /F /IM chrome.exe /T', () => {});
+                    exec('taskkill /F /IM chromium.exe /T', () => {});
+                } else {
+                    exec('pkill -f "chrome.*--remote-debugging-port=' + this.config.cdpPort + '"', () => {});
+                }
+            }
+            
+        } catch (error) {
+            console.log('[Injector] Error during CDP browser close:', error.message);
+            if (process.platform === 'win32') {
+                exec('taskkill /F /IM chrome.exe /T', () => {});
+                exec('taskkill /F /IM chromium.exe /T', () => {});
+            } else {
+                exec('pkill -f "chrome.*--remote-debugging-port=' + this.config.cdpPort + '"', () => {});
+            }
+        }
+        
+        console.log('[Injector] Profile initialization complete. Starting actual injection...');
+        
+        await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+
+    launch() {
+        const chromiumCmd = this.findChromiumPath();
+        const args = [
+            `--remote-debugging-port=${this.config.cdpPort}`,
+            `--user-data-dir=${this.userDataDir}`,
             '--no-first-run',
             '--no-default-browser-check',
             '--remote-allow-origins=*',
@@ -89,7 +213,6 @@ class CDPManager {
     }
 
     async waitForCDP(timeout = null) {
-        // Use config timeout if not specified, fallback to default
         const actualTimeout = timeout || this.config.timeout || 120_000;
         
         return new Promise((resolve, reject) => {
@@ -123,7 +246,6 @@ class CDPManager {
     }
 
     async connect() {
-        // Add timeout for CDP connection
         const connectionTimeout = this.config.timeout || 120_000;
         
         const tabs = await Promise.race([
@@ -259,13 +381,11 @@ class GameContextManager {
                 let contextReady = false;
                 let contextExpr = "window.__idleon_cheats__";
                 
-                // Calculate timeout based on config, default to 60 seconds
                 const contextTimeout = this.cdpManager.config.timeout || 120_000;
-                const maxIterations = Math.ceil(contextTimeout / 1000); // Convert timeout to iterations
+                const maxIterations = Math.ceil(contextTimeout / 1000);
                 const startTime = Date.now();
                 
                 for (let i = 0; i < maxIterations; ++i) {
-                    // Check if we've exceeded the timeout
                     if (Date.now() - startTime > contextTimeout) {
                         console.error(`[Injector] ERROR: Could not find __idleon_cheats__ context after ${contextTimeout/1000} seconds.`);
                         process.exit(1);
@@ -301,7 +421,6 @@ class GameContextManager {
 
                 console.log("[Injector] Waiting for game to be fully ready...");
                 try {
-                    // Add timeout for game ready wait
                     const gameReadyTimeout = this.cdpManager.config.timeout || 120_000;
                     await Promise.race([
                         this.cdpManager.client.Runtime.evaluate({ 
@@ -366,6 +485,8 @@ class IdleonInjector {
     async run() {
         try {
             console.log('[Injector] Starting main logic...');
+            
+            await this.browserLauncher.initializeProfile();
             
             this.browserLauncher.launch();
             await this.cdpManager.waitForCDP(this.configManager.timeout);

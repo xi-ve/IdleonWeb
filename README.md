@@ -136,8 +136,6 @@ python launch.py
 2. Configure your plugins using the web interface
 3. Changes take effect immediately
 
-> **Note:** On first launch, if the game requires you to log in, the injection process may fail. Simply close the browser, then run the `inject` command again in the launcher after logging in. This is normal for the first run.
-
 ### Web Interface
 - **Plugin Configuration** - Toggle features on/off, adjust settings
 - **Real-Time Updates** - See changes immediately
