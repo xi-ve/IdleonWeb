@@ -136,7 +136,7 @@ def test_config_file():
         return False
     
     try:
-        with open(config_path, 'r') as f:
+        with open(config_path, 'r', encoding='utf-8') as f:
             config = json.load(f)
         
         required_keys = ['plugins', 'plugin_configs', 'debug', 'injector']

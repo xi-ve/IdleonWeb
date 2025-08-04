@@ -223,7 +223,7 @@ jobs:
       - name: Create Linux archive
         run: |
           cd release_linux/dist/linux
-          tar -czf ../../../IdleonWeb-linux-v${{ steps.version.outputs.version }}.tar.gz *
+          tar -czf ../../../IdleonWeb-linux-v${{ steps.version.outputs.version }}.tar.gz IdleonWeb
           cd ../../..
           echo "✅ Linux archive created"
 
@@ -280,7 +280,7 @@ jobs:
       - name: Create Windows archive
         run: |
           cd release_windows\dist\windows
-          powershell Compress-Archive -Path * -DestinationPath ..\..\..\IdleonWeb-windows-v${{ needs.build-linux.outputs.version }}.zip
+          powershell Compress-Archive -Path IdleonWeb.exe -DestinationPath ..\..\..\IdleonWeb-windows-v${{ needs.build-linux.outputs.version }}.zip
           cd ..\..\..
           echo "✅ Windows archive created"
 
@@ -337,7 +337,7 @@ jobs:
       - name: Create macOS archive
         run: |
           cd release_macos/dist/macos
-          tar -czf ../../../IdleonWeb-macos-v${{ needs.build-linux.outputs.version }}.tar.gz *
+          tar -czf ../../../IdleonWeb-macos-v${{ needs.build-linux.outputs.version }}.tar.gz IdleonWeb
           cd ../../..
           echo "✅ macOS archive created"
 

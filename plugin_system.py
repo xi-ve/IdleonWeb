@@ -26,7 +26,7 @@ command_registry = {}
 def check_js_syntax(js_code: str, plugin_name: str, function_name: str) -> tuple[bool, str]:
     try:
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False, encoding='utf-8') as temp_file:
             temp_file.write(js_code)
             temp_file_path = temp_file.name
         

@@ -46,9 +46,8 @@ if exist "build_windows\dist" (
     REM Create release artifacts directory
     if not exist release-artifacts mkdir release-artifacts
     
-    REM Copy executable and config to release artifacts
+    REM Copy executable to release artifacts
     copy build_windows\dist\windows\IdleonWeb.exe release-artifacts\IdleonWeb-windows.exe
-    copy build_windows\dist\windows\conf.json release-artifacts\conf.json
     
     echo Release artifacts created in release-artifacts\
     dir release-artifacts\

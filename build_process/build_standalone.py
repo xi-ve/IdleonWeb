@@ -272,7 +272,7 @@ def copy_config_to_output(output_dir: Path):
             }
         }
         output_config = output_dir / "conf.json"
-        with open(output_config, 'w') as f:
+        with open(output_config, 'w', encoding='utf-8') as f:
             json.dump(default_config, f, indent=2)
         print_status(f"Created default config at {output_config}")
 

@@ -75,7 +75,7 @@ class ConfigManager:
     def _load_config(self) -> Dict[str, Any]:
         try:
             if self.conf_path.exists():
-                with open(self.conf_path, 'r') as f:
+                with open(self.conf_path, 'r', encoding='utf-8') as f:
                     config = json.load(f)
                 logger.info(f"Loaded config from {self.conf_path}")
                 return config
@@ -106,7 +106,7 @@ class ConfigManager:
     def _save_config(self) -> None:
         try:
             self.conf_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(self.conf_path, 'w') as f:
+            with open(self.conf_path, 'w', encoding='utf-8') as f:
                 json.dump(self._config, f, indent=2)
             logger.debug(f"Saved config to {self.conf_path}")
         except Exception as e:

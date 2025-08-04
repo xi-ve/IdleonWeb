@@ -285,7 +285,7 @@ def create_initial_config():
     }
     
     try:
-        with open(config_path, 'w') as f:
+        with open(config_path, 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=2)
         print_success("Created initial conf.json")
         return True
