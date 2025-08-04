@@ -143,7 +143,8 @@ jobs:
           echo ""
           echo "All integration tests passed across all platforms!"
 
-  release:
+  # Build binaries on native platforms
+  build-linux:
     needs: [check-commit, test-arch, test-ubuntu, test-windows]
     if: |
       always() && 
@@ -152,12 +153,14 @@ jobs:
       needs.test-ubuntu.result == 'success' &&
       needs.test-windows.result == 'success'
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0  # Fetch all history for proper versioning
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -192,12 +195,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Node.js for builds
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Create virtual environment for builds
+      - name: Install Python dependencies
         run: |
           python -m venv .venv
           source .venv/bin/activate
@@ -217,105 +220,211 @@ jobs:
           python build_process/build_standalone.py --platform linux --output release_linux --clean
         timeout-minutes: 15
 
-      - name: Build Windows executable (cross-compile attempt)
+      - name: Create Linux archive
         run: |
-          source .venv/bin/activate
-          python build_process/build_standalone.py --platform windows --output release_windows --clean
-        continue-on-error: true
-        timeout-minutes: 15
-
-      - name: Build macOS executable (cross-compile attempt)
-        run: |
-          source .venv/bin/activate
-          python build_process/build_standalone.py --platform macos --output release_macos --clean
-        continue-on-error: true
-        timeout-minutes: 15
-
-      - name: Create archives
-        run: |
-          # Verify Linux build succeeded (required)
-          if [ ! -d "release_linux/dist/linux" ]; then
-            echo "ERROR: Linux build failed - no executable found"
-            exit 1
-          fi
-          
-          # Create Linux archive (required)
           cd release_linux/dist/linux
           tar -czf ../../../IdleonWeb-linux-v${{ steps.version.outputs.version }}.tar.gz *
           cd ../../..
           echo "✅ Linux archive created"
-          
-          # Create Windows archive if build succeeded
-          if [ -d "release_windows/dist/windows" ]; then
-            cd release_windows/dist/windows
-            zip -r ../../../IdleonWeb-windows-v${{ steps.version.outputs.version }}.zip *
-            cd ../../..
-            echo "✅ Windows archive created"
-          else
-            echo "⚠️ Windows build not available"
-          fi
-          
-          # Create macOS archive if build succeeded
-          if [ -d "release_macos/dist/macos" ]; then
-            cd release_macos/dist/macos
-            tar -czf ../../../IdleonWeb-macos-v${{ steps.version.outputs.version }}.tar.gz *
-            cd ../../..
-            echo "✅ macOS archive created"
-          else
-            echo "⚠️ macOS build not available"
-          fi
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: IdleonWeb-linux-v${{ steps.version.outputs.version }}
+          path: IdleonWeb-linux-v${{ steps.version.outputs.version }}.tar.gz
+
+  build-windows:
+    needs: [check-commit, test-arch, test-ubuntu, test-windows, build-linux]
+    if: |
+      always() && 
+      needs.check-commit.outputs.should-release == 'true' &&
+      needs.test-arch.result == 'success' &&
+      needs.test-ubuntu.result == 'success' &&
+      needs.test-windows.result == 'success' &&
+      needs.build-linux.result == 'success'
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Python dependencies
+        run: |
+          python -m venv .venv
+          .venv\Scripts\activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r build_process\build-requirements.txt
+
+      - name: Install Node.js dependencies
+        run: |
+          cd core
+          npm install
+          cd ..
+
+      - name: Build Windows executable
+        run: |
+          .venv\Scripts\activate
+          python build_process\build_standalone.py --platform windows --output release_windows --clean
+        timeout-minutes: 15
+
+      - name: Create Windows archive
+        run: |
+          cd release_windows\dist\windows
+          powershell Compress-Archive -Path * -DestinationPath ..\..\..\IdleonWeb-windows-v${{ needs.build-linux.outputs.version }}.zip
+          cd ..\..\..
+          echo "✅ Windows archive created"
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: IdleonWeb-windows-v${{ needs.build-linux.outputs.version }}
+          path: IdleonWeb-windows-v${{ needs.build-linux.outputs.version }}.zip
+
+  build-macos:
+    needs: [check-commit, test-arch, test-ubuntu, test-windows, build-linux]
+    if: |
+      always() && 
+      needs.check-commit.outputs.should-release == 'true' &&
+      needs.test-arch.result == 'success' &&
+      needs.test-ubuntu.result == 'success' &&
+      needs.test-windows.result == 'success' &&
+      needs.build-linux.result == 'success'
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Python dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r build_process/build-requirements.txt
+
+      - name: Install Node.js dependencies
+        run: |
+          cd core
+          npm install
+          cd ..
+
+      - name: Build macOS executable
+        run: |
+          source .venv/bin/activate
+          python build_process/build_standalone.py --platform macos --output release_macos --clean
+        timeout-minutes: 15
+
+      - name: Create macOS archive
+        run: |
+          cd release_macos/dist/macos
+          tar -czf ../../../IdleonWeb-macos-v${{ needs.build-linux.outputs.version }}.tar.gz *
+          cd ../../..
+          echo "✅ macOS archive created"
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: IdleonWeb-macos-v${{ needs.build-linux.outputs.version }}
+          path: IdleonWeb-macos-v${{ needs.build-linux.outputs.version }}.tar.gz
+
+  release:
+    needs: [build-linux, build-windows, build-macos]
+    if: always() && needs.build-linux.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release files
+        id: prepare
+        run: |
+          # Move artifacts to root and list them
+          find artifacts -name "*.tar.gz" -o -name "*.zip" -exec mv {} . \;
           
           # Create source code archive
-          zip -r IdleonWeb-source-v${{ steps.version.outputs.version }}.zip . -x '*.git*' '.github/*' 'integration_tests/*' 'release_*/*' '.venv/*'
-          echo "✅ Source archive created"
+          zip -r IdleonWeb-source-v${{ needs.build-linux.outputs.version }}.zip . \
+            -x '*.git*' '.github/*' 'integration_tests/*' 'release_*/*' '.venv/*' 'artifacts/*'
+          
+          # Generate build status for release notes
+          BUILD_STATUS=""
+          
+          # Check Linux build (always available since release depends on it)
+          if [ -f "IdleonWeb-linux-v${{ needs.build-linux.outputs.version }}.tar.gz" ]; then
+            BUILD_STATUS+="- 🐧 **Linux**: ✅ \`IdleonWeb-linux-v${{ needs.build-linux.outputs.version }}.tar.gz\`"$'\n'
+          else
+            BUILD_STATUS+="- 🐧 **Linux**: ❌ Build failed"$'\n'
+          fi
+          
+          # Check Windows build
+          if [ -f "IdleonWeb-windows-v${{ needs.build-linux.outputs.version }}.zip" ]; then
+            BUILD_STATUS+="- 🪟 **Windows**: ✅ \`IdleonWeb-windows-v${{ needs.build-linux.outputs.version }}.zip\`"$'\n'
+          else
+            BUILD_STATUS+="- 🪟 **Windows**: ❌ Build failed"$'\n'
+          fi
+          
+          # Check macOS build
+          if [ -f "IdleonWeb-macos-v${{ needs.build-linux.outputs.version }}.tar.gz" ]; then
+            BUILD_STATUS+="- 🍎 **macOS**: ✅ \`IdleonWeb-macos-v${{ needs.build-linux.outputs.version }}.tar.gz\`"$'\n'
+          else
+            BUILD_STATUS+="- 🍎 **macOS**: ❌ Build failed"$'\n'
+          fi
+          
+          BUILD_STATUS+=""$'\n'
+          BUILD_STATUS+="📦 **Source Code**: \`IdleonWeb-source-v${{ needs.build-linux.outputs.version }}.zip\`"
+          
+          # Output for use in next step
+          {
+            echo "build-status<<EOF"
+            echo "$BUILD_STATUS"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+          
+          echo "Release files created:"
+          ls -la *.tar.gz *.zip 2>/dev/null || echo "Some builds may have failed"
 
-      - name: List created files
-        run: |
-          echo "Created release files:"
-          ls -la *.tar.gz *.zip
-
-      - name: Create GitHub Release with Binaries
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: Release v${{ steps.version.outputs.version }}
+          tag_name: v${{ needs.build-linux.outputs.version }}
+          name: IdleonWeb v${{ needs.build-linux.outputs.version }}
           body: |
-            ## IdleonWeb Release v${{ steps.version.outputs.version }}
+            Auto-generated release with standalone executables for multiple platforms.
             
-            ### Integration Tests Status ✅
-            All platform integration tests passed successfully:
-            - ✅ Arch Linux: PASS
-            - ✅ Ubuntu: PASS  
-            - ✅ Windows: PASS
+            ### Build Results
+            ${{ steps.prepare.outputs.build-status }}
             
-            ### Downloads
-            **Standalone Executables (No Installation Required):**
-            - 🐧 **Linux**: `IdleonWeb-linux-v${{ steps.version.outputs.version }}.tar.gz`
-            - 🪟 **Windows**: `IdleonWeb-windows-v${{ steps.version.outputs.version }}.zip` *(if available)*
-            - 🍎 **macOS**: `IdleonWeb-macos-v${{ steps.version.outputs.version }}.tar.gz` *(if available)*
+            **Requirements**: Node.js must be installed on target system.
+            **Installation**: Extract archive and run executable. Dependencies install automatically.
             
-            **Source Code:**
-            - 📦 **Source**: `IdleonWeb-source-v${{ steps.version.outputs.version }}.zip`
-            
-            ### Installation Instructions
-            1. Download the appropriate executable file for your operating system
-            2. Extract the archive
-            3. Run the executable directly (no installation required)
-            4. The application will create a `conf.json` file in the same directory
-            
-            ### Features
-            - 🚀 Standalone executables with embedded Python runtime
-            - 🔧 Auto-injection capabilities
-            - 🎮 Full plugin system support
-            - 📝 Persistent configuration management
-            
-            ### Technical Details
-            - Python Runtime: Embedded (no system Python required)
-            - Config Format: JSON with automatic migration
-            - Build System: PyInstaller with cross-platform support
-            - Size: ~27MB per platform
+            For source builds or development setup, see [README.md](https://github.com/${{ github.repository }}/blob/main/README.md).
           files: |
             IdleonWeb-*.tar.gz
             IdleonWeb-*.zip
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
