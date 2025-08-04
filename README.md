@@ -1,7 +1,7 @@
 # IdleonWeb
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg?style=flat-square)](https://www.python.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-14+-green.svg?style=flat-square)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-22+-green.svg?style=flat-square)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg?style=flat-square)](https://github.com/xi-ve/IdleonWeb)
 [![Integration Tests](https://github.com/xi-ve/IdleonWeb/actions/workflows/combined-tests-and-release.yml/badge.svg?style=flat-square)](https://github.com/xi-ve/IdleonWeb/actions/workflows/combined-tests-and-release.yml)
@@ -38,12 +38,44 @@ A modern, user-friendly launcher and plugin system for enhancing Legends of Idle
 
 ## Quick Start
 
+### Windows Setup (if dependencies are missing)
+If you don't have Python or Node.js installed, download and install them first:
+
+**Required Downloads:**
+- **Python 3.8+**: [Download Python](https://www.python.org/downloads/windows/) - Get the latest stable version
+- **Node.js 22+**: [Download Node.js](https://nodejs.org/en/download/) - Get the LTS (Long Term Support) version
+
+**Installation Steps:**
+1. Install Python (make sure to check "Add Python to PATH" during installation)
+2. Install Node.js (use default settings)
+3. Open Command Prompt (cmd.exe) or PowerShell as Administrator
+4. Verify installations by running:
+   ```cmd
+   python --version
+   node --version
+   ```
+5. If commands are not recognized, restart your terminal and try again
+6. Follow the Universal Setup steps below
+
 ### Universal Setup (Recommended)
-1. Download and extract the files
-2. Run `python setup.py` to install dependencies (works on all platforms)
-3. Run `python launch.py` to start the launcher
-4. Type `inject` to launch the game with enhancements
-5. Open `http://localhost:8080` in your browser to configure plugins
+1. Download and extract the IdleonWeb files to a folder
+2. Open your terminal:
+   - **Windows**: Open Command Prompt (cmd.exe) or PowerShell
+   - **Linux**: Open Terminal
+3. Navigate to the IdleonWeb folder:
+   ```bash
+   cd path/to/IdleonWeb
+   ```
+4. Install dependencies:
+   ```bash
+   python setup.py
+   ```
+5. Start the launcher:
+   ```bash
+   python launch.py
+   ```
+6. Type `inject` and press Enter to launch the game with enhancements
+7. Open `http://localhost:8080` in your browser to configure plugins
 
 ---
 
