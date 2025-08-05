@@ -11,7 +11,7 @@
     <div class="banner-content">
         <div class="banner-title">{{ label }}</div>
         {% if description %}
-        <div class="banner-message">{{ description }}</div>
+        <div class="banner-message">{{ description | safe }}</div>
         {% endif %}
     </div>
 </div>
@@ -20,7 +20,7 @@
 <div class="ui-element" data-plugin-name="{{ plugin_name }}" data-config-key="{{ config_key }}" data-element-name="{{ name }}">
     <div class="element-label">{{ label }}</div>
     {% if description %}
-    <div class="element-description">{{ description }}</div>
+    <div class="element-description">{{ description | safe }}</div>
     {% endif %}
     
     {% if element_type == 'toggle' %}

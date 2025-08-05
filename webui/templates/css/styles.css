@@ -223,6 +223,29 @@ body.dark .dark-mode-icon:last-child {
     font-size: 0.875rem;
     color: var(--text-secondary);
     margin-bottom: 0.75rem;
+    white-space: pre-line;
+    line-height: 1.5;
+}
+
+.element-description strong,
+.element-description b {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.element-description em,
+.element-description i {
+    font-style: italic;
+    color: var(--primary-color);
+}
+
+.element-description code {
+    background: var(--surface);
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    color: var(--primary-color);
 }
 
 .toggle-container {

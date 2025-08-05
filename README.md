@@ -149,36 +149,39 @@ python launch.py
 ## Available Plugins
 
 ### Character Plugins
-- **Currency Cheats** - Comprehensive currency management for Idleon: gems, coins, tokens, and all other currencies with display, add, set, and max functions
+- **Currency Cheats** - Manage all currencies: gems, coins, tokens with display, add, set, and max functions
 - **Godlike Powers** - Provides godlike powers and abilities for the game
 - **Instant Mob Respawn** - Change the rates of the game
-- **Inventory Storage** - Automatically unlock all inventory packages and storage spaces
-- **⚠️ Quest Manager** - Comprehensive quest management system to view, unlock, and manage all quests. Provides status overview, individual quest unlocking with autocomplete, and quest reset functionality. ⚠️ MODERATE RISK: Use with caution as quest manipulation can affect game progression
-- **Spawn Item** - Spawn / List / Search items with autocomplete functionality
-- **Stats Multiplier** - Multiplies various game stats by configurable amounts
+- **Inventory Storage** - Unlock all inventory packages and storage spaces
+- **⚠️ Quest Manager** - View, unlock, and manage all quests with autocomplete and reset functionality. ⚠️ MODERATE RISK: Use with caution as quest manipulation can affect game progression
+- **Spawn Item** - Spawn, list, and search items with autocomplete
+- **Stats Multiplier** - Multiply various game stats by configurable amounts
 
 ### QoL (Quality of Life) Plugins
 - **Global Storage** - Provides global storage functionality
 
 ### Unlocks Plugins
-- **Candy Unlock** - Allows the use of Time Candy anywhere, bypassing all map restrictions, dark places, and activity-specific blocks like Cooking/Laboratory
-- **Card Cheats** - Comprehensive card system cheats: search, unlock, level management, stats viewer, and complete card collection tools
-- **⚠️ Class Unlock** - Set characters to any class, change characters classes, view class progression. ⚠️ DANGER: Class changes can corrupt your character (infinite/invalid HP/MP/stats). Emergency recovery: Use 'Complete Class Redo Token' item
+- **Candy Unlock** - Use Time Candy anywhere, bypassing map restrictions and activity blocks
+- **Card Cheats** - Search, unlock, level, and manage cards with collection tools
+- **⚠️ Class Unlock** - Set characters to any class and view class progression. ⚠️ DANGER: Class changes can corrupt your character. Emergency recovery: Use 'Complete Class Redo Token' item
 - **Grimoire Unlocker** - Unlock and manage grimoire upgrades for Death Bringer class
 - **Package Toggle** - Toggle bought packages and bundles
-- **Vault Unlocker** - Unlock and manage vault upgrades with category-based controls
+- **Vault Unlocker** - Unlock and manage vault upgrades with category controls
 
 ### World-Specific Plugins
 #### World 1
-- **Anvil Cheats** - Cheats for World 1 - Anvil and Smithing related
-- **⚠️ Stamp Cheats** - Unlock and manage stamp upgrades & bribes. Includes stamp viewing, leveling, unlocking, and bribe purchasing tools. ⚠️ Use with caution as stamps and bribes affect multiple game systems!
+- **Anvil Cheats** - Anvil and Smithing related cheats
+- **⚠️ Stamp Cheats** - Unlock and manage stamp upgrades & bribes. ⚠️ Use with caution as stamps and bribes affect multiple game systems!
 
 #### World 2
-- **Post Office Cheats** - Post Office cheats - complete orders and manage upgrades with detailed status
+- **Post Office Cheats** - Complete orders and manage upgrades
+
+#### World 3
+- **Workbench Cheats** - World 3 Workbench and Construction cheats. Includes free buildings, instant build, speed boosts, flag cheats, better cogs, multikill bonuses, sample bonuses, printer slots, construction mastery, death note ranking, shrine cheats, damage bonuses, and exp/drop bonuses
 
 #### World 6
-- **⚠️ Sneaking Cheats** - Comprehensive cheats for the sneaking game including money, unlocks, upgrades, and more. ⚠️ HIGH RISK: These features may brick your account as the sneaking game data structure is complex and not fully explored. Use at your own risk!
-- **⚠️ Sneaking Items** - Comprehensive item cheats for the sneaking game including hats, weapons, gloves, and charms. ⚠️ HIGH RISK: These features may brick your account as the sneaking game data structure is complex and not fully explored. Use at your own risk!
+- **⚠️ Sneaking Cheats** - Cheats for the sneaking game including money, unlocks, and upgrades. ⚠️ HIGH RISK: These features may brick your account. Use at your own risk!
+- **⚠️ Sneaking Items** - Item cheats for the sneaking game including hats, weapons, gloves, and charms. ⚠️ HIGH RISK: These features may brick your account. Use at your own risk!
 
 ---
 
@@ -192,6 +195,7 @@ IdleonWeb/
 │   ├── unlocks/      # Unlock-related plugins
 │   ├── world1/       # World 1 specific plugins
 │   ├── world2/       # World 2 specific plugins
+│   ├── world3/       # World 3 specific plugins
 │   ├── world6/       # World 6 specific plugins
 │   └── ...           # Additional plugin categories
 ├── core/             # Core system files
