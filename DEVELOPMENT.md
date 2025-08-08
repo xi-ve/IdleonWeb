@@ -234,7 +234,7 @@ class MyPlugin(PluginBase):
 
 Plugins can be organized in subdirectories for better structure:
 
-```
+```text
 plugins/
 ├── character/
 │   ├── godlike_powers.py
@@ -1117,9 +1117,6 @@ The application uses a centralized configuration system in `core/conf.json`. Key
     "idleon_url": "https://www.legendsofidleon.com/ytGl5oc/",
     "timeout": 120000,
     "autoInject": true
-  },
-    "idleon_url": "https://www.legendsofidleon.com/ytGl5oc/",
-    "timeout": 120000
   },
   "plugins": [
     "spawn_item",

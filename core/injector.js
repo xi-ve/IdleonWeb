@@ -49,6 +49,12 @@ class BrowserLauncher {
             'C:/Program Files (x86)/Chromium/Application/chrome.exe',
             'C:/Users/' + process.env.USERNAME + '/AppData/Local/Google/Chrome/Application/chrome.exe',
             'C:/Users/' + process.env.USERNAME + '/AppData/Local/Microsoft/Edge/Application/msedge.exe',
+            // Support brave
+            'C:/Program Files/BraveSoftware/Brave-Browser/Application/brave.exe',
+            'C:/Program Files (x86)/BraveSoftware/Brave-Browser/Application/brave.exe',
+            'C:/Users/' + process.env.USERNAME + '/AppData/Local/BraveSoftware/Brave-Browser/Application/brave.exe',
+            // Brave on linux
+            '/usr/bin/brave'
         ];
         this.userDataDir = path.join(process.cwd(), 'idleon-chromium-profile');
     }

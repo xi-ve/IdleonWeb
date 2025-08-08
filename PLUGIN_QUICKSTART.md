@@ -208,7 +208,7 @@ PLUGIN_ORDER = 1  # Lower numbers appear first
 
 Organize plugins in subdirectories for better structure:
 
-```
+```text
 plugins/
 ├── character/
 │   ├── godlike_powers.py
