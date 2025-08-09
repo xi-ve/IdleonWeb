@@ -293,10 +293,12 @@ body.dark .dark-mode-icon:last-child {
     background: var(--border);
     border-radius: 9999px;
     outline: none;
+    appearance: none; /* added */
     -webkit-appearance: none;
 }
 
 .slider::-webkit-slider-thumb {
+    appearance: none; /* added */
     -webkit-appearance: none;
     width: 1.25rem;
     height: 1.25rem;
@@ -458,7 +460,7 @@ body.dark .dark-mode-icon:last-child {
     border: 1px solid var(--border);
     border-radius: 0.5rem;
     background: var(--background);
-    max-height: 400px;
+    max-height: 75vh; /* was 400px */
     overflow: hidden;
     margin-top: 0.5rem;
 }
@@ -500,7 +502,7 @@ body.dark .dark-mode-icon:last-child {
 }
 
 .results-content {
-    max-height: 300px;
+    max-height: 65vh; /* was 300px */
     overflow-y: auto;
 }
 
@@ -1139,4 +1141,4 @@ body.dark .dark-mode-icon:last-child {
         min-width: 120px;
         text-align: center;
     }
-} 
+}

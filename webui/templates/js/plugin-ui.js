@@ -3,6 +3,10 @@ class PluginUI {
         this.executingActions = new Set();
         this.initializeEventListeners();
         this.initializeDarkMode();
+        // Toggles that support backend state read on load (pluginName:elementName)
+        this.stateSyncSupported = new Set(['portal_unlocks:autokill_active_ui']);
+        // Sync toggle states from backend/JS on load (optional per element behavior)
+        this.syncAllToggles();
     }
 
     initializeEventListeners() {
@@ -23,14 +27,20 @@ class PluginUI {
             });
         });
 
-        document.querySelectorAll('.btn:not(.autocomplete-input .btn):not(.search-input .btn)').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.handleButton(e.target);
+        // Use a generic button handler, but exclude buttons inside specialized composites
+        document.querySelectorAll('.btn:not(.autocomplete-input .btn):not(.search-input .btn):not(.input-with-button .btn)')
+            .forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.handleButton(e.target);
+                });
             });
-        });
 
-        document.querySelectorAll('.input:not(.autocomplete-field):not(.search-input .input)').forEach(input => {
+        // Register change handlers for plain inputs only (exclude autocomplete, search, and input-with-button)
+        document.querySelectorAll('.input').forEach(input => {
+            if (input.classList.contains('autocomplete-field')) return;
+            if (input.closest('.search-with-results')) return;
+            if (input.closest('.input-with-button')) return; // has explicit Execute button
             input.addEventListener('change', (e) => {
                 e.stopPropagation();
                 this.handleInput(e.target);
@@ -137,6 +147,37 @@ class PluginUI {
         }
     }
 
+    updateToggleVisual(element, state) {
+        const toggle = element.querySelector('.toggle-switch');
+        const label = element.querySelector('.toggle-container span');
+        const isActive = !!state;
+        if (toggle) toggle.classList.toggle('active', isActive);
+        if (label) label.textContent = isActive ? 'Enabled' : 'Disabled';
+    }
+
+    async syncAllToggles() {
+        const elements = document.querySelectorAll('.ui-element .toggle-switch');
+        for (const toggle of elements) {
+            const element = toggle.closest('.ui-element');
+            if (!element) continue;
+            const pluginName = element.dataset.pluginName;
+            const elementName = element.dataset.elementName;
+            const key = `${pluginName}:${elementName}`;
+            if (!this.stateSyncSupported.has(key)) continue;
+            try {
+                const response = await this.executeUIAction(pluginName, elementName, null);
+                // If backend returns structured state, use it
+                if (response && response.result && typeof response.result === 'object' && 'state' in response.result) {
+                    this.updateToggleVisual(element, !!response.result.state);
+                } else if (typeof response?.result === 'boolean') {
+                    this.updateToggleVisual(element, response.result);
+                }
+            } catch (e) {
+                // Ignore sync errors; leave as-is
+            }
+        }
+    }
+
     async handleToggle(element) {
         const actionId = `${element.dataset.pluginName}-${element.dataset.elementName}`;
         if (this.executingActions.has(actionId)) return;
@@ -147,15 +188,32 @@ class PluginUI {
         const pluginName = element.dataset.pluginName;
         const value = !toggle.classList.contains('active');
         
+        // optimistic update
         toggle.classList.toggle('active', value);
         this.showStatus(element, 'Updating...', 'loading');
         
         try {
             const response = await this.executeUIAction(pluginName, elementName, value);
-            this.showStatus(element, response.result || 'Updated successfully', 'success');
+            // Determine final state from backend
+            let finalState = value;
+            let message = '';
+            if (response && response.result) {
+                if (typeof response.result === 'object' && 'state' in response.result) {
+                    finalState = !!response.result.state;
+                    message = response.result.message || '';
+                } else if (typeof response.result === 'boolean') {
+                    finalState = response.result;
+                } else if (typeof response.result === 'string') {
+                    message = response.result;
+                }
+            }
+            this.updateToggleVisual(element, finalState);
+            this.showStatus(element, message || 'Updated successfully', 'success');
         } catch (error) {
             this.showStatus(element, 'Error: ' + error.message, 'error');
+            // revert optimistic change on error
             toggle.classList.toggle('active', !value);
+            this.updateToggleVisual(element, !value);
         } finally {
             this.executingActions.delete(actionId);
         }
@@ -216,6 +274,10 @@ class PluginUI {
     }
 
     async handleInput(input) {
+        // Ignore blur/change for inputs that belong to input-with-button composites
+        if (input && input.closest && input.closest('.input-with-button')) {
+            return;
+        }
         const element = input.closest('.ui-element');
         const actionId = `${element.dataset.pluginName}-${element.dataset.elementName}`;
         if (this.executingActions.has(actionId)) return;
@@ -576,4 +638,4 @@ class TabManager {
 document.addEventListener('DOMContentLoaded', () => {
     new PluginUI();
     new TabManager();
-}); 
+});
