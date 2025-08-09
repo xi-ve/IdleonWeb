@@ -24,11 +24,11 @@ class InstantMobRespawnPlugin(PluginBase):
         self.debug = config_manager.get_path('plugin_configs.instant_mob_respawn.debug', False)
         if self.last_update < time.time() - 10:
             self.last_update = time.time()
-            if hasattr(self, 'injector') and self.injector and config_manager.get_path('plugin_configs.instant_mob_respawn.enabled', False):
+            if hasattr(self, 'injector') and self.injector and self.config.get('toggle', False):
                 try:
                     proxy_status = self.run_js_export('check_proxy_status_js', self.injector)
                     if not proxy_status:
-                        self.run_js_export('setup_proxy_mob_respawn_rate_js', self.injector, enabled=self.config.get('toggle', False))
+                        self.run_js_export('setup_proxy_mob_respawn_rate_js', self.injector)
                 except Exception as e:
                     if self.debug:
                         console.print(f"[instant_mob_respawn] Error checking proxy status: {e}")
@@ -37,7 +37,8 @@ class InstantMobRespawnPlugin(PluginBase):
         if self.injector:
             try:
                 self.set_config(config_manager.get_plugin_config(self.name))
-                self.run_js_export('setup_proxy_mob_respawn_rate_js', self.injector)
+                if self.config.get('toggle', False):
+                    self.run_js_export('setup_proxy_mob_respawn_rate_js', self.injector)
             except Exception as e:
                 console.print(f"[instant_mob_respawn] Error setting up mob spawn rate proxy: {e}")
 
@@ -85,13 +86,14 @@ class InstantMobRespawnPlugin(PluginBase):
 
     @js_export()
     def setup_proxy_mob_respawn_rate_js(self):
-        return '''
+        return """
         try {
             const ctx = window.__idleon_cheats__;
             const engine = ctx["com.stencyl.Engine"].engine;
             
             if (window.__mob_respawn_proxy_setup__) {
                 console.log("[instant_mob_respawn] Proxy already set up");
+                return "Proxy already set up";
             }
             
             if (!window.__mob_respawn_original__) {
@@ -131,11 +133,11 @@ class InstantMobRespawnPlugin(PluginBase):
             console.error("Error setting up mob respawn rate proxy:", e);
             return `Error: ${e.message}`;
         }
-        '''
+        """
 
     @js_export()
     def check_proxy_status_js(self):
-        return '''
+        return """
         try {
             const isProxySetup = window.__mob_respawn_proxy_setup__ === true;            
             return isProxySetup;
@@ -143,6 +145,6 @@ class InstantMobRespawnPlugin(PluginBase):
             console.error("Error checking proxy status:", e);
             return false;
         }
-        '''
+        """
 
 plugin_class = InstantMobRespawnPlugin

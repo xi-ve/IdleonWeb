@@ -740,66 +740,63 @@ class QuestManagerPlugin(PluginBase):
             const ctx = window.__idleon_cheats__;
             if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
             const bEngine = ctx["com.stencyl.Engine"].engine;
-            
-            const questComplete = bEngine.getGameAttribute("QuestComplete");
-            const questStatus = bEngine.getGameAttribute("QuestStatus");
-            
-            if (!questComplete || !questComplete.h) {
-                return "Error: Quest completion data not found";
-            }
-            
-            if (!questStatus || !questStatus.h) {
-                return "Error: Quest status data not found";
-            }
-            
-            if (!quest_name || quest_name.trim() === "") {
-                return "Error: Quest name is required";
-            }
-            
+
+            if (!quest_name || !quest_name.trim()) return "Error: Quest name is required";
             const questName = quest_name.trim();
-            
-            // Check if quest exists
-            if (!(questName in questComplete.h)) {
-                return `Error: Quest '${questName}' not found. Available quests: ${Object.keys(questComplete.h).slice(0, 10).join(', ')}...`;
+
+            const questHelperMenu = bEngine.getGameAttribute("QuestHelperMenu");
+            if (!Array.isArray(questHelperMenu)) return "Error: QuestHelperMenu not found";
+
+            const helperEntry = questHelperMenu.find(e => Array.isArray(e) && e[0] === questName);
+            if (!helperEntry) return `Error: Quest '${questName}' is not active in QuestHelperMenu`;
+
+            const triples = [];
+            for (let i = 1; i + 2 < helperEntry.length; i += 3) {
+                const id = helperEntry[i];
+                const cur = Number(helperEntry[i + 1]) || 0;
+                const tgt = Number(helperEntry[i + 2]) || 0;
+                triples.push({ id, cur, tgt });
             }
-            
-            const currentCompletionStatus = questComplete.h[questName];
-            let statusText = "unknown";
-            if (currentCompletionStatus === 1) statusText = "completed";
-            else if (currentCompletionStatus === 0) statusText = "active";
-            else if (currentCompletionStatus === -1) statusText = "locked";
-            
-            if (!(questName in questStatus.h)) {
-                questStatus.h[questName] = [9999]; // Initialize with high completion value
-                return `✅ Initialized and completed all requirements for quest '${questName}' (quest status: ${statusText})`;
-            } else {
-                const questProgress = questStatus.h[questName];
-                
-                if (Array.isArray(questProgress)) {
-                    let requirementsUpdated = 0;
-                    let alreadyCompleted = 0;
-                    
-                    for (let i = 0; i < questProgress.length; i++) {
-                        if (questProgress[i] < 9999) {
-                            questProgress[i] = 9999;
-                            requirementsUpdated++;
-                        } else {
-                            alreadyCompleted++;
-                        }
+            const reqCount = triples.length;
+            if (reqCount === 0) return `Error: No requirements parsed for '${questName}'`;
+
+            const candidateKeys = Object.keys(bEngine._gameAttributes || {}).filter(k => /quest/i.test(k));
+            const updated = [];
+            let bestHit = null;
+
+            for (const key of candidateKeys) {
+                const v = bEngine.getGameAttribute(key);
+                if (!v || !v.h || !(questName in v.h)) continue;
+                const entry = v.h[questName];
+                if (!Array.isArray(entry)) continue;
+
+                if (entry.length === reqCount || entry.length >= reqCount) {
+                    for (let i = 0; i < reqCount; i++) {
+                        entry[i] = Number.isFinite(entry[i]) ? Math.max(entry[i], triples[i].tgt) : triples[i].tgt;
                     }
-                    
-                    if (requirementsUpdated === 0) {
-                        return `✅ All ${questProgress.length} requirements for quest '${questName}' were already completed! (quest status: ${statusText})`;
-                    } else {
-                        return `✅ Completed ${requirementsUpdated} requirements for quest '${questName}' (${alreadyCompleted} were already done, quest status: ${statusText})`;
-                    }
-                } else {
-                    questStatus.h[questName] = [9999];
-                    return `✅ Initialized and completed requirements for quest '${questName}' (quest status: ${statusText})`;
+                    updated.push(key);
+                    if (entry.length === reqCount && !bestHit) bestHit = key;
                 }
             }
+
+            if (updated.length === 0) {
+                const questStatus = bEngine.getGameAttribute("QuestStatus");
+                if (questStatus && questStatus.h) {
+                    questStatus.h[questName] = triples.map(t => t.tgt);
+                    bestHit = "QuestStatus";
+                } else {
+                    return "Error: No quest progress container matched and QuestStatus missing";
+                }
+            }
+
+            const questComplete = bEngine.getGameAttribute("QuestComplete");
+            if (questComplete?.h && (questName in questComplete.h) && questComplete.h[questName] !== 1) {
+                questComplete.h[questName] = 0;
+            }
+
+            return `✅ Set ${reqCount} requirements to target for '${questName}' in ${bestHit || updated[0]}${updated.length > 1 ? " (+ " + (updated.length - 1) + " mirrors)" : ""}`;
         } catch (e) {
-            return `Error: ${e.message}`;
+            return "Error: " + e.message;
         }
         '''
 
