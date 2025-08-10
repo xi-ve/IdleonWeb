@@ -430,7 +430,7 @@ jobs:
         id: relnotes
         run: |
           set -e
-          git fetch --tags --force --prune
+          git fetch origin --force --prune +refs/heads/*:refs/remotes/origin/* --tags
           ORIGIN_URL=$(git config --get remote.origin.url)
           BASE_URL=""
           if [[ "$ORIGIN_URL" =~ ^git@github.com:(.*)\.git$ ]]; then
