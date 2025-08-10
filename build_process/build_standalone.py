@@ -32,7 +32,6 @@ import platform
 from pathlib import Path
 from typing import List, Dict, Any
 
-# Build configuration
 BUILD_CONFIG = {
     "hidden_imports": [
         "aiohttp", "aiohttp_jinja2", "jinja2", "rich", "prompt_toolkit", "pychrome",
@@ -44,7 +43,6 @@ BUILD_CONFIG = {
     ]
 }
 
-# Platform compatibility mapping
 PLATFORM_COMPATIBILITY = {
     "linux": ["linux"],
     "windows": ["windows", "win32"],
@@ -52,26 +50,20 @@ PLATFORM_COMPATIBILITY = {
 }
 
 def print_status(message: str):
-    """Print a status message."""
     print(f"[BUILD] {message}")
 
 def print_success(message: str):
-    """Print a success message."""
     print(f"[SUCCESS] {message}")
 
 def print_error(message: str):
-    """Print an error message."""
     print(f"[ERROR] {message}")
 
 def print_warning(message: str):
-    """Print a warning message."""
     print(f"[WARNING] {message}")
 
 def check_platform_compatibility(target_platform: str) -> bool:
-    """Check if the target platform can be built on the current platform."""
     current_platform = platform.system().lower()
     
-    # Normalize platform names
     platform_map = {
         "linux": "linux",
         "windows": "windows", 
@@ -89,7 +81,6 @@ def check_platform_compatibility(target_platform: str) -> bool:
         print_warning("The build may fail or produce an incompatible executable.")
         print_warning("For best results, build on the target platform.")
         
-        # Check if running in CI environment (GitHub Actions, etc.)
         ci_environment = os.environ.get('CI') or os.environ.get('GITHUB_ACTIONS') or os.environ.get('JENKINS_URL')
         
         if ci_environment:
@@ -97,7 +88,6 @@ def check_platform_compatibility(target_platform: str) -> bool:
             print_status("Cross-platform builds should use native runners for each platform")
             return False
         
-        # Ask user if they want to continue in interactive mode
         try:
             response = input("Continue anyway? (y/N): ").strip().lower()
             if response not in ['y', 'yes']:
@@ -110,10 +100,8 @@ def check_platform_compatibility(target_platform: str) -> bool:
     return True
 
 def check_dependencies():
-    """Check if required build dependencies are available."""
     print_status("Checking build dependencies...")
     
-    # Check PyInstaller
     try:
         import PyInstaller
         print_success(f"PyInstaller {PyInstaller.__version__} found")
@@ -121,7 +109,6 @@ def check_dependencies():
         print_error("PyInstaller not found. Install with: pip install pyinstaller")
         return False
     
-    # Check Node.js
     try:
         result = subprocess.run(["node", "--version"], capture_output=True, text=True, check=True)
         print_success(f"Node.js {result.stdout.strip()} found")
@@ -129,7 +116,6 @@ def check_dependencies():
         print_error("Node.js not found. Please install Node.js")
         return False
     
-    # Check npm (use npm.cmd on Windows)
     npm_command = "npm.cmd" if platform.system().lower() == "windows" else "npm"
     try:
         result = subprocess.run([npm_command, "--version"], capture_output=True, text=True, check=True)
@@ -141,7 +127,6 @@ def check_dependencies():
     return True
 
 def run_command(command: List[str], cwd: Path = None, check: bool = True) -> subprocess.CompletedProcess:
-    """Run a command and return the result."""
     print_status(f"Running: {' '.join(command)}")
     try:
         result = subprocess.run(
@@ -165,22 +150,17 @@ def run_command(command: List[str], cwd: Path = None, check: bool = True) -> sub
         if e.stderr:
             print_error(f"Error output: {e.stderr}")
         if not check:
-            # Return a mock CompletedProcess for failed commands when check=False
             return subprocess.CompletedProcess(command, e.returncode, e.stdout, e.stderr)
         raise
 
 def prepare_build_environment(build_dir: Path) -> Path:
-    """Prepare the build environment."""
     print_status("Preparing build environment...")
-    
-    # Create build directory structure
     temp_dir = build_dir / "temp"
     temp_dir.mkdir(parents=True, exist_ok=True)
     
     return temp_dir
 
 def bundle_core_files(temp_dir: Path) -> bool:
-    """Bundle core files using npm."""
     print_status("Bundling core files...")
     
     core_src = Path("core")
@@ -190,24 +170,18 @@ def bundle_core_files(temp_dir: Path) -> bool:
         print_warning("Core directory not found, skipping core bundling")
         return True
     
-    # Copy core files including node_modules for standalone functionality  
     if core_dest.exists():
         shutil.rmtree(core_dest)
     
-    # Copy core files including node_modules
     print_status("Copying core files (including node_modules)...")
     shutil.copytree(core_src, core_dest, ignore=shutil.ignore_patterns('*.log', '.npm', '__pycache__'))
     
-    # Node.js dependencies are included in the build for standalone functionality
     print_status("Core files bundled with Node.js dependencies")
     
     return True
 
 def copy_essential_files(temp_dir: Path):
-    """Copy essential Python files to the temp directory."""
     print_status("Copying essential files...")
-    
-    # Essential files to copy
     essential_files = [
         "config_manager.py",
         "plugin_system.py", 
@@ -227,7 +201,6 @@ def copy_essential_files(temp_dir: Path):
         else:
             print_warning(f"File {file_name} not found, skipping")
     
-    # Copy directories
     essential_dirs = ["plugins", "webui"]
     for dir_name in essential_dirs:
         src_dir = Path(dir_name)
@@ -241,10 +214,7 @@ def copy_essential_files(temp_dir: Path):
             print_warning(f"Directory {dir_name} not found, skipping")
 
 def copy_config_to_output(output_dir: Path):
-    """Copy the default config file to the output directory for standalone use."""
     print_status("Copying standalone config...")
-    
-    # Try to copy the core config file first
     core_config = Path("core/conf.json")
     root_config = Path("conf.json")
     
@@ -262,7 +232,6 @@ def copy_config_to_output(output_dir: Path):
         print_status(f"Copied config from {config_source} to {output_config}")
     else:
         print_warning("No config file found, creating default config")
-        # Create a minimal default config
         default_config = {
             "openDevTools": False,
             "debugMode": False,
@@ -286,34 +255,164 @@ def copy_config_to_output(output_dir: Path):
         print_status(f"Created default config at {output_config}")
 
 def create_launcher_script(temp_dir: Path):
-    """Create a simplified launcher script for the standalone build."""
     launcher_content = '''#!/usr/bin/env python3
-"""
-IdleonWeb Standalone Launcher
-This is the entry point for the standalone IdleonWeb application.
-"""
-
 import sys
 import os
+import json
+import shutil
+import subprocess
+import shlex
+import time
 from pathlib import Path
 
-# Add the application directory to the path
+enable_logging = False
+try:
+    conf_path_for_logging = Path(sys.executable).parent / 'conf.json'
+    if conf_path_for_logging.exists():
+        with open(conf_path_for_logging, 'r', encoding='utf-8') as _f:
+            _conf_log = json.load(_f)
+            enable_logging = bool(_conf_log.get('debug', False))
+except Exception:
+    pass
+if os.environ.get('IDLEONWEB_DEBUG') == '1':
+    enable_logging = True
+
+log_path = Path(sys.executable).parent / 'idleonweb-launch.log'
+def log(msg):
+    if not enable_logging:
+        return
+    try:
+        with open(log_path, 'a', encoding='utf-8') as f:
+            ts = time.strftime('%Y-%m-%d %H:%M:%S')
+            f.write('[' + ts + '] ' + str(msg) + os.linesep)
+    except Exception:
+        pass
+
+def relaunch_in_terminal():
+    log('relaunch_check_start')
+    if not sys.platform.startswith('linux'):
+        log('not_linux')
+        return False
+    if os.environ.get('IDLEONWEB_TERMINAL_WRAPPED') == '1':
+        log('already_wrapped')
+        return False
+    try:
+        stdout_tty = False
+        stdin_tty = False
+        try:
+            stdout_tty = sys.stdout.isatty()
+        except Exception:
+            stdout_tty = False
+        try:
+            stdin_tty = sys.stdin.isatty()
+        except Exception:
+            stdin_tty = False
+        log(f'stdout_tty={stdout_tty} stdin_tty={stdin_tty}')
+        if stdout_tty or stdin_tty:
+            log('tty_present_no_relaunch')
+            return False
+    except Exception:
+        log('isatty_exception')
+    exe = sys.executable or sys.argv[0]
+    args = [exe] + sys.argv[1:]
+    log(f'exec_path={exe} argv={sys.argv}')
+    env = dict(os.environ)
+    env['IDLEONWEB_TERMINAL_WRAPPED'] = '1'
+    env['IDLEONWEB_FORCE_INTERACTIVE'] = '1'
+    def exists(cmd):
+        return shutil.which(cmd) is not None
+    cmd_str = ' '.join(shlex.quote(a) for a in args)
+    def build_cmd(name):
+        if name == 'x-terminal-emulator':
+            return ['x-terminal-emulator', '-e', 'bash', '-lc', cmd_str]
+        if name == 'kgx':
+            return ['kgx', '--', 'bash', '-lc', cmd_str]
+        if name == 'gnome-terminal':
+            return ['gnome-terminal', '--wait', '--', 'bash', '-lc', cmd_str]
+        if name == 'konsole':
+            return ['konsole', '--hold', '-e', 'bash', '-lc', cmd_str]
+        if name == 'xfce4-terminal':
+            return ['xfce4-terminal', '-e', 'bash', '-lc', cmd_str]
+        if name == 'mate-terminal':
+            return ['mate-terminal', '-e', 'bash', '-lc', cmd_str]
+        if name == 'lxterminal':
+            return ['lxterminal', '-e', 'bash', '-lc', cmd_str]
+        if name == 'tilix':
+            return ['tilix', '-e', 'bash', '-lc', cmd_str]
+        if name == 'alacritty':
+            return ['alacritty', '-e', exe] + sys.argv[1:]
+        if name == 'kitty':
+            return ['kitty', '-e', 'bash', '-lc', cmd_str]
+        if name == 'terminator':
+            return ['terminator', '-x', 'bash', '-lc', cmd_str]
+        if name == 'xterm':
+            return ['xterm', '-hold', '-e', 'bash', '-lc', cmd_str]
+        if name == 'urxvt':
+            return ['urxvt', '-e', 'bash', '-lc', cmd_str]
+        return None
+    preferred = 'auto'
+    try:
+        conf = {}
+        conf_path = Path(sys.executable).parent / 'conf.json'
+        if conf_path.exists():
+            with open(conf_path, 'r', encoding='utf-8') as f:
+                conf = json.load(f)
+        if isinstance(conf, dict):
+            if isinstance(conf.get('console'), dict):
+                preferred = str(conf['console'].get('terminal', 'auto')).strip()
+            elif 'terminal' in conf:
+                preferred = str(conf.get('terminal', 'auto')).strip()
+    except Exception as e:
+        log(f'conf_read_error={e!r}')
+    candidates = []
+    known = ['kitty','alacritty','gnome-terminal','konsole','x-terminal-emulator','kgx','xfce4-terminal','terminator','tilix','xterm','urxvt','mate-terminal','lxterminal']
+    if preferred and preferred != 'auto' and preferred in known and exists(preferred):
+        c = build_cmd(preferred)
+        if c:
+            candidates.append(c)
+    for name in known:
+        if preferred and preferred != 'auto' and name == preferred:
+            continue
+        if exists(name):
+            c = build_cmd(name)
+            if c:
+                candidates.append(c)
+    log(f'terminal_candidates={len(candidates)}')
+    for cmd in candidates:
+        try:
+            log(f'spawn_attempt={cmd}')
+            proc = subprocess.Popen(cmd, env=env)
+            log('spawn_success_waiting')
+            rc = proc.wait()
+            log(f'spawn_terminal_exit_code={rc}')
+            return True
+        except Exception as e:
+            log(f'spawn_error={e!r}')
+            continue
+    log('spawn_all_failed')
+    return False
+
+if relaunch_in_terminal():
+    log('relaunch_triggered_parent_exit')
+    sys.exit(0)
+
 app_dir = Path(__file__).parent
 sys.path.insert(0, str(app_dir))
-
-# Set up environment
-os.environ["IDLEONWEB_STANDALONE"] = "1"
-
-# Import and run the main application
+os.environ['IDLEONWEB_STANDALONE'] = '1'
 try:
+    log('import_main_start')
     from main import main
-    if __name__ == "__main__":
+    if __name__ == '__main__':
+        log('main_call')
         main()
+        log('main_return')
 except ImportError as e:
+    log(f'import_error={e!r}')
     print(f"Error importing main module: {e}")
-    print("Please ensure all required files are present.")
+    print('Please ensure all required files are present.')
     sys.exit(1)
 except Exception as e:
+    log(f'main_error={e!r}')
     print(f"Error starting IdleonWeb: {e}")
     sys.exit(1)
 '''
@@ -326,52 +425,44 @@ except Exception as e:
     return launcher_path
 
 def get_pyinstaller_args(platform: str, temp_dir: Path, launcher_script: Path, output_dir: Path) -> List[str]:
-    """Get PyInstaller arguments for the specified platform."""
-    
-    # Get PyInstaller path from virtual environment
     python_path = Path(sys.executable)
     venv_bin = python_path.parent
     pyinstaller_path = venv_bin / "pyinstaller"
     if not pyinstaller_path.exists():
-        pyinstaller_path = "pyinstaller"  # Fallback to PATH
+        pyinstaller_path = "pyinstaller"
     
     args = [
         str(pyinstaller_path),
-        "--onefile",  # Create a single executable file
-        "--clean",    # Clean cache and remove temporary files
-        "--noconfirm", # Replace output directory without asking
+        "--onefile",
+        "--clean",
+        "--noconfirm",
         f"--distpath={output_dir}",
         f"--workpath={temp_dir / 'work'}",
         f"--specpath={temp_dir}",
         f"--name=IdleonWeb",
-        "--noupx",    # Disable UPX compression (can cause issues)
+        "--noupx",
     ]
     
-    # Add compatibility flags for Linux builds
     if platform == "linux":
         args.extend([
-            "--strip",  # Strip debug symbols to reduce size
-            "--exclude-module=tkinter",  # Remove GUI modules
+            "--strip",
+            "--exclude-module=tkinter",
             "--exclude-module=matplotlib",
             "--exclude-module=PIL",
         ])
     
-    # Add icon if available
     icon_files = ["icon.ico", "icon.png", "icon.icns"]
     for icon_file in icon_files:
         if Path(icon_file).exists():
             args.extend(["--icon", icon_file])
             break
     
-    # Add hidden imports
     for module in BUILD_CONFIG["hidden_imports"]:
         args.extend(["--hidden-import", module])
     
-    # Exclude unnecessary modules to reduce size
     for module in BUILD_CONFIG["exclude_modules"]:
         args.extend(["--exclude-module", module])
     
-    # Add data directories with correct separator
     separator = ":" if platform in ["linux", "macos"] else ";"
     
     core_dir = temp_dir / "core"
@@ -386,53 +477,31 @@ def get_pyinstaller_args(platform: str, temp_dir: Path, launcher_script: Path, o
     if webui_dir.exists():
         args.append(f"--add-data={webui_dir.absolute()}{separator}webui")
     
-    # Add the launcher script
     args.append(str(launcher_script.absolute()))
     
     return args
 
 def build_platform(target_platform: str, build_dir: Path):
-    """Build for a specific platform."""
     print_status(f"Building for {target_platform}...")
-    
-    # Check platform compatibility
     if not check_platform_compatibility(target_platform):
         return False
-    
-    # Prepare build environment
     temp_dir = prepare_build_environment(build_dir)
-    
-    # Bundle core files
     if not bundle_core_files(temp_dir):
         return False
-    
-    # Copy essential files
     copy_essential_files(temp_dir)
-    
-    # Create launcher script
     launcher_script = create_launcher_script(temp_dir)
-    
-    # Debug: Check if launcher script exists
     if launcher_script.exists():
         print_status(f"Launcher script created at: {launcher_script}")
     else:
         print_error(f"Launcher script not found at: {launcher_script}")
         return False
-    
-    # Create output directory
     output_dir = build_dir / "dist" / target_platform
     output_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Get PyInstaller arguments
     pyinstaller_args = get_pyinstaller_args(target_platform, temp_dir, launcher_script, output_dir)
-    
-    # Run PyInstaller
     try:
-        run_command(pyinstaller_args, cwd=Path.cwd())  # Run from project root
+        run_command(pyinstaller_args, cwd=Path.cwd())
         
-        # Copy config file to output directory for standalone use
         copy_config_to_output(output_dir)
-        
         print_success(f"Build completed for {target_platform}")
         return True
     except subprocess.CalledProcessError:
@@ -440,7 +509,6 @@ def build_platform(target_platform: str, build_dir: Path):
         return False
 
 def cleanup_build_files(build_dir: Path, keep_dist: bool = True):
-    """Clean up temporary build files."""
     print_status("Cleaning temporary build files...")
     
     temp_dir = build_dir / "temp"
@@ -455,7 +523,6 @@ def cleanup_build_files(build_dir: Path, keep_dist: bool = True):
     print_success("Cleanup completed")
 
 def main():
-    """Main build function."""
     parser = argparse.ArgumentParser(description="Build IdleonWeb standalone executables")
     parser.add_argument("--platform", choices=["all", "windows", "linux", "macos"], 
                        default="all", help="Target platform(s) to build for")
@@ -468,17 +535,13 @@ def main():
     
     args = parser.parse_args()
     
-    # Check dependencies
     if not check_dependencies():
         return 1
     
     build_dir = Path(args.output)
     
-    # Clean build directory if requested
     if args.clean and build_dir.exists():
         shutil.rmtree(build_dir)
-    
-    # Determine platforms to build
     if args.platform == "all":
         platforms = ["windows", "linux", "macos"]
     else:
@@ -503,10 +566,7 @@ def main():
             print_error(f"Unexpected error building for {target_platform}: {e}")
             failed_builds.append(target_platform)
     
-    # Cleanup temporary files
     cleanup_build_files(build_dir, keep_dist=True)
-    
-    # Print summary
     print("=" * 50)
     print("BUILD SUMMARY")
     print("=" * 50)

@@ -1,4 +1,5 @@
 import subprocess
+import os
 import sys
 import logging
 import asyncio
@@ -582,7 +583,7 @@ def main():
         box=box.DOUBLE
     )
     console.print(banner)
-    if not config_manager.get_path("interactive", True):
+    if not config_manager.get_path("interactive", True) and os.environ.get('IDLEONWEB_FORCE_INTERACTIVE') != '1':
         console.print("[yellow]Interactive mode is disabled in config. Exiting.[/yellow]")
         return
     while True:
