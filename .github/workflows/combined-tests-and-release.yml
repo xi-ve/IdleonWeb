@@ -457,11 +457,21 @@ jobs:
           echo "Using BASE_REF: $BASE_REF"
           echo "Current commit: $(git rev-parse HEAD)"
 
-          # Find the most recent version bump commit (the last release)
+          # Find the previous version bump commit (skip the current one if HEAD is a version bump)
           echo "Looking for version bump commits..."
           git log --no-merges --grep='^Bump version' -i --pretty=format:'%h %s' "$BASE_REF" | head -3
-          LAST_VERSION_BUMP=$(git log --no-merges --grep='^Bump version' -i --pretty=format:'%H' "$BASE_REF" | head -n 1)
-          echo "Last version bump found: $LAST_VERSION_BUMP"
+          
+          # Check if current HEAD is a version bump
+          CURRENT_COMMIT_MSG=$(git log -1 --pretty=format:'%s' HEAD)
+          if [[ "$CURRENT_COMMIT_MSG" =~ ^Bump\ version ]]; then
+            echo "Current HEAD is a version bump: $CURRENT_COMMIT_MSG"
+            echo "Using previous version bump for range calculation"
+            LAST_VERSION_BUMP=$(git log --no-merges --grep='^Bump version' -i --pretty=format:'%H' "$BASE_REF" | sed -n '2p')
+          else
+            echo "Current HEAD is not a version bump: $CURRENT_COMMIT_MSG"
+            LAST_VERSION_BUMP=$(git log --no-merges --grep='^Bump version' -i --pretty=format:'%H' "$BASE_REF" | head -n 1)
+          fi
+          echo "Using version bump for range: $LAST_VERSION_BUMP"
           
           # Set range from last version bump to current HEAD (commits for the upcoming release)
           if [ -n "$LAST_VERSION_BUMP" ]; then
