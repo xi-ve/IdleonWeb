@@ -441,12 +441,17 @@ jobs:
             BASE_URL=${ORIGIN_URL%%.git}
           fi
 
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || true)
-          RANGE_SPEC=""
+          # Determine a stable base ref
+          BASE_REF="origin/main"
+          git rev-parse --verify --quiet "$BASE_REF" >/dev/null || BASE_REF="HEAD"
+
+          # Find last tag reachable from base
+          LAST_TAG=$(git describe --tags --abbrev=0 "$BASE_REF" 2>/dev/null || true)
           if [ -n "$LAST_TAG" ]; then
-            RANGE_SPEC="$LAST_TAG..HEAD"
+            RANGE_SPEC="$LAST_TAG..$BASE_REF"
           else
-            RANGE_SPEC="HEAD~50..HEAD"
+            FIRST_COMMIT=$(git rev-list --max-parents=0 "$BASE_REF" | head -n 1)
+            RANGE_SPEC="$FIRST_COMMIT..$BASE_REF"
           fi
 
           LAST_REAL_SHA=$(git log --no-merges -n 50 --grep='bump version' -i --invert-grep --pretty=format:'%H' HEAD | head -n 1)
@@ -489,9 +494,6 @@ jobs:
             
             ### Changelog
             ${{ steps.relnotes.outputs.notes }}
-            
-            **Requirements**: Node.js must be installed on target system.
-            **Installation**: Extract archive and run executable. Dependencies install automatically.
             
             For source builds or development setup, see [README.md](https://github.com/${{ github.repository }}/blob/main/README.md).
           files: |
