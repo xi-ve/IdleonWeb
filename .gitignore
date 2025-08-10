@@ -18,10 +18,14 @@ package-lock.json
 /dumped_N.js
 /main.js
 /test_js_gen.py
+*.js
+**/*.js
 
 # Extracted data files
 data_extraction/extracted_*.txt
 data_extraction/dumped_N.js
+*.txt
+**/*.txt
 
 # Node.js dependencies
 /node_modules
@@ -45,3 +49,5 @@ data_extraction/dumped_N.js
 
 # Configuration files (user-specific)
 core/conf.json
+*.json
+**/*.json
