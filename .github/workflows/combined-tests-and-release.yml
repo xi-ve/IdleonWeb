@@ -480,7 +480,9 @@ jobs:
           NOTES_FILE=RELEASE_NOTES.md
           git --no-pager log $RANGE_SPEC \
             --no-merges \
-            --grep='bump version' -i --invert-grep \
+            --grep='^Bump version' -i \
+            --grep='^Merge ' \
+            --invert-grep \
             --pretty=format:'%H%x09%s' | while IFS=$'\t' read -r sha subject; do
               if [ -n "$BASE_URL" ]; then
                 short=${sha:0:7}
@@ -492,7 +494,7 @@ jobs:
 
           # Fallback: if empty (no real commits in range), show the last real commit overall
           if [ ! -s "$NOTES_FILE" ]; then
-            LAST_REAL=$(git log "$BASE_REF" --no-merges --grep='bump version' -i --invert-grep -n 1 --pretty=format:'%H%x09%s' || true)
+            LAST_REAL=$(git log "$BASE_REF" --no-merges --grep='^Bump version' -i --grep='^Merge ' --invert-grep -n 1 --pretty=format:'%H%x09%s' || true)
             if [ -n "$LAST_REAL" ]; then
               sha=${LAST_REAL%%$'\t'*}
               subject=${LAST_REAL#*$'\t'}
