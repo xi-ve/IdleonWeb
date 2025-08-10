@@ -362,8 +362,11 @@ jobs:
           
       - name: Fetch latest changes including version bump
         run: |
-          git fetch origin main:main --force
-          git checkout main
+          git fetch origin --force --prune +refs/heads/*:refs/remotes/origin/* --tags
+          git reset --hard origin/main
+          echo "Now at commit: $(git rev-parse HEAD)"
+          echo "Latest commits:"
+          git log --oneline -5
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
