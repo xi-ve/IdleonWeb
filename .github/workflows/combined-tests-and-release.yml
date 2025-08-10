@@ -445,13 +445,28 @@ jobs:
           BASE_REF="origin/main"
           git rev-parse --verify --quiet "$BASE_REF" >/dev/null || BASE_REF="HEAD"
 
-          # Find last tag reachable from base
-          LAST_TAG=$(git describe --tags --abbrev=0 "$BASE_REF" 2>/dev/null || true)
-          if [ -n "$LAST_TAG" ]; then
-            RANGE_SPEC="$LAST_TAG..$BASE_REF"
+          # Prefer the range between the last two version bump commits (exclusive of preceding bump, inclusive of latest bump)
+          mapfile -t BUMPS < <(git log "$BASE_REF" --grep='^Bump version' -i --pretty=format:'%H' -n 2 || true)
+          LATEST_BUMP="${BUMPS[0]}"
+          PREV_BUMP="${BUMPS[1]}"
+          if [ -n "$LATEST_BUMP" ] && [ -n "$PREV_BUMP" ]; then
+            RANGE_SPEC="$PREV_BUMP..$LATEST_BUMP"
+          elif [ -n "$LATEST_BUMP" ]; then
+            LAST_TAG=$(git describe --tags --abbrev=0 "$LATEST_BUMP^" 2>/dev/null || true)
+            if [ -n "$LAST_TAG" ]; then
+              RANGE_SPEC="$LAST_TAG..$LATEST_BUMP"
+            else
+              FIRST_COMMIT=$(git rev-list --max-parents=0 "$BASE_REF" | head -n 1)
+              RANGE_SPEC="$FIRST_COMMIT..$LATEST_BUMP"
+            fi
           else
-            FIRST_COMMIT=$(git rev-list --max-parents=0 "$BASE_REF" | head -n 1)
-            RANGE_SPEC="$FIRST_COMMIT..$BASE_REF"
+            LAST_TAG=$(git describe --tags --abbrev=0 "$BASE_REF" 2>/dev/null || true)
+            if [ -n "$LAST_TAG" ]; then
+              RANGE_SPEC="$LAST_TAG..$BASE_REF"
+            else
+              FIRST_COMMIT=$(git rev-list --max-parents=0 "$BASE_REF" | head -n 1)
+              RANGE_SPEC="$FIRST_COMMIT..$BASE_REF"
+            fi
           fi
 
           LAST_REAL_SHA=$(git log --no-merges -n 50 --grep='bump version' -i --invert-grep --pretty=format:'%H' HEAD | head -n 1)
