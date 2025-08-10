@@ -213,19 +213,24 @@ class PluginWebAPI:
                         print(f"DEBUG: use_tabs value: {use_tabs}")
                         print(f"DEBUG: Number of plugins: {len(all_ui_elements)}")
                     
-                    # Group plugins by category for the new interface
                     plugin_categories = {}
-                    
-                    # Group sorted plugins by category
                     for plugin_info in plugins_with_order:
                         plugin_category = plugin_info['category']
                         plugin_name = plugin_info['name']
-                        
                         if plugin_category not in plugin_categories:
                             plugin_categories[plugin_category] = []
                         plugin_categories[plugin_category].append(plugin_name)
-                    
-                    context['plugin_categories'] = plugin_categories
+
+                    def _category_sort_key(cat: str):
+                        import re
+                        m = re.match(r"^World\s+(\d+)$", cat.strip(), flags=re.IGNORECASE)
+                        if m:
+                            return (0, int(m.group(1)))
+                        return (1, cat.lower())
+
+                    ordered_categories_items = sorted(plugin_categories.items(), key=lambda kv: _category_sort_key(kv[0]))
+                    ordered_plugin_categories = {k: v for k, v in ordered_categories_items}
+                    context['plugin_categories'] = ordered_plugin_categories
                     
                     # Update the plugin schemas to include order information
                     for plugin_info in plugins_with_order:
