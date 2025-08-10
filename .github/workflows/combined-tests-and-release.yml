@@ -445,14 +445,14 @@ jobs:
           BASE_REF="origin/main"
           git rev-parse --verify --quiet "$BASE_REF" >/dev/null || BASE_REF="HEAD"
 
-          # Find the most recent version bump commit
+          # Find the most recent version bump commit (the last release)
           LAST_VERSION_BUMP=$(git log --no-merges --grep='^Bump version' -i --pretty=format:'%H' "$BASE_REF" | head -n 1)
           
-          # Set range from last version bump to current HEAD
+          # Set range from last version bump to current HEAD (commits for the upcoming release)
           if [ -n "$LAST_VERSION_BUMP" ]; then
             RANGE_SPEC="$LAST_VERSION_BUMP..$BASE_REF"
           else
-            # Fallback if no version bump found - get recent commits
+            # Fallback if no version bumps found - get recent commits
             RANGE_SPEC="$BASE_REF~50..$BASE_REF"
           fi
 

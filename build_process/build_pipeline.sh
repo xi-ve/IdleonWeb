@@ -71,15 +71,15 @@ elif [[ "$ORIGIN_URL" =~ ^https?://github.com/.*$ ]]; then
   BASE_URL=${ORIGIN_URL%%.git}
 fi
 
-# Find the most recent version bump commit
+# Find the most recent version bump commit (the last release)
 LAST_VERSION_BUMP=$(git log --no-merges --grep='bump version' -i --pretty=format:'%H' origin/main | head -n 1)
 
-# Set range from last version bump to current HEAD
+# Set range from last version bump to current HEAD (commits for the upcoming release)
 RANGE_SPEC=""
 if [ -n "$LAST_VERSION_BUMP" ]; then
   RANGE_SPEC="$LAST_VERSION_BUMP..origin/main"
 else
-  # Fallback if no version bump found
+  # Fallback if no version bumps found
   RANGE_SPEC="origin/main~50..origin/main"
 fi
 
