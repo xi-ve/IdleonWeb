@@ -356,6 +356,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Fetch latest changes including version bump
+        run: |
+          git fetch origin main:main --force
+          git checkout main
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -441,19 +449,27 @@ jobs:
             BASE_URL=${ORIGIN_URL%%.git}
           fi
 
-          # Determine a stable base ref
-          BASE_REF="origin/main"
-          git rev-parse --verify --quiet "$BASE_REF" >/dev/null || BASE_REF="HEAD"
+          # Determine a stable base ref (we're now on the latest main branch)
+          BASE_REF="HEAD"
+          echo "Using BASE_REF: $BASE_REF"
+          echo "Current commit: $(git rev-parse HEAD)"
 
           # Find the most recent version bump commit (the last release)
+          echo "Looking for version bump commits..."
+          git log --no-merges --grep='^Bump version' -i --pretty=format:'%h %s' "$BASE_REF" | head -3
           LAST_VERSION_BUMP=$(git log --no-merges --grep='^Bump version' -i --pretty=format:'%H' "$BASE_REF" | head -n 1)
+          echo "Last version bump found: $LAST_VERSION_BUMP"
           
           # Set range from last version bump to current HEAD (commits for the upcoming release)
           if [ -n "$LAST_VERSION_BUMP" ]; then
             RANGE_SPEC="$LAST_VERSION_BUMP..$BASE_REF"
+            echo "Range spec: $RANGE_SPEC"
+            echo "Commits in range:"
+            git log $RANGE_SPEC --no-merges --grep='bump version' -i --invert-grep --pretty=format:'  %h %s' | head -5
           else
             # Fallback if no version bumps found - get recent commits
             RANGE_SPEC="$BASE_REF~50..$BASE_REF"
+            echo "No version bumps found, using fallback range: $RANGE_SPEC"
           fi
 
           LAST_REAL_SHA=$(git log --no-merges -n 50 --grep='bump version' -i --invert-grep --pretty=format:'%H' HEAD | head -n 1)
