@@ -21,6 +21,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+        with:
+          fetch-depth: 0
         
       - name: Check commit author and message
         id: check
@@ -424,6 +428,68 @@ jobs:
             echo "EOF"
           } >> $GITHUB_OUTPUT
 
+      - name: Generate release notes
+        id: relnotes
+        run: |
+          set -e
+          git fetch --tags --force --prune
+          ORIGIN_URL=$(git config --get remote.origin.url)
+          BASE_URL=""
+          if [[ "$ORIGIN_URL" =~ ^git@github.com:(.*)\.git$ ]]; then
+            BASE_URL="https://github.com/${BASH_REMATCH[1]}"
+          elif [[ "$ORIGIN_URL" =~ ^https?://github.com/(.*)\.git$ ]]; then
+            BASE_URL="https://github.com/${BASH_REMATCH[1]}"
+          elif [[ "$ORIGIN_URL" =~ ^https?://github.com/.*$ ]]; then
+            BASE_URL=${ORIGIN_URL%%.git}
+          fi
+
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || true)
+          RANGE_SPEC=""
+          if [ -n "$LAST_TAG" ]; then
+            RANGE_SPEC="$LAST_TAG..HEAD"
+          else
+            RANGE_SPEC="HEAD~50..HEAD"
+          fi
+
+          LAST_REAL_SHA=$(git log --no-merges -n 50 --grep='bump version' -i --invert-grep --pretty=format:'%H' HEAD | head -n 1)
+          LAST_REAL_SUBJECT=""
+          LAST_REAL_BODY=""
+          if [ -n "$LAST_REAL_SHA" ]; then
+            LAST_REAL_SUBJECT=$(git log -n 1 --format='%s' "$LAST_REAL_SHA")
+            LAST_REAL_BODY=$(git log -n 1 --format='%b' "$LAST_REAL_SHA")
+          fi
+
+          NOTES_FILE=RELEASE_NOTES.md
+          {
+            if [ -n "$LAST_REAL_SUBJECT" ]; then
+              echo "$LAST_REAL_SUBJECT"
+              if [ -n "$LAST_REAL_BODY" ]; then
+                echo
+                echo "$LAST_REAL_BODY"
+              fi
+              echo
+            fi
+            echo "### Changes since last release"
+            echo
+            git --no-pager log $RANGE_SPEC \
+              --no-merges \
+              --grep='bump version' -i --invert-grep \
+              --pretty=format:'%H%x09%s' | while IFS=$'\t' read -r sha subject; do
+                if [ -n "$BASE_URL" ]; then
+                  short=${sha:0:7}
+                  echo "- [${short}]($BASE_URL/commit/$sha) $subject"
+                else
+                  echo "- ${sha:0:7} $subject"
+                fi
+              done
+          } > "$NOTES_FILE"
+
+          {
+            echo "notes<<EOF"
+            cat "$NOTES_FILE"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -434,6 +500,8 @@ jobs:
             
             ### Build Results
             ${{ steps.prepare.outputs.build-status }}
+            
+            ${{ steps.relnotes.outputs.notes }}
             
             **Requirements**: Node.js must be installed on target system.
             **Installation**: Extract archive and run executable. Dependencies install automatically.
