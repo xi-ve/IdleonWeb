@@ -443,14 +443,21 @@ jobs:
           set -e
           git fetch origin --force --prune +refs/heads/*:refs/remotes/origin/* --tags
           ORIGIN_URL=$(git config --get remote.origin.url)
+          echo "Origin URL: $ORIGIN_URL"
           BASE_URL=""
           if [[ "$ORIGIN_URL" =~ ^git@github.com:(.*)\.git$ ]]; then
             BASE_URL="https://github.com/${BASH_REMATCH[1]}"
+            echo "Matched SSH pattern, BASE_URL: $BASE_URL"
           elif [[ "$ORIGIN_URL" =~ ^https?://github.com/(.*)\.git$ ]]; then
             BASE_URL="https://github.com/${BASH_REMATCH[1]}"
+            echo "Matched HTTPS .git pattern, BASE_URL: $BASE_URL"
           elif [[ "$ORIGIN_URL" =~ ^https?://github.com/.*$ ]]; then
             BASE_URL=${ORIGIN_URL%%.git}
+            echo "Matched HTTPS no .git pattern, BASE_URL: $BASE_URL"
+          else
+            echo "No pattern matched for ORIGIN_URL: $ORIGIN_URL"
           fi
+          echo "Final BASE_URL: $BASE_URL"
 
           # Determine a stable base ref (we're now on the latest main branch)
           BASE_REF="HEAD"
@@ -494,6 +501,14 @@ jobs:
           fi
 
           NOTES_FILE=RELEASE_NOTES.md
+          echo "Generating notes file with BASE_URL: $BASE_URL"
+          echo "Raw commit data:"
+          git --no-pager log $RANGE_SPEC \
+            --no-merges \
+            --grep='bump version' -i --invert-grep \
+            --pretty=format:'%H%x09%s'
+          
+          echo "Generating formatted notes..."
           git --no-pager log $RANGE_SPEC \
             --no-merges \
             --grep='bump version' -i --invert-grep \
@@ -505,6 +520,9 @@ jobs:
                 echo "- ${sha:0:7} $subject"
               fi
             done > "$NOTES_FILE"
+          
+          echo "Generated notes file content:"
+          cat "$NOTES_FILE"
 
           # Show all commits since last version bump (merges, fixes, etc.), excluding version bumps
 
