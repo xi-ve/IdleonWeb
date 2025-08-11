@@ -25,8 +25,8 @@ class StatueManagerPlugin(PluginBase):
 
     @ui_banner(
         label="Note",
-        description="Statue caps vary by type. When unknown, the plugin avoids over-capping and uses conservative defaults.",
-        banner_type="info",
+        description="Statues are theoretically unlimited, but this plugin hard-caps manual inputs to 1000 for safety. Use reasonable amounts.",
+        banner_type="warning",
         category="Actions",
         order=-100
     )
@@ -95,17 +95,7 @@ class StatueManagerPlugin(PluginBase):
                 return '';
             };
 
-            const getCapHeuristic = (idx) => {
-                const row = info && info[idx];
-                let best = 0;
-                if (Array.isArray(row)) {
-                    for (let j = 0; j < row.length; j++) {
-                        const val = Number(row[j]);
-                        if (!Number.isNaN(val) && val > 0 && val <= 1000) best = Math.max(best, val);
-                    }
-                }
-                return best;
-            };
+            const getCapHeuristic = (idx) => 0;
 
             const toGrade = (g) => (g >= 2 ? 'Onyx' : (g >= 1 ? 'Gold' : 'Stone'));
 
@@ -117,7 +107,7 @@ class StatueManagerPlugin(PluginBase):
                 const rawName = getRawName(i);
                 if (!rawName) continue;
                 const name = rawName;
-                const cap = getCapHeuristic(i);
+                const cap = 0;
                 items.push({ index: i, name, level, grade, gradeText: toGrade(grade), cap });
             }
 
@@ -356,20 +346,13 @@ class StatueManagerPlugin(PluginBase):
             if (foundIndex === -1) return `Error: Statue '${statue_name}' not found`;
 
             const row = info && info[foundIndex];
-            let maxCap = 0;
-            if (Array.isArray(row)) {
-                for (let j = 0; j < row.length; j++) {
-                    const val = Number(row[j]);
-                    if (!Number.isNaN(val) && val > 0 && val <= 1000) maxCap = Math.max(maxCap, val);
-                }
-            }
+            const maxCap = 1000;
             const oldLevel = Number((levelsList[foundIndex] && levelsList[foundIndex][0]) || 0);
-            if (maxCap > 0 && Number(level) > maxCap) return `Error: Level ${level} exceeds maximum ${maxCap} for '${foundName}'`;
+            if (Number(level) > maxCap) return `Error: Level ${level} exceeds maximum ${maxCap} for '${foundName}'`;
             if (!Array.isArray(levelsList[foundIndex])) levelsList[foundIndex] = [0];
             levelsList[foundIndex][0] = Math.floor(Number(level));
             if (Number(level) === 0) return `Reset '${foundName}' to level 0 (was ${oldLevel})`;
-            const capDisp = maxCap > 0 ? maxCap : '∞';
-            return `Set '${foundName}' to level ${level} (was ${oldLevel}, max ${capDisp})`;
+            return `Set '${foundName}' to level ${level} (was ${oldLevel}, max ${maxCap})`;
         } catch (e) {
             return `Error: ${e.message}`;
         }
@@ -447,27 +430,18 @@ class StatueManagerPlugin(PluginBase):
             const info = cl?.h?.StatueInfo;
             if (!Array.isArray(levelsList)) return "Error: Statue data not found";
 
-            const capOf = (idx) => {
-                const row = info && info[idx];
-                let best = 0;
-                if (Array.isArray(row)) for (let j = 0; j < row.length; j++) {
-                    const val = Number(row[j]);
-                    if (!Number.isNaN(val) && val > 0 && val <= 1000) best = Math.max(best, val);
-                }
-                return best;
-            };
+            const capOf = (idx) => 0;
 
             let setToMax = 0;
             let setToDefault = 0;
             for (let i = 0; i < levelsList.length; i++) {
-                const cap = capOf(i);
-                const target = cap > 0 ? cap : 50;
+                const target = 200;
                 if (!Array.isArray(levelsList[i])) levelsList[i] = [0];
                 const old = Number(levelsList[i][0] || 0);
                 levelsList[i][0] = target;
-                if (cap > 0) setToMax++; else setToDefault++;
+                setToDefault++;
             }
-            return `Set ${setToMax} statues to known cap and ${setToDefault} to 50`;
+            return `Set ${setToDefault} statues to 200`;
         } catch (e) {
             return `Error: ${e.message}`;
         }
