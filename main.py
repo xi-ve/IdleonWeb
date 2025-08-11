@@ -200,6 +200,20 @@ def cmd_inject(args=None, plugin_manager=None):
             )
             web_server_task.start()
             console.print("[green]Plugin UI web server started at http://localhost:8080[/green]")
+            try:
+                if config_manager.get_webui_auto_open():
+                    url_to_open = config_manager.get_webui_url()
+                    console.print(f"[cyan]Opening Web UI at {url_to_open} in the target browser...[/cyan]")
+                    import time
+                    time.sleep(0.5)
+                    try:
+                        injector.open_url_in_new_tab(url_to_open)
+                        console.print("[green]Web UI opened in target browser.[/green]")
+                    except Exception as e:
+                        console.print(f"[yellow]Could not open Web UI automatically: {e}[/yellow]")
+                        console.print(f"[yellow]You can open it manually at {url_to_open}[/yellow]")
+            except Exception as e:
+                console.print(f"[yellow]Auto-open web UI encountered an error: {e}[/yellow]")
             
     except Exception as e:
         console.print(f"[red]Failed to connect injector: {e}[/red]")
@@ -225,6 +239,8 @@ def cmd_injector_config(args=None, plugin_manager=None):
     table.add_row("N.js Pattern", config_manager.get_njs_pattern(), "Pattern for intercepting game JS")
     table.add_row("Idleon URL", config_manager.get_idleon_url(), "Game URL to launch")
     table.add_row("Timeout (ms)", str(config_manager.get_timeout()), "CDP connection timeout in milliseconds")
+    table.add_row("Web UI Auto Open", str(config_manager.get_webui_auto_open()), "Open the Web UI after injection")
+    table.add_row("Web UI URL", config_manager.get_webui_url(), "Web UI URL to open after injection")
     
     console.print(table)
 
@@ -358,6 +374,30 @@ def cmd_web_ui(args=None, plugin_manager=None):
         console.print("[cyan]Open your browser to configure plugins with a modern web interface![/cyan]")
     except Exception as e:
         console.print(f"[red]Failed to start web server: {e}[/red]")
+
+def cmd_webui_auto_open(args=None, plugin_manager=None):
+    if args:
+        if args[0].lower() in ['on', 'true', '1', 'yes']:
+            config_manager.set_webui_auto_open(True)
+            console.print("[green]Web UI auto-open enabled[/green]")
+        elif args[0].lower() in ['off', 'false', '0', 'no']:
+            config_manager.set_webui_auto_open(False)
+            console.print("[green]Web UI auto-open disabled[/green]")
+        else:
+            console.print("[red]Invalid argument. Use 'on' or 'off'[/red]")
+    else:
+        current = config_manager.get_webui_auto_open()
+        new_state = not current
+        config_manager.set_webui_auto_open(new_state)
+        status = "enabled" if new_state else "disabled"
+        console.print(f"[green]Web UI auto-open {status}[/green]")
+
+def cmd_webui_url(args=None, plugin_manager=None):
+    if args and args[0]:
+        config_manager.set_webui_url(args[0])
+        console.print(f"[green]Web UI URL set to {args[0]}[/green]")
+    else:
+        console.print(f"[cyan]Current Web UI URL: {config_manager.get_webui_url()}[/cyan]")
 
 def cmd_exit(args=None, plugin_manager=None):
     global update_loop_stop, update_loop_task, web_server_task
@@ -565,6 +605,8 @@ def main():
         'plugins': {'func': cmd_plugins, 'help': 'List loaded plugins.'},
         'reload_config': {'func': cmd_reload_config, 'help': 'Reload plugin configurations from conf.json.'},
         'web_ui': {'func': cmd_web_ui, 'help': 'Start the plugin web UI server.'},
+        'webui_auto_open': {'func': cmd_webui_auto_open, 'help': 'Toggle or set auto-open of Web UI after injection (on/off).'},
+        'webui_url': {'func': cmd_webui_url, 'help': 'Set or view the Web UI URL to open after injection.'},
         'help': {'func': cmd_help, 'help': 'Show this help menu.'},
         'exit': {'func': cmd_exit, 'help': 'Exit the CLI.'},
         'reload': {'func': cmd_reload, 'help': 'Hot reload all plugins, JS, and web UI into the active injector session.'}

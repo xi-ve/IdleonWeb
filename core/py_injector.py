@@ -88,3 +88,21 @@ class PyInjector:
             if debug_enabled:
                 print(f"[DEBUG] JS injection failed: {e}")
             raise RuntimeError(f"Failed to reload JS: {e}") 
+
+    def open_url_in_new_tab(self, url: str) -> None:
+        if not self.browser:
+            raise RuntimeError("Browser is not connected")
+        try:
+            try:
+                tab = self.browser.new_tab(url=url)
+                try:
+                    tab.start()
+                except Exception:
+                    pass
+            except TypeError:
+                tab = self.browser.new_tab()
+                tab.start()
+                tab.call_method("Page.enable")
+                tab.call_method("Page.navigate", url=url)
+        except Exception as e:
+            raise RuntimeError(f"Failed to open URL: {e}")

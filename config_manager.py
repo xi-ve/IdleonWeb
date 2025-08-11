@@ -30,6 +30,14 @@ class ConfigManager:
             self._config['plugins'] = []
         if 'debug' not in self._config:
             self._config['debug'] = False
+        if 'webui' not in self._config:
+            self._config['webui'] = {}
+        if 'darkmode' not in self._config['webui']:
+            self._config['webui']['darkmode'] = False
+        if 'autoOpenOnInject' not in self._config['webui']:
+            self._config['webui']['autoOpenOnInject'] = True
+        if 'url' not in self._config['webui']:
+            self._config['webui']['url'] = 'http://localhost:8080'
         
         # Migrate autoInject to injector section if it exists at root level
         if 'autoInject' in self._config and 'injector' in self._config:
@@ -92,7 +100,9 @@ class ConfigManager:
             "interactive": True,
             "debug": False,
             "webui": {
-                "darkmode": False
+                "darkmode": False,
+                "autoOpenOnInject": True,
+                "url": "http://localhost:8080"
             },
             "injector": {
                 "cdp_port": 32123,
@@ -244,11 +254,29 @@ class ConfigManager:
         self.set_path('webui.darkmode', enabled)
         logger.info(f"Updated dark mode setting: {enabled}")
 
-    def set_webui_config(self, darkmode: bool = None) -> None:
+    def get_webui_auto_open(self) -> bool:
+        return self.get_path('webui.autoOpenOnInject', True)
+
+    def set_webui_auto_open(self, enabled: bool) -> None:
+        self.set_path('webui.autoOpenOnInject', enabled)
+        logger.info(f"Updated web UI auto open setting: {enabled}")
+
+    def get_webui_url(self) -> str:
+        return self.get_path('webui.url', 'http://localhost:8080')
+
+    def set_webui_url(self, url: str) -> None:
+        self.set_path('webui.url', url)
+        logger.info(f"Updated web UI URL: {url}")
+
+    def set_webui_config(self, darkmode: bool = None, autoOpenOnInject: bool = None, url: str = None) -> None:
         webui_config = self.get_webui_config()
         
         if darkmode is not None:
             webui_config['darkmode'] = darkmode
+        if autoOpenOnInject is not None:
+            webui_config['autoOpenOnInject'] = autoOpenOnInject
+        if url is not None:
+            webui_config['url'] = url
         
         self._config['webui'] = webui_config
         self._save_config()
