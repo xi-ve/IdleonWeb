@@ -25,7 +25,7 @@ class StatueManagerPlugin(PluginBase):
 
     @ui_banner(
         label="Note",
-        description="Statues are theoretically unlimited, but this plugin hard-caps manual inputs to 1000 for safety. Use reasonable amounts.",
+        description="Statues are theoretically unlimited, but this plugin hard-caps manual inputs to 1000 for safety. Use reasonable amounts. When settings statues that are not yet known, please ensure to do some actions in-game before logging out to ensure data synchronization.",
         banner_type="warning",
         category="Actions",
         order=-100
@@ -75,7 +75,10 @@ class StatueManagerPlugin(PluginBase):
             const bEngine = ctx["com.stencyl.Engine"].engine;
             const levelsList = bEngine.getGameAttribute("StatueLevels");
             const gradeList = bEngine.getGameAttribute("StatueG");
+            const ownershipKey = (window.pluginConfigs && window.pluginConfigs['statue_manager'] && window.pluginConfigs['statue_manager'].ownershipKey) || '';
+            const ownArr = ownershipKey ? bEngine.getGameAttribute(ownershipKey) : null;
             const cl = bEngine.getGameAttribute("CustomLists");
+            const dmap = bEngine.getGameAttribute("DummyMap");
             const info = cl?.h?.StatueInfo;
             if (!Array.isArray(levelsList) || !Array.isArray(gradeList)) return "Error: Statue data not found";
 
@@ -89,7 +92,10 @@ class StatueManagerPlugin(PluginBase):
                 if (Array.isArray(row)) {
                     for (let j = 0; j < row.length; j++) {
                         const v = row[j];
-                        if (typeof v === 'string' && v.trim()) return v.replace(/_/g, ' ');
+                        if (typeof v === 'string') {
+                            const s = v.replace(/_/g, ' ').trim();
+                            if (s && /[A-Za-z]/.test(s) && !/^statue\\s*\\d+$/i.test(s)) return s;
+                        }
                     }
                 }
                 return '';
@@ -310,52 +316,41 @@ class StatueManagerPlugin(PluginBase):
     def set_statue_level_js(self, statue_name=None, level=None):
         return '''
         try {
+            const desiredName = String(arguments[0] ?? statue_name ?? '').trim();
+            const desiredLevel = Math.max(0, Math.floor(Number(arguments[1] ?? level ?? 0)));
+            function findEngine(){ const seen=new Set(); const q=[window]; while(q.length){ const o=q.shift(); if(!o||typeof o!=="object") continue; if(seen.has(o)) continue; seen.add(o); try{ if(typeof o.getGameAttribute==="function"&&o.gameAttributes) return o; }catch(_){ } const ks=Object.keys(o); for(let i=0;i<ks.length;i++){ const v=o[ks[i]]; if(v&&typeof v==="object"&&!seen.has(v)) q.push(v); } } return null; }
+            function normalize(s){ return (s||"").toString().trim().toLowerCase(); }
+            function extractNames(entry){ const out=[]; if(!entry) return out; if(typeof entry==="string"){ out.push(entry); } else if(Array.isArray(entry)){ for(const v of entry) if(typeof v==="string") out.push(v); } else if(typeof entry==="object"){ for(const k in entry){ const v=entry[k]; if(typeof v==="string") out.push(v); } } return out; }
+            function unlockByName(eng,name,lvl){ const cl=eng.getGameAttribute("CustomLists"); if(!cl||!cl.h||!cl.h.StatueInfo) return false; const info=cl.h.StatueInfo; const target=normalize(name); let idx=-1; if(Array.isArray(info)){ for(let i=0;i<info.length;i++){ const cand=extractNames(info[i]).map(normalize); if(cand.includes(target) || cand.some(n=>n.replace(/[\\s_]+/g,' ')===target.replace(/[\\s_]+/g,' '))){ idx=i; break; } } } else { const keys=Object.keys(info); for(let i=0;i<keys.length;i++){ const k=keys[i]; const cand=extractNames(info[k]).concat([k]).map(normalize); if(cand.includes(target) || cand.some(n=>n.replace(/[\\s_]+/g,' ')===target.replace(/[\\s_]+/g,' '))){ idx=(+k===+k)?+k:i; break; } } } if(idx<0) return false; const lv=eng.getGameAttribute("StatueLevels"); const g=eng.getGameAttribute("StatueG")||[]; if(!lv) return false; if(Array.isArray(lv[idx])) lv[idx][0]=Math.max(1, +lv[idx][0]||lvl||1); else lv[idx]=Math.max(1, +lv[idx]||lvl||1); if(Array.isArray(g)) g[idx]=Math.max(1, +g[idx]||0); return true; }
             const ctx = window.__idleon_cheats__;
-            if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
-            const bEngine = ctx["com.stencyl.Engine"].engine;
-            const levelsList = bEngine.getGameAttribute("StatueLevels");
-            const cl = bEngine.getGameAttribute("CustomLists");
-            const info = cl?.h?.StatueInfo;
-            if (!Array.isArray(levelsList)) return "Error: Statue data not found";
-            if (!statue_name || level === undefined || level === null) return "Error: Statue name and level are required";
-            if (Number(level) < 0) return "Error: Level must be 0 or higher";
-
-            const getNameFromRow = (row) => {
-                if (!Array.isArray(row)) return '';
-                for (let j = 0; j < row.length; j++) {
-                    const v = row[j];
-                    if (typeof v === 'string' && v.trim()) return v.replace(/_/g, ' ');
+            const eng = (ctx && ctx["com.stencyl.Engine"] && ctx["com.stencyl.Engine"].engine) || findEngine();
+            if(!eng) throw new Error('Game engine not found');
+            let applied=false; try{ applied=unlockByName(eng,desiredName,desiredLevel); }catch(_){ }
+            function tick(){ try{ unlockByName(eng,desiredName,desiredLevel); }catch(_){ } }
+            function forceDesired(){ try {
+                const cl=eng.getGameAttribute('CustomLists'); if(!cl||!cl.h||!cl.h.StatueInfo) return;
+                const info=cl.h.StatueInfo; const target=normalize(desiredName); let idx=-1;
+                function extract(entry){ const out=[]; if(!entry) return out; if(typeof entry==='string'){ out.push(entry); } else if(Array.isArray(entry)){ for(const v of entry) if(typeof v==='string') out.push(v); } else if(typeof entry==='object'){ for(const k in entry){ const v=entry[k]; if(typeof v==='string') out.push(v); } } return out; }
+                function norm(s){ return (s||'').toString().trim().toLowerCase(); }
+                if(Array.isArray(info)){
+                  for(let i=0;i<info.length;i++){ const cand=extract(info[i]).map(norm); if(cand.includes(target) || cand.some(n=>n.replace(/[\\s_]+/g,' ')===target.replace(/[\\s_]+/g,' '))){ idx=i; break; } }
+                } else {
+                  const keys=Object.keys(info); for(let i=0;i<keys.length;i++){ const k=keys[i]; const cand=extract(info[k]).concat([k]).map(norm); if(cand.includes(target) || cand.some(n=>n.replace(/[\\s_]+/g,' ')===target.replace(/[\\s_]+/g,' '))){ idx=(+k===+k)?+k:i; break; } }
                 }
-                return '';
-            };
-
-            const target = String(statue_name).toLowerCase().replace(/[^a-z0-9]/g, '');
-            let foundIndex = -1;
-            let foundName = "";
-            const len = Math.max(levelsList.length, Array.isArray(info) ? info.length : 0);
-            for (let i = 0; i < len; i++) {
-                const name = getNameFromRow(info && info[i]) || `Statue ${i}`;
-                const clean = name.toLowerCase().replace(/[^a-z0-9]/g, '');
-                if (clean.includes(target) || target.includes(clean)) {
-                    foundIndex = i;
-                    foundName = name;
-                    break;
-                }
+                if(idx<0) return;
+                const lv=eng.getGameAttribute('StatueLevels'); const g=eng.getGameAttribute('StatueG')||[];
+                if(!lv) return;
+                const want=Math.max(1, desiredLevel);
+                if(Array.isArray(lv[idx])) lv[idx][0]=want; else lv[idx]=want;
+                if(Array.isArray(g)) g[idx]=Math.max(1, +g[idx]||0);
+                try { const dmap=eng.getGameAttribute('DummyMap'); if(dmap&&dmap.h){ if(!Array.isArray(dmap.h.StatueLevels)) dmap.h.StatueLevels=[]; if(!Array.isArray(dmap.h.StatueLevels[idx])) dmap.h.StatueLevels[idx]=[0]; dmap.h.StatueLevels[idx][0]=want; } } catch(_){ }
+              } catch(_){ }
             }
-
-            if (foundIndex === -1) return `Error: Statue '${statue_name}' not found`;
-
-            const row = info && info[foundIndex];
-            const maxCap = 1000;
-            const oldLevel = Number((levelsList[foundIndex] && levelsList[foundIndex][0]) || 0);
-            if (Number(level) > maxCap) return `Error: Level ${level} exceeds maximum ${maxCap} for '${foundName}'`;
-            if (!Array.isArray(levelsList[foundIndex])) levelsList[foundIndex] = [0];
-            levelsList[foundIndex][0] = Math.floor(Number(level));
-            if (Number(level) === 0) return `Reset '${foundName}' to level 0 (was ${oldLevel})`;
-            return `Set '${foundName}' to level ${level} (was ${oldLevel}, max ${maxCap})`;
-        } catch (e) {
-            return `Error: ${e.message}`;
-        }
+            try{ forceDesired(); }catch(_){ }
+            try{ tick(); }catch(_){ }
+            try{ const id=setInterval(()=>{ tick(); forceDesired(); },2000); document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ tick(); forceDesired(); } }); window.addEventListener('focus',()=>{ tick(); forceDesired(); }); setTimeout(()=>{ try{ clearInterval(id); }catch(_){ } },20000); }catch(_){ }
+            return applied ? 'OK' : `Error: Statue '${desiredName}' not found`;
+        } catch (e) { return `Error: ${e.message}`; }
         '''
 
     @plugin_command(
@@ -375,6 +370,9 @@ class StatueManagerPlugin(PluginBase):
             const bEngine = ctx["com.stencyl.Engine"].engine;
             const levelsList = bEngine.getGameAttribute("StatueLevels");
             const gradeList = bEngine.getGameAttribute("StatueG");
+            const ownershipKey = (window.pluginConfigs && window.pluginConfigs['statue_manager'] && window.pluginConfigs['statue_manager'].ownershipKey) || '';
+            const ownArr = ownershipKey ? bEngine.getGameAttribute(ownershipKey) : null;
+            const dmap = bEngine.getGameAttribute("DummyMap");
             const cl = bEngine.getGameAttribute("CustomLists");
             const info = cl?.h?.StatueInfo;
             if (!Array.isArray(levelsList)) return "Error: Statue data not found";
@@ -423,28 +421,40 @@ class StatueManagerPlugin(PluginBase):
         return '''
         try {
             const ctx = window.__idleon_cheats__;
-            if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
-            const bEngine = ctx["com.stencyl.Engine"].engine;
-            const levelsList = bEngine.getGameAttribute("StatueLevels");
-            const cl = bEngine.getGameAttribute("CustomLists");
-            const info = cl?.h?.StatueInfo;
-            if (!Array.isArray(levelsList)) return "Error: Statue data not found";
-
-            const capOf = (idx) => 0;
-
-            let setToMax = 0;
-            let setToDefault = 0;
-            for (let i = 0; i < levelsList.length; i++) {
-                const target = 200;
-                if (!Array.isArray(levelsList[i])) levelsList[i] = [0];
-                const old = Number(levelsList[i][0] || 0);
-                levelsList[i][0] = target;
-                setToDefault++;
+            let eng = null;
+            if (ctx && ctx["com.stencyl.Engine"] && ctx["com.stencyl.Engine"].engine) eng = ctx["com.stencyl.Engine"].engine;
+            if (!eng) {
+                const seen = new Set(); const q = [window];
+                while (q.length) {
+                    const o = q.shift(); if (!o || typeof o !== 'object') continue; if (seen.has(o)) continue; seen.add(o);
+                    try { if (typeof o.getGameAttribute === 'function' && o.gameAttributes) { eng = o; break; } } catch(_) {}
+                    for (const k in o) { try { const v = o[k]; if (v && typeof v === 'object' && !seen.has(v)) q.push(v); } catch(_) {} }
+                }
             }
-            return `Set ${setToDefault} statues to 200`;
-        } catch (e) {
-            return `Error: ${e.message}`;
-        }
+            if (!eng) throw new Error('Game engine not found');
+            const lv = eng.getGameAttribute('StatueLevels');
+            const gr = eng.getGameAttribute('StatueG') || [];
+            const cl = eng.getGameAttribute('CustomLists');
+            const info = cl && cl.h && cl.h.StatueInfo;
+            if (!Array.isArray(lv)) return 'Error: Statue data not found';
+            function extractNames(entry){ const out=[]; if(!entry) return out; if (typeof entry==='string') out.push(entry); else if (Array.isArray(entry)) for(const v of entry) if(typeof v==='string') out.push(v); else if (typeof entry==='object') for(const k in entry){ const v=entry[k]; if(typeof v==='string') out.push(v); } return out; }
+            function hasName(i){ if (!info) return true; const row = Array.isArray(info)?info[i]:info[i]; const names = extractNames(row); return names.length>0; }
+            function setLevel(i, v){ if (Array.isArray(lv[i])) lv[i][0]=v; else lv[i]=v; }
+            function ensureUnlockedAll(){ let n=0; const len = Array.isArray(info)?info.length:lv.length; for(let i=0;i<len;i++){ if (Array.isArray(info) && !hasName(i)) continue; if (!Array.isArray(lv[i]) && typeof lv[i] !== 'number') lv[i] = [0]; if (Array.isArray(lv[i])) { if (lv[i][0] < 1) { lv[i][0] = 1; n++; } } else { if (lv[i] < 1) { lv[i] = 1; n++; } } if (Array.isArray(gr)) gr[i] = Math.max(1, Number(gr[i]||0)); }
+              return n;
+            }
+            try { ensureUnlockedAll(); } catch(_){ }
+            try { const id = setInterval(()=>{ try{ ensureUnlockedAll(); }catch(_){} }, 2000); setTimeout(()=>{ try{ clearInterval(id); }catch(_){} }, 8000); } catch(_){ }
+            let changed=0; const target=200; const len = Array.isArray(info)?info.length:lv.length;
+            for (let i=0;i<len;i++){
+                if (!hasName(i)) continue;
+                if (!Array.isArray(lv[i]) && typeof lv[i] !== 'number') lv[i] = [0];
+                setLevel(i, Math.max(1,target));
+                if (Array.isArray(gr)) gr[i]=Math.max(1, Number(gr[i]||0));
+                changed++;
+            }
+            return `Set ${changed} statues to ${target}`;
+        } catch (e) { return `Error: ${e.message}`; }
         '''
 
     @ui_button(
@@ -470,24 +480,37 @@ class StatueManagerPlugin(PluginBase):
         return '''
         try {
             const ctx = window.__idleon_cheats__;
-            if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
-            const bEngine = ctx["com.stencyl.Engine"].engine;
-            const levelsList = bEngine.getGameAttribute("StatueLevels");
-            const gradeList = bEngine.getGameAttribute("StatueG");
-            if (!Array.isArray(levelsList) || !Array.isArray(gradeList)) return "Error: Statue data not found";
-            let resetL = 0;
-            let resetG = 0;
-            for (let i = 0; i < levelsList.length; i++) {
-                if (!Array.isArray(levelsList[i])) levelsList[i] = [0];
-                if (levelsList[i][0] !== 0) { levelsList[i][0] = 0; resetL++; }
+            let eng = null;
+            if (ctx && ctx["com.stencyl.Engine"] && ctx["com.stencyl.Engine"].engine) eng = ctx["com.stencyl.Engine"].engine;
+            if (!eng) {
+                const seen = new Set(); const q = [window];
+                while (q.length) {
+                    const o = q.shift(); if (!o || typeof o !== 'object') continue; if (seen.has(o)) continue; seen.add(o);
+                    try { if (typeof o.getGameAttribute === 'function' && o.gameAttributes) { eng = o; break; } } catch(_) {}
+                    for (const k in o) { try { const v = o[k]; if (v && typeof v === 'object' && !seen.has(v)) q.push(v); } catch(_) {} }
+                }
             }
-            for (let i = 0; i < gradeList.length; i++) {
-                if (Number(gradeList[i] || 0) !== 0) { gradeList[i] = 0; resetG++; }
+            if (!eng) throw new Error('Game engine not found');
+            const lv = eng.getGameAttribute('StatueLevels');
+            const gr = eng.getGameAttribute('StatueG') || [];
+            const cl = eng.getGameAttribute('CustomLists');
+            const info = cl && cl.h && cl.h.StatueInfo;
+            if (!Array.isArray(lv)) return 'Error: Statue data not found';
+            function extractNames(entry){ const out=[]; if(!entry) return out; if (typeof entry==='string') out.push(entry); else if (Array.isArray(entry)) for(const v of entry) if(typeof v==='string') out.push(v); else if (typeof entry==='object') for(const k in entry){ const v=entry[k]; if(typeof v==='string') out.push(v); } return out; }
+            function hasName(i){ if (!info) return true; const row = Array.isArray(info)?info[i]:info[i]; const names = extractNames(row); return names.length>0; }
+            function setLevel(i, v){ if (Array.isArray(lv[i])) lv[i][0]=v; else lv[i]=v; }
+            function ensureUnlockedAll(){ let n=0; const len = Array.isArray(info)?info.length:lv.length; for(let i=0;i<len;i++){ if (Array.isArray(info) && !hasName(i)) continue; if (!Array.isArray(lv[i]) && typeof lv[i] !== 'number') lv[i] = [0]; if (Array.isArray(lv[i])) { if (lv[i][0] < 1) { lv[i][0] = 1; n++; } } else { if (lv[i] < 1) { lv[i] = 1; n++; } } if (Array.isArray(gr)) gr[i] = Math.max(1, Number(gr[i]||0)); }
+              return n;
             }
-            return `Reset levels for ${resetL} statues and grade for ${resetG}`;
-        } catch (e) {
-            return `Error: ${e.message}`;
-        }
+            try { ensureUnlockedAll(); } catch(_){ }
+            try { const id = setInterval(()=>{ try{ ensureUnlockedAll(); }catch(_){} }, 2000); setTimeout(()=>{ try{ clearInterval(id); }catch(_){} }, 8000); } catch(_){ }
+            let resetL=0; const len = Array.isArray(info)?info.length:lv.length;
+            for (let i=0;i<len;i++){
+                if (!hasName(i)) continue;
+                setLevel(i, 0); if (Array.isArray(gr)) gr[i]=0; resetL++;
+            }
+            return `Reset levels for ${resetL} statues`;
+        } catch (e) { return `Error: ${e.message}`; }
         '''
 
     @ui_button(
@@ -605,6 +628,7 @@ class StatueManagerPlugin(PluginBase):
             if (!ctx?.["com.stencyl.Engine"]?.engine) throw new Error("Game engine not found");
             const bEngine = ctx["com.stencyl.Engine"].engine;
             const gradeList = bEngine.getGameAttribute("StatueG");
+            const levelsList = bEngine.getGameAttribute("StatueLevels");
             const cl = bEngine.getGameAttribute("CustomLists");
             const info = cl?.h?.StatueInfo;
             if (!Array.isArray(gradeList)) return "Error: Statue data not found";
@@ -631,6 +655,12 @@ class StatueManagerPlugin(PluginBase):
             if (foundIndex === -1) return `Error: Statue '${name}' not found`;
             const old = Number(gradeList[foundIndex] || 0);
             gradeList[foundIndex] = g;
+            if (g > 0 && Array.isArray(levelsList)) {
+                if (!Array.isArray(levelsList[foundIndex])) levelsList[foundIndex] = [0];
+                if (Number(levelsList[foundIndex][0] || 0) === 0) {
+                    levelsList[foundIndex][0] = 1;
+                }
+            }
             const gt = g >= 2 ? 'Onyx' : (g >= 1 ? 'Gold' : 'Stone');
             return `Set '${foundName}' grade to ${gt} (was ${old})`;
         } catch (e) {
@@ -645,7 +675,8 @@ class StatueManagerPlugin(PluginBase):
     async def get_statue_status(self, injector=None, **kwargs):
         result = self.run_js_export('get_statue_status_js', injector)
         return result
-
+        
+   
 
 plugin_class = StatueManagerPlugin
 
