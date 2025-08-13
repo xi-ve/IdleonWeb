@@ -74,6 +74,17 @@
 
   window.__idleon_core_setup = setup;
 
+  function getGameContext() {
+    if (window.__idleon_cheats__) return window.__idleon_cheats__;
+    const iframes = Array.from(window.document.querySelectorAll('iframe'));
+    for (const f of iframes) {
+      try {
+        if (f && f.contentWindow && f.contentWindow.__idleon_cheats__) return f.contentWindow.__idleon_cheats__;
+      } catch (_) {}
+    }
+    return null;
+  }
+
   window.__idleon_wait_for_game_ready = function() {
     if (gameReadyPromise) {
       return gameReadyPromise;
@@ -86,15 +97,8 @@
     gameReadyPromise = new Promise(async (resolve, reject) => {
       try {
 
-        let context = window.__idleon_cheats__;
-        if (!context) {
-          const iframe = window.document.querySelector('iframe');
-          if (iframe && iframe.contentWindow && iframe.contentWindow.__idleon_cheats__) {
-            context = iframe.contentWindow.__idleon_cheats__;
-          } else {
-            throw new Error("Could not find __idleon_cheats__ context");
-          }
-        }
+        const context = getGameContext();
+        if (!context) throw new Error("Could not find __idleon_cheats__ context");
 
         await gameReady.call(context);
         

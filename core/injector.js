@@ -340,11 +340,12 @@ class ScriptInjector {
                         
                         injected = pluginJsCode + '\n' + injected;
 
+                        const contentLength = Buffer.byteLength(injected, 'utf-8');
                         const headers = [
                             `Date: ${(new Date()).toUTCString()}`,
-                            "Connection: closed",
-                            `Content-Length: ${injected.length}`,
-                            "Content-Type: text/javascript",
+                            "Connection: close",
+                            `Content-Length: ${contentLength}`,
+                            "Content-Type: application/javascript; charset=utf-8",
                         ];
                         
                         const rawResponse = Buffer.from(

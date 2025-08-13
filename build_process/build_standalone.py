@@ -424,7 +424,7 @@ except Exception as e:
     print_status("Created launcher script")
     return launcher_path
 
-def get_pyinstaller_args(platform: str, temp_dir: Path, launcher_script: Path, output_dir: Path) -> List[str]:
+def get_pyinstaller_args(platform: str, temp_dir: Path, launcher_script: Path, output_dir: Path, macos_arch: str | None = None) -> List[str]:
     python_path = Path(sys.executable)
     venv_bin = python_path.parent
     pyinstaller_path = venv_bin / "pyinstaller"
@@ -450,6 +450,9 @@ def get_pyinstaller_args(platform: str, temp_dir: Path, launcher_script: Path, o
             "--exclude-module=matplotlib",
             "--exclude-module=PIL",
         ])
+    elif platform == "macos":
+        if macos_arch and macos_arch != "auto":
+            args.extend(["--target-arch", macos_arch])
     
     icon_files = ["icon.ico", "icon.png", "icon.icns"]
     for icon_file in icon_files:
@@ -481,7 +484,7 @@ def get_pyinstaller_args(platform: str, temp_dir: Path, launcher_script: Path, o
     
     return args
 
-def build_platform(target_platform: str, build_dir: Path):
+def build_platform(target_platform: str, build_dir: Path, macos_arch: str = "auto"):
     print_status(f"Building for {target_platform}...")
     if not check_platform_compatibility(target_platform):
         return False
@@ -497,7 +500,8 @@ def build_platform(target_platform: str, build_dir: Path):
         return False
     output_dir = build_dir / "dist" / target_platform
     output_dir.mkdir(parents=True, exist_ok=True)
-    pyinstaller_args = get_pyinstaller_args(target_platform, temp_dir, launcher_script, output_dir)
+    mac_arch = macos_arch if target_platform == "macos" else None
+    pyinstaller_args = get_pyinstaller_args(target_platform, temp_dir, launcher_script, output_dir, mac_arch)
     try:
         run_command(pyinstaller_args, cwd=Path.cwd())
         
@@ -526,6 +530,7 @@ def main():
     parser = argparse.ArgumentParser(description="Build IdleonWeb standalone executables")
     parser.add_argument("--platform", choices=["all", "windows", "linux", "macos"], 
                        default="all", help="Target platform(s) to build for")
+    parser.add_argument("--macos-arch", choices=["auto", "x86_64", "arm64", "universal2"], default="auto", help="macOS target architecture")
     parser.add_argument("--output", default="build", 
                        help="Output directory for build artifacts")
     parser.add_argument("--clean", action="store_true", 
@@ -557,7 +562,8 @@ def main():
     for target_platform in platforms:
         print_status(f"Building for {target_platform}...")
         try:
-            if build_platform(target_platform, build_dir):
+            mac_arch = args.macos_arch if target_platform == "macos" else "auto"
+            if build_platform(target_platform, build_dir, mac_arch):
                 successful_builds += 1
             else:
                 failed_builds.append(target_platform)

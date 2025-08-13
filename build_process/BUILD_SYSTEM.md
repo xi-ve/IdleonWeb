@@ -51,7 +51,7 @@ python build_process/build_standalone.py
 # Build for specific platform
 python build_process/build_standalone.py --platform windows
 python build_process/build_standalone.py --platform linux
-python build_process/build_standalone.py --platform macos
+python build_process/build_standalone.py --platform macos --macos-arch universal2  # build a universal macOS binary
 
 # Build for all platforms (requires cross-platform setup)
 python build_process/build_standalone.py --platform all
@@ -105,7 +105,7 @@ The generated executables are completely standalone and can be distributed as-is
 
 1. **Windows**: `IdleonWeb.exe` - Double-click to run
 2. **Linux**: `IdleonWeb` - `chmod +x IdleonWeb && ./IdleonWeb`
-3. **macOS**: `IdleonWeb` - `chmod +x IdleonWeb && ./IdleonWeb`
+3. **macOS**: `IdleonWeb` - `chmod +x IdleonWeb && ./IdleonWeb` (universal2 when built with `--macos-arch universal2`)
 
 ## Build Process Details
 

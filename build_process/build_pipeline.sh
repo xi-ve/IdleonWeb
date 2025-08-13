@@ -22,12 +22,25 @@ if [ -f "VERSION" ]; then
     echo "Version: $VERSION"
 fi
 
-# Run the build
+# Determine target and extra args
 echo "Starting build process..."
-if [ -n "$VERSION" ]; then
-    python3 build_process/build_standalone.py --platform current --version "$VERSION"
+TARGET_PLATFORM=""
+EXTRA_ARGS=()
+if [ "$PLATFORM" = "windows" ]; then
+    TARGET_PLATFORM="windows"
+elif [ "$PLATFORM" = "linux" ]; then
+    TARGET_PLATFORM="linux"
+elif [ "$PLATFORM" = "darwin" ]; then
+    TARGET_PLATFORM="macos"
+    EXTRA_ARGS+=("--macos-arch" "universal2")
 else
-    python3 build_process/build_standalone.py --platform current
+    echo "Unknown platform: $PLATFORM" && exit 1
+fi
+
+if [ -n "$VERSION" ]; then
+    python3 build_process/build_standalone.py --platform "$TARGET_PLATFORM" "${EXTRA_ARGS[@]}" --version "$VERSION"
+else
+    python3 build_process/build_standalone.py --platform "$TARGET_PLATFORM" "${EXTRA_ARGS[@]}"
 fi
 
 # Check if build was successful
@@ -46,8 +59,8 @@ if [ -d "build/dist" ]; then
         cp build/dist/linux/IdleonWeb release-artifacts/IdleonWeb-linux
         chmod +x release-artifacts/IdleonWeb-linux
     elif [ "$PLATFORM" = "darwin" ]; then
-        cp build/dist/macos/IdleonWeb release-artifacts/IdleonWeb-macos
-        chmod +x release-artifacts/IdleonWeb-macos
+        cp build/dist/macos/IdleonWeb release-artifacts/IdleonWeb-macos-universal2
+        chmod +x release-artifacts/IdleonWeb-macos-universal2
     fi
     
     echo "Release artifacts created in release-artifacts/"
