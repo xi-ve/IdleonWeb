@@ -38,22 +38,25 @@ A modern, user-friendly launcher and plugin system for enhancing Legends of Idle
 
 ## Quick Start
 
-### Option 1: Pre-compiled Binaries (Easiest) ⭐
+### Option 1: Pre-compiled Binaries (Easiest)
 
 **Download and run - no setup required!**
 
 1. Go to the [Releases page](https://github.com/xi-ve/IdleonWeb/releases)
 2. Download the appropriate file for your system:
-   - 🐧 **Linux**: `IdleonWeb-linux-v{version}.tar.gz`
-   - 🪟 **Windows**: `IdleonWeb-windows-v{version}.zip` 
-   - 🍎 **macOS**: `IdleonWeb-macos-v{version}.tar.gz`
+   - Linux: `IdleonWeb-linux-v{version}.tar.gz`
+   - Windows: `IdleonWeb-windows-v{version}.zip`
+   - macOS (Apple Silicon): `IdleonWeb-macos-arm64-v{version}.tar.gz`
+   - macOS (Intel): `IdleonWeb-macos-x86_64-v{version}.tar.gz`
 3. Extract the archive to a folder
 4. **Install Node.js** (required): [Download Node.js](https://nodejs.org/en/download/) - Get the LTS version
 5. Run the executable:
    - **Linux/macOS**: `./IdleonWeb`
    - **Windows**: `IdleonWeb.exe`
-6. Node.js dependencies will install automatically on first run
+6. No npm install is needed; dependencies are bundled in the executable
 7. Open `http://localhost:8080` in your browser to configure plugins
+
+Note (macOS): Choose arm64 for Apple Silicon (M1/M2/M3) Macs, x86_64 for Intel Macs.
 
 **Requirements:**
 - Node.js must be installed on your system
@@ -165,13 +168,16 @@ python launch.py
 - **Card Cheats** - Search, unlock, level, and manage cards with collection tools
 - **⚠️ Class Unlock** - Set characters to any class and view class progression. ⚠️ DANGER: Class changes can corrupt your character. Emergency recovery: Use 'Complete Class Redo Token' item
 - **Grimoire Unlocker** - Unlock and manage grimoire upgrades for Death Bringer class
+- **Achievements Manager** - View and manage achievements
 - **Package Toggle** - Toggle bought packages and bundles
+- **Portal Unlocks** - Unlock portals quickly
 - **Vault Unlocker** - Unlock and manage vault upgrades with category controls
 
 ### World-Specific Plugins
 #### World 1
 - **Anvil Cheats** - Anvil and Smithing related cheats
 - **⚠️ Stamp Cheats** - Unlock and manage stamp upgrades & bribes. ⚠️ Use with caution as stamps and bribes affect multiple game systems!
+- **Statue Manager** - Manage and upgrade statues
 
 #### World 2
 - **Post Office Cheats** - Complete orders and manage upgrades
@@ -182,6 +188,7 @@ python launch.py
 #### World 6
 - **⚠️ Sneaking Cheats** - Cheats for the sneaking game including money, unlocks, and upgrades. ⚠️ HIGH RISK: These features may brick your account. Use at your own risk!
 - **⚠️ Sneaking Items** - Item cheats for the sneaking game including hats, weapons, gloves, and charms. ⚠️ HIGH RISK: These features may brick your account. Use at your own risk!
+- **Summoning Manager** - Manage summoning-related actions
 
 ---
 
@@ -201,7 +208,6 @@ IdleonWeb/
 ├── core/             # Core system files
 ├── webui/            # Web interface files
 ├── build_process/    # Build scripts for standalone executables
-├── .github/workflows/# Automated CI/CD for multi-platform builds
 ├── integration_tests/# Automated testing suite
 ├── main.py           # Main launcher
 ├── setup.py          # Universal setup script
@@ -210,11 +216,7 @@ IdleonWeb/
 
 ### Automated Builds
 
-This project features automated multi-platform builds via GitHub Actions:
-- **Integration Tests**: All platforms tested on every commit
-- **Native Builds**: Linux, Windows, and macOS executables built automatically
-- **Releases**: Triggered on successful tests, includes all platform binaries
-- **Quality Assurance**: Only tested code reaches releases
+Multi-platform builds are supported via CI/CD and local build scripts in `build_process/`.
 
 ---
 
