@@ -292,7 +292,7 @@ jobs:
           name: IdleonWeb-windows-v${{ needs.build-linux.outputs.version }}
           path: IdleonWeb-windows-v${{ needs.build-linux.outputs.version }}.zip
 
-  build-macos:
+  build-macos-arm64:
     needs: [check-commit, test-arch, test-ubuntu, test-windows, build-linux]
     if: |
       always() && 
@@ -301,7 +301,7 @@ jobs:
       needs.test-ubuntu.result == 'success' &&
       needs.test-windows.result == 'success' &&
       needs.build-linux.result == 'success'
-    runs-on: macos-latest
+    runs-on: macos-14
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -330,31 +330,84 @@ jobs:
           npm install
           cd ..
 
-      - name: Build macOS executable (universal2)
+      - name: Build macOS executable (arm64)
         run: |
           source .venv/bin/activate
-          python build_process/build_standalone.py --platform macos --macos-arch universal2 --output release_macos --clean
+          python build_process/build_standalone.py --platform macos --output release_macos --clean
         timeout-minutes: 15
 
-      - name: Verify fat binary (universal2)
-        run: |
-          lipo -info release_macos/dist/macos/IdleonWeb
-
-      - name: Create macOS archive
+      - name: Create macOS archive (arm64)
         run: |
           cd release_macos/dist/macos
-          tar -czf ../../../IdleonWeb-macos-universal2-v${{ needs.build-linux.outputs.version }}.tar.gz IdleonWeb
+          tar -czf ../../../IdleonWeb-macos-arm64-v${{ needs.build-linux.outputs.version }}.tar.gz IdleonWeb
           cd ../../..
-          echo "✅ macOS archive created"
+          echo "✅ macOS arm64 archive created"
 
-      - name: Upload macOS artifact
+      - name: Upload macOS arm64 artifact
         uses: actions/upload-artifact@v4
         with:
-          name: IdleonWeb-macos-universal2-v${{ needs.build-linux.outputs.version }}
-          path: IdleonWeb-macos-universal2-v${{ needs.build-linux.outputs.version }}.tar.gz
+          name: IdleonWeb-macos-arm64-v${{ needs.build-linux.outputs.version }}
+          path: IdleonWeb-macos-arm64-v${{ needs.build-linux.outputs.version }}.tar.gz
+
+  build-macos-x86_64:
+    needs: [check-commit, test-arch, test-ubuntu, test-windows, build-linux]
+    if: |
+      always() && 
+      needs.check-commit.outputs.should-release == 'true' &&
+      needs.test-arch.result == 'success' &&
+      needs.test-ubuntu.result == 'success' &&
+      needs.test-windows.result == 'success' &&
+      needs.build-linux.result == 'success'
+    runs-on: macos-13
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Python dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r build_process/build-requirements.txt
+
+      - name: Install Node.js dependencies
+        run: |
+          cd core
+          npm install
+          cd ..
+
+      - name: Build macOS executable (x86_64)
+        run: |
+          source .venv/bin/activate
+          python build_process/build_standalone.py --platform macos --output release_macos --clean
+        timeout-minutes: 15
+
+      - name: Create macOS archive (x86_64)
+        run: |
+          cd release_macos/dist/macos
+          tar -czf ../../../IdleonWeb-macos-x86_64-v${{ needs.build-linux.outputs.version }}.tar.gz IdleonWeb
+          cd ../../..
+          echo "✅ macOS x86_64 archive created"
+
+      - name: Upload macOS x86_64 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: IdleonWeb-macos-x86_64-v${{ needs.build-linux.outputs.version }}
+          path: IdleonWeb-macos-x86_64-v${{ needs.build-linux.outputs.version }}.tar.gz
 
   release:
-    needs: [build-linux, build-windows, build-macos]
+    needs: [build-linux, build-windows, build-macos-arm64, build-macos-x86_64]
     if: always() && needs.build-linux.result == 'success'
     runs-on: ubuntu-latest
     steps:
@@ -423,12 +476,18 @@ jobs:
             BUILD_STATUS+="- 🪟 **Windows**: ❌ Build failed"$'\n'
           fi
           
-          # Check macOS build
-          MACOS_FILE="IdleonWeb-macos-v${{ needs.build-linux.outputs.version }}.tar.gz"
-          if [[ "${{ needs.build-macos.result }}" == "success" ]] && [ -f "$MACOS_FILE" ]; then
-            BUILD_STATUS+="- 🍎 **macOS**: ✅ \`$MACOS_FILE\`"$'\n'
+          # Check macOS builds (arm64 and x86_64)
+          MACOS_ARM_FILE="IdleonWeb-macos-arm64-v${{ needs.build-linux.outputs.version }}.tar.gz"
+          MACOS_X64_FILE="IdleonWeb-macos-x86_64-v${{ needs.build-linux.outputs.version }}.tar.gz"
+          if [[ "${{ needs.build-macos-arm64.result }}" == "success" ]] && [ -f "$MACOS_ARM_FILE" ]; then
+            BUILD_STATUS+="- 🍎 **macOS (arm64)**: ✅ \`$MACOS_ARM_FILE\`"$'\n'
           else
-            BUILD_STATUS+="- 🍎 **macOS**: ❌ Build failed"$'\n'
+            BUILD_STATUS+="- 🍎 **macOS (arm64)**: ❌ Build failed"$'\n'
+          fi
+          if [[ "${{ needs.build-macos-x86_64.result }}" == "success" ]] && [ -f "$MACOS_X64_FILE" ]; then
+            BUILD_STATUS+="- 🍎 **macOS (x86_64)**: ✅ \`$MACOS_X64_FILE\`"$'\n'
+          else
+            BUILD_STATUS+="- 🍎 **macOS (x86_64)**: ❌ Build failed"$'\n'
           fi
           
           BUILD_STATUS+=""$'\n'
