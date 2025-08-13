@@ -34,7 +34,7 @@ jobs:
             executable-name: IdleonWeb.exe
           - os: macos-latest
             platform: macos
-            artifact-name: IdleonWeb-macos
+            artifact-name: IdleonWeb-macos-universal2
             executable-name: IdleonWeb
 
     steps:
@@ -71,11 +71,21 @@ jobs:
         pip install -r requirements.txt
         pip install -r build_process/build-requirements.txt
 
-    - name: Build standalone executable (Linux/macOS)
-      if: runner.os != 'Windows'
+    - name: Build standalone executable (Linux)
+      if: runner.os == 'Linux'
       run: |
         source .venv/bin/activate
-        python build_process/build_standalone.py --platform ${{ matrix.platform }} --output release_build
+        python build_process/build_standalone.py --platform linux --output release_build
+
+    - name: Build universal2 executable (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        source .venv/bin/activate
+        python build_process/build_standalone.py --platform macos --macos-arch universal2 --output release_build
+
+    - name: Verify fat binary (macOS)
+      if: runner.os == 'macOS'
+      run: lipo -info release_build/dist/macos/IdleonWeb
 
     - name: Build standalone executable (Windows)
       if: runner.os == 'Windows'
