@@ -330,24 +330,28 @@ jobs:
           npm install
           cd ..
 
-      - name: Build macOS executable
+      - name: Build macOS executable (universal2)
         run: |
           source .venv/bin/activate
-          python build_process/build_standalone.py --platform macos --output release_macos --clean
+          python build_process/build_standalone.py --platform macos --macos-arch universal2 --output release_macos --clean
         timeout-minutes: 15
+
+      - name: Verify fat binary (universal2)
+        run: |
+          lipo -info release_macos/dist/macos/IdleonWeb
 
       - name: Create macOS archive
         run: |
           cd release_macos/dist/macos
-          tar -czf ../../../IdleonWeb-macos-v${{ needs.build-linux.outputs.version }}.tar.gz IdleonWeb
+          tar -czf ../../../IdleonWeb-macos-universal2-v${{ needs.build-linux.outputs.version }}.tar.gz IdleonWeb
           cd ../../..
           echo "✅ macOS archive created"
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
-          name: IdleonWeb-macos-v${{ needs.build-linux.outputs.version }}
-          path: IdleonWeb-macos-v${{ needs.build-linux.outputs.version }}.tar.gz
+          name: IdleonWeb-macos-universal2-v${{ needs.build-linux.outputs.version }}
+          path: IdleonWeb-macos-universal2-v${{ needs.build-linux.outputs.version }}.tar.gz
 
   release:
     needs: [build-linux, build-windows, build-macos]
