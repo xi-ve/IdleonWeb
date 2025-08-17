@@ -181,6 +181,7 @@ python launch.py
 
 #### World 2
 - **Post Office Cheats** - Complete orders and manage upgrades
+- **Islands Cheats** - Manage Trash/Rando/Crystal/Seasalt/Shimmer/Fractal islands: currencies, upgrades, and unlocks
 
 #### World 3
 - **Workbench Cheats** - World 3 Workbench and Construction cheats. Includes free buildings, instant build, speed boosts, flag cheats, better cogs, multikill bonuses, sample bonuses, printer slots, construction mastery, death note ranking, shrine cheats, damage bonuses, and exp/drop bonuses
