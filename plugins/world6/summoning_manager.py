@@ -4,7 +4,7 @@ from plugin_system import PluginBase, js_export, ui_toggle, ui_search_with_resul
 class SummoningManagerPlugin(PluginBase):
     VERSION = "1.0.0"
     DESCRIPTION = "Manage World 6 Summoning upgrades: view status, set levels, max all, and reset."
-    PLUGIN_ORDER = 2
+    PLUGIN_ORDER = 1
     CATEGORY = "World 6"
 
     def __init__(self, config=None):

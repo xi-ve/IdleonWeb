@@ -5,7 +5,7 @@ from config_manager import config_manager
 class PackageTogglePlugin(PluginBase):
     VERSION = "1.0.2"
     DESCRIPTION = "Toggle bought packages / bundles"
-    PLUGIN_ORDER = 5
+    PLUGIN_ORDER = 7
     CATEGORY = "Unlocks"
 
     def __init__(self, config=None):

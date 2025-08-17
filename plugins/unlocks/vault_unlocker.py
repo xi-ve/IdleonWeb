@@ -4,7 +4,7 @@ from config_manager import config_manager
 class VaultUnlockerPlugin(PluginBase):
     VERSION = "1.0.1"
     DESCRIPTION = "Unlock and manage vault upgrades with category-based controls."
-    PLUGIN_ORDER = 1
+    PLUGIN_ORDER = 4
     CATEGORY = "Unlocks"
 
     def __init__(self, config=None):

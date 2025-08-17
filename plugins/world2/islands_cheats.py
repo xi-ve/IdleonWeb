@@ -4,7 +4,7 @@ from plugin_system import PluginBase, js_export, ui_toggle, ui_search_with_resul
 class IslandsCheatsPlugin(PluginBase):
     VERSION = "1.0.0"
     DESCRIPTION = "World 2 Islands cheats: Trash, Bottles, Shimmers, Rando, Gambling, unlock islands, and counters."
-    PLUGIN_ORDER = 2
+    PLUGIN_ORDER = 1
     CATEGORY = "World 2"
 
     def __init__(self, config=None):

@@ -4,7 +4,7 @@ from config_manager import config_manager
 class GrimoireUnlockerPlugin(PluginBase):
     VERSION = "1.0.0"
     DESCRIPTION = "Unlock and manage grimoire upgrades for Death Bringer class."
-    PLUGIN_ORDER = 2
+    PLUGIN_ORDER = 8
     CATEGORY = "Unlocks"
 
     def __init__(self, config=None):

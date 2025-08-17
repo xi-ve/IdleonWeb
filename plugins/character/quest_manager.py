@@ -4,7 +4,7 @@ from config_manager import config_manager
 class QuestManagerPlugin(PluginBase):
     VERSION = "1.0.0"
     DESCRIPTION = "Comprehensive quest management system to view, unlock, and manage all quests. Provides status overview, individual quest unlocking with autocomplete, and quest reset functionality. ⚠️ MODERATE RISK: Use with caution as quest manipulation can affect game progression."
-    PLUGIN_ORDER = 4
+    PLUGIN_ORDER = 6
     CATEGORY = "Character"
 
     def __init__(self, config=None):

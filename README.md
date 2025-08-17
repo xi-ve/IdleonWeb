@@ -26,13 +26,22 @@ A modern, user-friendly launcher and plugin system for enhancing Legends of Idle
 
 ## Features
 
-- **Easy-to-Use Web Interface** - Configure plugins and manage game enhancements through a modern web browser
-- **Plugin System** - Add new features by simply dropping plugin files into the `plugins/` folder
-- **Real-Time Updates** - See changes instantly as you configure plugins
-- **Cross-Platform** - Works on Windows, Linux, and macOS
-- **One-Click Setup** - Automated installation scripts for all platforms
-- **Plugin Categories** - Organized plugin management with categories like Character, QoL, Unlocks, and World-specific
-- **Folderized Plugins** - Support for organizing plugins in subdirectories for better organization
+### For players
+- **Point‑and‑click UI**: Configure everything from a clean web page. No commands or code needed.
+- **One‑click start**: Launch the game and inject automatically; no manual steps each time.
+- **Popular cheats built‑in**: Portals, cards, statues, islands, post office, anvil, stamps, summoning, and more.
+- **Clear categories**: Character, QoL, Unlocks, and World 1/2/3/6 collections for quick discovery.
+- **Live feedback**: Changes apply immediately; status panels show current values.
+- **Mobile friendly**: Works on phones and tablets.
+- **Cross‑platform**: Windows, Linux, macOS.
+
+### For developers
+- **Simple plugin API**: Write Python plugins with decorators for UI (`@ui_toggle`, `@ui_button`, etc.).
+- **Auto‑generated UI**: The web interface is built from your decorators—no frontend work required.
+- **JS export bridge**: Attach JavaScript snippets with `@js_export`; they run inside the game context.
+- **Live safety checks**: Built‑in Node.js syntax validation for exported JS before it’s sent to the game.
+- **Hot discovery**: New plugins are found automatically; organize by folders and categories.
+- **Structured config**: Centralized config manager with per‑plugin settings and persistence.
 
 ---
 

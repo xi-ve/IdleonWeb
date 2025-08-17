@@ -4,7 +4,7 @@ from config_manager import config_manager
 class SneakingItemsPlugin(PluginBase):
     VERSION = "1.0.1"
     DESCRIPTION = "Comprehensive item cheats for the sneaking game including hats, weapons, gloves, and charms."
-    PLUGIN_ORDER = 8
+    PLUGIN_ORDER = 3
     CATEGORY = "World 6"
 
     def __init__(self, config=None):

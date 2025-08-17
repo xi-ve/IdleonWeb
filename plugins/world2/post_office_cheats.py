@@ -5,7 +5,7 @@ from config_manager import config_manager
 class PostOfficeCheatsPlugin(PluginBase):
     VERSION = "1.0.2"
     DESCRIPTION = "Post Office cheats - complete orders and manage upgrades with detailed status"
-    PLUGIN_ORDER = 5
+    PLUGIN_ORDER = 2
     CATEGORY = "World 2"
 
     def __init__(self, config=None):

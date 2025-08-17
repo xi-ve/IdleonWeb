@@ -5,7 +5,7 @@ from config_manager import config_manager
 class SpawnItemPlugin(PluginBase):
     VERSION = "1.0.3"
     DESCRIPTION = "Spawn / List / Search items"
-    PLUGIN_ORDER = 6
+    PLUGIN_ORDER = 5
     CATEGORY = "Character"
 
     def __init__(self, config=None):

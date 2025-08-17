@@ -3,7 +3,7 @@ from plugin_system import PluginBase, js_export, ui_toggle
 class CandyUnlockPlugin(PluginBase):
     VERSION = "1.1.0"
     DESCRIPTION = "Allows the use of Time Candy anywhere, bypassing all map restrictions, dark places, and activity-specific blocks like Cooking/Laboratory."
-    PLUGIN_ORDER = 3
+    PLUGIN_ORDER = 1
     CATEGORY = "Unlocks"
 
     def __init__(self, config=None):

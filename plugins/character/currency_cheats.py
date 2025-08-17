@@ -4,7 +4,7 @@ from config_manager import config_manager
 class CurrencyCheatsPlugin(PluginBase):
     VERSION = "1.0.0"
     DESCRIPTION = "Comprehensive currency management for Idleon: gems, coins, tokens, and all other currencies with display, add, set, and max functions."
-    PLUGIN_ORDER = 5
+    PLUGIN_ORDER = 2
     CATEGORY = "Character"
 
     def __init__(self, config=None):

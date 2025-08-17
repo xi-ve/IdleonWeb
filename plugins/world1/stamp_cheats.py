@@ -5,7 +5,7 @@ import time
 class StampCheatsPlugin(PluginBase):
     VERSION = "1.0.0"
     DESCRIPTION = "⚠️ Unlock and manage stamp upgrades & bribes. Includes stamp viewing, leveling, unlocking, and bribe purchasing tools. Use with caution as stamps and bribes affect multiple game systems! ⚠️"
-    PLUGIN_ORDER = 3
+    PLUGIN_ORDER = 2
     CATEGORY = "World 1"
 
     def __init__(self, config=None):

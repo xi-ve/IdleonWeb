@@ -4,7 +4,7 @@ import time
 class CardCheatsPlugin(PluginBase):
     VERSION = "2.0.0"
     DESCRIPTION = "Comprehensive card system cheats: search, unlock, level management, stats viewer, and complete card collection tools."
-    PLUGIN_ORDER = 4
+    PLUGIN_ORDER = 3
     CATEGORY = "Unlocks"
 
     def __init__(self, config=None):

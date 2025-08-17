@@ -3,7 +3,7 @@ from plugin_system import PluginBase, js_export, ui_toggle, ui_search_with_resul
 class ClassUnlockPlugin(PluginBase):
     VERSION = "1.0.0"
     DESCRIPTION = "Set characters to any class, change characters classes, view class progression."
-    PLUGIN_ORDER = 4
+    PLUGIN_ORDER = 2
     CATEGORY = "Unlocks"
 
     def __init__(self, config=None):
