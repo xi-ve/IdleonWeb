@@ -304,22 +304,8 @@ def cmd_inject(args=None, plugin_manager=None):
     
     injector = PyInjector()
     try:
-        max_retries = 15
-        retry_delay = 0.2
-        for attempt in range(max_retries):
-            try:
-                console.print(f"[cyan]Attempting to connect to injector (attempt {attempt + 1}/{max_retries})...[/cyan]")
-                injector.connect()
-                console.print("[green]Injector connected successfully.[/green]")
-                break
-            except Exception as e:
-                if attempt < max_retries - 1:
-                    console.print(f"[yellow]Connection attempt {attempt + 1} failed: {e}[/yellow]")
-                    console.print(f"[cyan]Waiting {retry_delay} seconds before retry...[/cyan]")
-                    time.sleep(retry_delay)
-                    retry_delay *= 1.5
-                else:
-                    raise e
+        injector.connect()
+        console.print("[green]Injector connected successfully.[/green]")
         
         try:
             console.print("[cyan]Injecting fresh JS into browser...[/cyan]")
@@ -356,7 +342,7 @@ def cmd_inject(args=None, plugin_manager=None):
                     url_to_open = config_manager.get_webui_url_from_port()
                     console.print(f"[cyan]Opening Web UI at {url_to_open} in the target browser...[/cyan]")
                     import time
-                    time.sleep(0.5)
+                    time.sleep(1)
                     try:
                         injector.open_url_in_new_tab(url_to_open)
                         console.print("[green]Web UI opened in target browser.[/green]")
