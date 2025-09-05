@@ -23,7 +23,7 @@ pip install -r build_process/build-requirements.txt
 
 Required tools:
 - **Python 3.8+** with PyInstaller
-- **Node.js 22+** (for bundling core files)
+- **Node.js 22+ LTS** (for bundling core files with compatible OpenSSL)
 - **npm** (for installing core dependencies)
 
 ### Platform-Specific Requirements

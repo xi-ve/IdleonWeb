@@ -174,8 +174,37 @@ def bundle_core_files(temp_dir: Path) -> bool:
     if core_dest.exists():
         shutil.rmtree(core_dest)
     
-    print_status("Copying core files (including node_modules)...")
-    shutil.copytree(core_src, core_dest, ignore=shutil.ignore_patterns('*.log', '.npm', '__pycache__'))
+    print_status("Copying core files...")
+    shutil.copytree(core_src, core_dest, ignore=shutil.ignore_patterns('*.log', '.npm', '__pycache__', 'node_modules'))
+    
+    # Reinstall Node.js dependencies with current Node.js version to ensure OpenSSL compatibility
+    print_status("Installing Node.js dependencies with current Node.js version...")
+    try:
+        # Get current Node.js version for logging
+        node_version_result = subprocess.run(["node", "--version"], capture_output=True, text=True, check=True)
+        node_version = node_version_result.stdout.strip()
+        print_status(f"Using Node.js {node_version} for dependency installation")
+        
+        # Install dependencies in the bundled core directory
+        npm_command = "npm.cmd" if platform.system().lower() == "windows" else "npm"
+        install_result = subprocess.run([npm_command, "install"], cwd=core_dest, check=True, 
+                                       capture_output=True, text=True)
+        print_success("Node.js dependencies installed with current Node.js version")
+        
+        # Log OpenSSL version used by Node.js
+        openssl_check = subprocess.run(["node", "-e", "console.log(process.versions.openssl)"], 
+                                      capture_output=True, text=True, check=True)
+        openssl_version = openssl_check.stdout.strip()
+        print_status(f"Node.js bundled OpenSSL version: {openssl_version}")
+        
+    except subprocess.CalledProcessError as e:
+        print_error(f"Failed to install Node.js dependencies: {e}")
+        print_error(f"stdout: {e.stdout}")
+        print_error(f"stderr: {e.stderr}")
+        return False
+    except FileNotFoundError:
+        print_error("npm not found. Please ensure Node.js and npm are installed.")
+        return False
     
     print_status("Core files bundled with Node.js dependencies")
     
