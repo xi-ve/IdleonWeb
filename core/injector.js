@@ -69,20 +69,57 @@ class BrowserLauncher {
         this.userDataDir = path.join(process.cwd(), 'idleon-chromium-profile');
     }
 
+    _doesPathMatchBrowser(path, browserName) {
+        const pathLower = path.toLowerCase();
+        const fileName = path.basename(path).toLowerCase();
+        
+        switch (browserName) {
+            case 'edge':
+                return fileName.includes('msedge') || pathLower.includes('microsoft/edge');
+            case 'chrome':
+                return fileName.includes('chrome') && !fileName.includes('chromium');
+            case 'chromium':
+                return fileName.includes('chromium');
+            case 'brave':
+                return fileName.includes('brave');
+            case 'operagx':
+            case 'opera':
+                return fileName.includes('opera');
+            default:
+                return pathLower.includes(browserName);
+        }
+    }
+
     findChromiumPath() {
-        // Check if a specific browser path is configured
-        if (this.config.browser && this.config.browser.path && fs.existsSync(this.config.browser.path)) {
-            console.log(`[Injector] Using configured browser path: ${this.config.browser.path}`);
-            return this.config.browser.path;
+        const browserConfig = this.config.browser;
+        
+        if (browserConfig?.path && fs.existsSync(browserConfig.path)) {
+            const browserName = browserConfig.name?.toLowerCase();
+            
+            if (!browserName || browserName === 'auto') {
+                console.log(`[Injector] Using configured browser path: ${browserConfig.path}`);
+                return browserConfig.path;
+            }
+            
+            if (this._doesPathMatchBrowser(browserConfig.path, browserName)) {
+                console.log(`[Injector] Using configured browser path: ${browserConfig.path}`);
+                return browserConfig.path;
+            }
+            
+            const knownBrowsers = ['edge', 'chrome', 'chromium', 'brave', 'operagx', 'opera'];
+            if (!knownBrowsers.includes(browserName)) {
+                console.log(`[Injector] Using custom browser path for unknown browser type: ${browserConfig.path}`);
+                return browserConfig.path;
+            }
+            
+            console.log(`[Injector] Configured path does not match browser name ${browserName}, falling back to name-based detection`);
         }
         
-        // Check if a specific browser name is configured
-        if (this.config.browser && this.config.browser.name && this.config.browser.name !== 'auto') {
-            const browserName = this.config.browser.name.toLowerCase();
-            const filteredPaths = this.possibleChromiumPaths.filter(p => {
-                const pathLower = p.toLowerCase();
-                return pathLower.includes(browserName);
-            });
+        if (browserConfig?.name && browserConfig.name !== 'auto') {
+            const browserName = browserConfig.name.toLowerCase();
+            const filteredPaths = this.possibleChromiumPaths.filter(p => 
+                this._doesPathMatchBrowser(p, browserName)
+            );
             
             for (const p of filteredPaths) {
                 if (fs.existsSync(p)) {
@@ -92,13 +129,13 @@ class BrowserLauncher {
             }
         }
         
-        // Fall back to auto-detection
         for (const p of this.possibleChromiumPaths) {
             if (fs.existsSync(p)) {
                 console.log(`[Injector] Auto-detected browser: ${p}`);
                 return p;
             }
         }
+        
         throw new Error("Could not find Chromium/Chrome executable. Please install Chromium or Google Chrome.");
     }
 
@@ -170,7 +207,7 @@ class BrowserLauncher {
                     if (Date.now() - start > 10000) {
                         reject(new Error('CDP not available for browser close'));
                     } else {
-                        setTimeout(check, 500);
+                        setTimeout(check, 200);
                     }
                 };
                 check();

@@ -305,6 +305,9 @@ def cmd_inject(args=None, plugin_manager=None):
     injector = PyInjector()
     try:
         injector.connect()
+
+        time.sleep(0.5)
+
         console.print("[green]Injector connected successfully.[/green]")
         
         try:
@@ -317,7 +320,7 @@ def cmd_inject(args=None, plugin_manager=None):
         
         asyncio.run(plugin_manager.initialize_all(injector, config_manager.get_path('plugin_configs', {})))
         console.print("[green]Plugins initialized in injector session.[/green]")
-        
+
         if update_loop_task is None or not update_loop_task.is_alive():
             update_loop_stop.clear()
             update_loop_task = threading.Thread(
