@@ -96,6 +96,8 @@ class IdleonWebGUI:
         self.webui_status = "stopped"
         self.plugin_count = 0
         self.disconnect_popup_shown = False
+        self.login_reminder_popup_shown = False
+        self.login_reminder_timer = None
         
         self.injection_in_progress = False
         
@@ -650,10 +652,13 @@ class IdleonWebGUI:
                     return
                     
                 self.injection_in_progress = True
+                self.login_reminder_popup_shown = False
                 self.update_button_states()
                 
                 self.log_message("Starting game injection...")
                 self.update_status_indicator(self.injection_status_indicator, "loading")
+                
+                self.login_reminder_timer = self.root.after(30000, self.show_login_reminder_popup)
                 
                 from main import cmd_inject
                 cmd_inject(plugin_manager=self.plugin_manager)
@@ -774,7 +779,11 @@ class IdleonWebGUI:
             self.log_message("Loading plugins...")
             plugin_names = config_manager.get_path('plugins', [])
             plugin_configs = config_manager.get_path('plugin_configs', {})
-            plugins_dir = Path(__file__).parent / 'plugins'
+            
+            if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+                plugins_dir = Path(sys._MEIPASS) / 'plugins'
+            else:
+                plugins_dir = Path(__file__).parent / 'plugins'
             
             self.plugin_manager = PluginManager(plugin_names, plugin_dir=str(plugins_dir))
             asyncio.run(self.plugin_manager.load_plugins(
@@ -782,12 +791,105 @@ class IdleonWebGUI:
                 plugin_configs=plugin_configs, 
                 global_debug=config_manager.get_path('debug', False)
             ))
+            
+            self.check_and_auto_enable_plugins()
+            
             self.log_message(f"Loaded {len(self.plugin_manager.plugins)} plugins", "success")
             self.refresh_plugin_list()
             
             self.start_webui_automatically()
         except Exception as e:
             self.log_message(f"Failed to load plugins: {e}", "error")
+    
+    def check_and_auto_enable_plugins(self):
+        try:
+            configured_plugins = set(config_manager.get_path('plugins', []))
+            
+            plugin_files = []
+            
+            if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+                plugins_dir = Path(sys._MEIPASS) / 'plugins'
+            else:
+                plugins_dir = Path(__file__).parent / 'plugins'
+            
+            for plugin_file in plugins_dir.glob("*.py"):
+                if plugin_file.name != "__init__.py" and plugin_file.name != "example_plugin.py":
+                    plugin_name = plugin_file.stem
+                    plugin_files.append(plugin_name)
+            
+            for subdir in plugins_dir.iterdir():
+                if subdir.is_dir() and not subdir.name.startswith('.'):
+                    for plugin_file in subdir.glob("*.py"):
+                        if plugin_file.name != "__init__.py" and plugin_file.name != "example_plugin.py":
+                            plugin_name = f"{subdir.name}.{plugin_file.stem}"
+                            plugin_files.append(plugin_name)
+            
+            unused_plugins = [name for name in plugin_files if name not in configured_plugins]
+            
+            if unused_plugins:
+                self.log_message(f"Found {len(unused_plugins)} unused plugins: {', '.join(unused_plugins)}", "warning")
+                
+                current_plugins = config_manager.get_path('plugins', [])
+                for plugin_name in unused_plugins:
+                    if plugin_name not in current_plugins:
+                        current_plugins.append(plugin_name)
+                        config_manager.add_plugin(plugin_name, {})
+                config_manager.set_plugins_list(current_plugins)
+                self.log_message(f"Auto-enabled all unused plugins in GUI mode: {', '.join(unused_plugins)}", "success")
+                
+                self.log_message("Reloading plugin manager with new plugins...", "info")
+                self.plugin_manager.plugin_names = current_plugins
+                try:
+                    asyncio.run(self.plugin_manager.load_plugins(
+                        None, 
+                        plugin_configs=config_manager.get_all_plugin_configs(), 
+                        global_debug=config_manager.get_path('debug', False)
+                    ))
+                    self.log_message(f"Successfully loaded {len(self.plugin_manager.plugins)} plugins (including newly enabled ones)", "success")
+                except Exception as e:
+                    self.log_message(f"Error loading new plugins: {e}", "error")
+        except Exception as e:
+            self.log_message(f"Error checking unused plugins: {e}", "error")
+    
+    def show_login_reminder_popup(self):
+        if self.login_reminder_popup_shown or not self.injection_in_progress:
+            return
+            
+        self.login_reminder_popup_shown = True
+        
+        popup = ctk.CTkToplevel(self.root)
+        popup.title("Login Required")
+        popup.geometry("400x200")
+        popup.resizable(False, False)
+        
+        popup.attributes('-type', 'dialog')
+        popup.attributes('-topmost', True)
+        
+        main_window_x = self.root.winfo_x()
+        main_window_y = self.root.winfo_y()
+        main_window_width = self.root.winfo_width()
+        main_window_height = self.root.winfo_height()
+        
+        popup_x = main_window_x + (main_window_width - 400) // 2
+        popup_y = main_window_y + (main_window_height - 200) // 2
+        
+        popup.geometry(f"400x200+{popup_x}+{popup_y}")
+        
+        main = ctk.CTkFrame(popup)
+        main.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        title = ctk.CTkLabel(main, text="Login Required", font=ctk.CTkFont(size=18, weight="bold"))
+        title.pack(pady=(0, 10))
+        
+        message = ctk.CTkLabel(main, text="Please log into the game in your browser\nto complete the injection process.\n\nThe injection is waiting and will continue\nautomatically once you are logged in.", 
+                              font=ctk.CTkFont(size=14), justify="center")
+        message.pack(pady=(0, 20))
+        
+        close_button = ctk.CTkButton(main, text="Got it", command=popup.destroy,
+                                   height=36, corner_radius=8, width=100)
+        close_button.pack()
+        
+        popup.focus()
     
     def start_webui_automatically(self):
         def start():

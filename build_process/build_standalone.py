@@ -35,11 +35,11 @@ from typing import List, Dict, Any
 BUILD_CONFIG = {
     "hidden_imports": [
         "aiohttp", "aiohttp_jinja2", "jinja2", "rich", "prompt_toolkit", "pychrome",
-        "customtkinter", "darkdetect",
+        "customtkinter", "darkdetect", "gui_main",
         "pathlib", "json", "asyncio", "logging", "importlib", "inspect"
     ],
     "exclude_modules": [
-        "tkinter", "matplotlib", "numpy", "scipy", "pandas", "PIL",
+        "matplotlib", "numpy", "scipy", "pandas", "PIL",
         "PyQt5", "PyQt6", "PySide2", "PySide6", "jupyter", "IPython", "notebook"
     ]
 }
@@ -187,6 +187,7 @@ def copy_essential_files(temp_dir: Path):
         "config_manager.py",
         "plugin_system.py", 
         "main.py",
+        "gui_main.py",
         "launch.py",
         "requirements.txt",
         "VERSION",
@@ -452,7 +453,6 @@ def get_pyinstaller_args(platform: str, temp_dir: Path, launcher_script: Path, o
     if platform == "linux":
         args.extend([
             "--strip",
-            "--exclude-module=tkinter",
             "--exclude-module=matplotlib",
             "--exclude-module=PIL",
         ])

@@ -91,9 +91,18 @@ from config_manager import config_manager
 from webui.web_api_integration import PluginWebAPI
 
 NODE_PATH = 'node'
-CORE_DIR = Path(__file__).parent / 'core'
+
+if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+    CORE_DIR = Path(sys._MEIPASS) / 'core'
+else:
+    CORE_DIR = Path(__file__).parent / 'core'
+
 INJECTOR_PATH = CORE_DIR / 'injector.js'
-PLUGINS_DIR = Path(__file__).parent / 'plugins'
+
+if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+    PLUGINS_DIR = Path(sys._MEIPASS) / 'plugins'
+else:
+    PLUGINS_DIR = Path(__file__).parent / 'plugins'
 
 console = Console()
 injector = None
@@ -709,59 +718,53 @@ def check_unused_plugins(plugin_manager, startup_msgs):
         if unused_plugins:
             startup_msgs.append(f"[yellow]Found {len(unused_plugins)} unused plugins: {', '.join(unused_plugins)}[/yellow]")
             
-            console.print(f"[cyan]Found {len(unused_plugins)} unused plugins:[/cyan]")
-            for plugin_name in unused_plugins:
-                console.print(f"  [yellow]• {plugin_name}[/yellow]")
+            is_standalone = getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
+            gui_enabled = config_manager.get_gui_enabled()
             
-            console.print(f"\n[cyan]Would you like to enable any of these plugins?[/cyan]")
-            console.print(f"[cyan]Type 'all' to enable all, 'none' to skip, or enter plugin names separated by spaces:[/cyan]")
-            
-            try:
-                user_input = input("> ").strip().lower()
+            if is_standalone or gui_enabled:
+                current_plugins = config_manager.get_path('plugins', [])
+                for plugin_name in unused_plugins:
+                    if plugin_name not in current_plugins:
+                        current_plugins.append(plugin_name)
+                        config_manager.add_plugin(plugin_name, {})
+                config_manager.set_plugins_list(current_plugins)
+                mode_text = "standalone mode" if is_standalone else "GUI mode"
+                startup_msgs.append(f"[green]Auto-enabled all unused plugins in {mode_text}: {', '.join(unused_plugins)}[/green]")
+                console.print(f"[green]Auto-enabled all unused plugins in {mode_text}: {', '.join(unused_plugins)}[/green]")
                 
-                if user_input == 'all':
-                    current_plugins = config_manager.get_path('plugins', [])
-                    for plugin_name in unused_plugins:
-                        if plugin_name not in current_plugins:
-                            current_plugins.append(plugin_name)
-                            config_manager.add_plugin(plugin_name, {})
-                    config_manager.set_plugins_list(current_plugins)
-                    startup_msgs.append(f"[green]Enabled all unused plugins: {', '.join(unused_plugins)}[/green]")
-                    console.print(f"[green]Enabled all unused plugins![/green]")
-                    
-                    console.print(f"[cyan]Reloading plugin manager with new plugins...[/cyan]")
-                    plugin_manager.plugin_names = current_plugins
-                    try:
-                        asyncio.run(plugin_manager.load_plugins(
-                            None, 
-                            plugin_configs=config_manager.get_all_plugin_configs(), 
-                            global_debug=config_manager.get_path('debug', False)
-                        ))
-                        startup_msgs.append(f"[green]Successfully loaded {len(plugin_manager.plugins)} plugins (including newly enabled ones)[/green]")
-                        console.print(f"[green]Successfully loaded {len(plugin_manager.plugins)} plugins![/green]")
-                    except Exception as e:
-                        startup_msgs.append(f"[red]Error loading new plugins: {e}[/red]")
-                        console.print(f"[red]Error loading new plugins: {e}[/red]")
-                    
-                elif user_input == 'none':
-                    startup_msgs.append(f"[yellow]Skipped enabling unused plugins[/yellow]")
-                    console.print(f"[yellow]Skipped enabling unused plugins[/yellow]")
-                    
-                elif user_input:
-                    selected_plugins = user_input.split()
-                    current_plugins = config_manager.get_path('plugins', [])
-                    enabled_plugins = []
-                    
-                    for plugin_name in selected_plugins:
-                        if plugin_name in unused_plugins and plugin_name not in current_plugins:
-                            current_plugins.append(plugin_name)
-                            config_manager.add_plugin(plugin_name, {})
-                            enabled_plugins.append(plugin_name)
-                    
-                    if enabled_plugins:
+                console.print(f"[cyan]Reloading plugin manager with new plugins...[/cyan]")
+                plugin_manager.plugin_names = current_plugins
+                try:
+                    asyncio.run(plugin_manager.load_plugins(
+                        None, 
+                        plugin_configs=config_manager.get_all_plugin_configs(), 
+                        global_debug=config_manager.get_path('debug', False)
+                    ))
+                    startup_msgs.append(f"[green]Successfully loaded {len(plugin_manager.plugins)} plugins (including newly enabled ones)[/green]")
+                    console.print(f"[green]Successfully loaded {len(plugin_manager.plugins)} plugins![/green]")
+                except Exception as e:
+                    startup_msgs.append(f"[red]Error loading new plugins: {e}[/red]")
+                    console.print(f"[red]Error loading new plugins: {e}[/red]")
+            else:
+                console.print(f"[cyan]Found {len(unused_plugins)} unused plugins:[/cyan]")
+                for plugin_name in unused_plugins:
+                    console.print(f"  [yellow]• {plugin_name}[/yellow]")
+                
+                console.print(f"\n[cyan]Would you like to enable any of these plugins?[/cyan]")
+                console.print(f"[cyan]Type 'all' to enable all, 'none' to skip, or enter plugin names separated by spaces:[/cyan]")
+                
+                try:
+                    user_input = input("> ").strip().lower()
+                
+                    if user_input == 'all':
+                        current_plugins = config_manager.get_path('plugins', [])
+                        for plugin_name in unused_plugins:
+                            if plugin_name not in current_plugins:
+                                current_plugins.append(plugin_name)
+                                config_manager.add_plugin(plugin_name, {})
                         config_manager.set_plugins_list(current_plugins)
-                        startup_msgs.append(f"[green]Enabled plugins: {', '.join(enabled_plugins)}[/green]")
-                        console.print(f"[green]Enabled plugins: {', '.join(enabled_plugins)}[/green]")
+                        startup_msgs.append(f"[green]Enabled all unused plugins: {', '.join(unused_plugins)}[/green]")
+                        console.print(f"[green]Enabled all unused plugins![/green]")
                         
                         console.print(f"[cyan]Reloading plugin manager with new plugins...[/cyan]")
                         plugin_manager.plugin_names = current_plugins
@@ -776,13 +779,47 @@ def check_unused_plugins(plugin_manager, startup_msgs):
                         except Exception as e:
                             startup_msgs.append(f"[red]Error loading new plugins: {e}[/red]")
                             console.print(f"[red]Error loading new plugins: {e}[/red]")
-                    else:
-                        startup_msgs.append(f"[yellow]No valid plugins selected[/yellow]")
-                        console.print(f"[yellow]No valid plugins selected[/yellow]")
                         
-            except (KeyboardInterrupt, EOFError):
-                startup_msgs.append(f"[yellow]Plugin selection cancelled[/yellow]")
-                console.print(f"[yellow]Plugin selection cancelled[/yellow]")
+                    elif user_input == 'none':
+                        startup_msgs.append(f"[yellow]Skipped enabling unused plugins[/yellow]")
+                        console.print(f"[yellow]Skipped enabling unused plugins[/yellow]")
+                    
+                    elif user_input:
+                        selected_plugins = user_input.split()
+                        current_plugins = config_manager.get_path('plugins', [])
+                        enabled_plugins = []
+                        
+                        for plugin_name in selected_plugins:
+                            if plugin_name in unused_plugins and plugin_name not in current_plugins:
+                                current_plugins.append(plugin_name)
+                                config_manager.add_plugin(plugin_name, {})
+                                enabled_plugins.append(plugin_name)
+                        
+                        if enabled_plugins:
+                            config_manager.set_plugins_list(current_plugins)
+                            startup_msgs.append(f"[green]Enabled plugins: {', '.join(enabled_plugins)}[/green]")
+                            console.print(f"[green]Enabled plugins: {', '.join(enabled_plugins)}[/green]")
+                            
+                            console.print(f"[cyan]Reloading plugin manager with new plugins...[/cyan]")
+                            plugin_manager.plugin_names = current_plugins
+                            try:
+                                asyncio.run(plugin_manager.load_plugins(
+                                    None, 
+                                    plugin_configs=config_manager.get_all_plugin_configs(), 
+                                    global_debug=config_manager.get_path('debug', False)
+                                ))
+                                startup_msgs.append(f"[green]Successfully loaded {len(plugin_manager.plugins)} plugins (including newly enabled ones)[/green]")
+                                console.print(f"[green]Successfully loaded {len(plugin_manager.plugins)} plugins![/green]")
+                            except Exception as e:
+                                startup_msgs.append(f"[red]Error loading new plugins: {e}[/red]")
+                                console.print(f"[red]Error loading new plugins: {e}[/red]")
+                        else:
+                            startup_msgs.append(f"[yellow]No valid plugins selected[/yellow]")
+                            console.print(f"[yellow]No valid plugins selected[/yellow]")
+                            
+                except (KeyboardInterrupt, EOFError):
+                    startup_msgs.append(f"[yellow]Plugin selection cancelled[/yellow]")
+                    console.print(f"[yellow]Plugin selection cancelled[/yellow]")
                 
     except Exception as e:
         startup_msgs.append(f"[red]Error checking unused plugins: {e}[/red]")
