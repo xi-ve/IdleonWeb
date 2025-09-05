@@ -15,6 +15,20 @@ class ConfigManager {
         this.idleonUrl = this.injectorConfig.idleon_url || 'https://www.legendsofidleon.com/ytGl5oc/';
         this.timeout = this.injectorConfig.timeout || 120_000;
         this.profileInitTimeout = this.injectorConfig.profile_init_timeout || 5000;
+        this.debug = this.config.debug || false;
+        this.debugLogPath = path.join(process.cwd(), 'injector-debug.log');
+    }
+
+    debugLog(message) {
+        if (this.debug) {
+            const timestamp = new Date().toISOString();
+            const logMessage = `[${timestamp}] ${message}\n`;
+            try {
+                fs.appendFileSync(this.debugLogPath, logMessage);
+            } catch (e) {
+                console.log(`[Injector] DEBUG: ${message}`);
+            }
+        }
     }
 
     loadConfig() {
@@ -72,23 +86,27 @@ class BrowserLauncher {
 
     findChromiumPath() {
         const browserConfig = this.config.browser;
-        console.log(`[Injector] Browser config:`, JSON.stringify(browserConfig, null, 2));
+        this.config.debugLog(`[Injector] DEBUG: Browser config: ${JSON.stringify(browserConfig, null, 2)}`);
         
         if (browserConfig?.path && fs.existsSync(browserConfig.path)) {
             console.log(`[Injector] Using configured browser path: ${browserConfig.path}`);
+            this.config.debugLog(`[Injector] DEBUG: Path exists and will be used: ${browserConfig.path}`);
             return browserConfig.path;
         }
         
         if (browserConfig?.name && browserConfig.name !== 'auto') {
             const browserName = browserConfig.name.toLowerCase();
             console.log(`[Injector] Browser name set to ${browserName}, but no valid path found. Please set browser path manually.`);
+            this.config.debugLog(`[Injector] DEBUG: Browser name '${browserName}' configured but path '${browserConfig?.path}' not found or invalid`);
             throw new Error(`Browser name '${browserName}' is configured but no valid path is set. Please configure the browser path manually.`);
         }
         
         console.log(`[Injector] Auto-detecting browser...`);
+        this.config.debugLog(`[Injector] DEBUG: Checking ${this.possibleChromiumPaths.length} possible browser paths`);
         for (const p of this.possibleChromiumPaths) {
             if (fs.existsSync(p)) {
                 console.log(`[Injector] Auto-detected browser: ${p}`);
+                this.config.debugLog(`[Injector] DEBUG: First available browser found at: ${p}`);
                 return p;
             }
         }
@@ -119,6 +137,7 @@ class BrowserLauncher {
         console.log('[Injector] Fresh Chrome profile detected. Initializing profile for login...');
         
         const chromiumCmd = this.findChromiumPath();
+        this.config.debugLog(`[Injector] DEBUG: Profile initialization using browser: ${chromiumCmd}`);
         const args = [
             `--remote-debugging-port=${this.config.cdpPort}`,
             `--user-data-dir=${this.userDataDir}`,
@@ -221,6 +240,7 @@ class BrowserLauncher {
 
     launch() {
         const chromiumCmd = this.findChromiumPath();
+        this.config.debugLog(`[Injector] DEBUG: Main launch using browser: ${chromiumCmd}`);
         const args = [
             `--remote-debugging-port=${this.config.cdpPort}`,
             `--user-data-dir=${this.userDataDir}`,
@@ -235,6 +255,7 @@ class BrowserLauncher {
         
         args.push(this.config.idleonUrl);
         console.log(`[Injector] Launching Chromium with Idleon at ${this.config.idleonUrl} ...`);
+        this.config.debugLog(`[Injector] DEBUG: Launch command: ${chromiumCmd} ${args.join(' ')}`);
         spawn(chromiumCmd, args, { detached: true, stdio: 'inherit' });
     }
 }
