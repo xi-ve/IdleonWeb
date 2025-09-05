@@ -176,7 +176,15 @@ def bundle_openssl_libraries(temp_dir: Path) -> bool:
     
     # Find OpenSSL libraries that Node.js depends on
     try:
-        node_deps = subprocess.run(["ldd", "/usr/bin/node"], capture_output=True, text=True, check=True)
+        # Find Node.js executable path
+        node_path_result = subprocess.run(["which", "node"], capture_output=True, text=True, check=True)
+        node_path = node_path_result.stdout.strip()
+        
+        if not node_path:
+            raise FileNotFoundError("Node.js executable not found")
+        
+        print_status(f"Using Node.js at: {node_path}")
+        node_deps = subprocess.run(["ldd", node_path], capture_output=True, text=True, check=True)
         ssl_libs = []
         crypto_libs = []
         
@@ -217,6 +225,48 @@ def bundle_openssl_libraries(temp_dir: Path) -> bool:
             
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
         print_warning(f"Could not detect OpenSSL libraries: {e}")
+        
+        # Try common Node.js locations as fallback
+        common_paths = ["/usr/bin/node", "/usr/local/bin/node", "/opt/nodejs/bin/node"]
+        for path in common_paths:
+            if os.path.exists(path):
+                try:
+                    print_status(f"Trying fallback Node.js path: {path}")
+                    node_deps = subprocess.run(["ldd", path], capture_output=True, text=True, check=True)
+                    print_success(f"Found Node.js dependencies using fallback path: {path}")
+                    # Process the dependencies (same logic as above)
+                    ssl_libs = []
+                    crypto_libs = []
+                    for line in node_deps.stdout.split('\n'):
+                        if 'libssl.so' in line:
+                            ssl_path = line.split('=>')[1].strip().split()[0]
+                            ssl_libs.append(ssl_path)
+                        elif 'libcrypto.so' in line:
+                            crypto_path = line.split('=>')[1].strip().split()[0]
+                            crypto_libs.append(crypto_path)
+                    
+                    # Copy libraries if found
+                    for ssl_lib in ssl_libs:
+                        if os.path.exists(ssl_lib):
+                            lib_name = os.path.basename(ssl_lib)
+                            dest_path = openssl_libs_dir / lib_name
+                            shutil.copy2(ssl_lib, dest_path)
+                            print_status(f"Bundled SSL library: {lib_name}")
+                    
+                    for crypto_lib in crypto_libs:
+                        if os.path.exists(crypto_lib):
+                            lib_name = os.path.basename(crypto_lib)
+                            dest_path = openssl_libs_dir / lib_name
+                            shutil.copy2(crypto_lib, dest_path)
+                            print_status(f"Bundled crypto library: {lib_name}")
+                    
+                    if ssl_libs or crypto_libs:
+                        print_success("OpenSSL libraries bundled successfully using fallback")
+                        return True
+                    break
+                except (subprocess.CalledProcessError, FileNotFoundError):
+                    continue
+        
         print_warning("Continuing without bundled OpenSSL libraries")
         return True
 
