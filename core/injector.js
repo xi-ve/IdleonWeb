@@ -255,6 +255,12 @@ class CDPManager {
     async waitForCDP(timeout = null) {
         const actualTimeout = timeout || this.config.timeout || 120_000;
         
+        // Add extra delay for macOS as Chrome takes longer to initialize
+        if (process.platform === 'darwin') {
+            console.log('[Injector] macOS detected - adding extra delay for Chrome initialization...');
+            await new Promise(resolve => setTimeout(resolve, 3000));
+        }
+        
         return new Promise((resolve, reject) => {
             const start = Date.now();
             const check = () => {
