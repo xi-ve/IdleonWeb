@@ -290,7 +290,7 @@ class CDPManager {
                     reject(new Error(`Maximum attempts (${maxAttempts}) reached waiting for Chrome initialization`));
                 } else {
                     // Exponential backoff: start with 100ms, max 2000ms
-                    const baseDelay = 100;
+                    const baseDelay = 350;
                     const maxDelay = 2000;
                     const delay = Math.min(baseDelay * Math.pow(1.5, attempt), maxDelay);
                     
