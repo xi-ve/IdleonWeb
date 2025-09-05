@@ -170,7 +170,7 @@ class BrowserLauncher {
                     if (Date.now() - start > 10000) {
                         reject(new Error('CDP not available for browser close'));
                     } else {
-                        setTimeout(check, 200);
+                        setTimeout(check, 500);
                     }
                 };
                 check();
