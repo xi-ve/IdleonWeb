@@ -110,11 +110,43 @@ def check_dependencies():
         print_error("PyInstaller not found. Install with: pip install pyinstaller")
         return False
     
+    # Check Node.js requirements
     try:
         result = subprocess.run(["node", "--version"], capture_output=True, text=True, check=True)
-        print_success(f"Node.js {result.stdout.strip()} found")
+        node_version = result.stdout.strip()
+        print_success(f"Node.js {node_version} found")
+        
+        # Check if version is compatible (should be v20+)
+        version_number = node_version.replace('v', '').split('.')[0]
+        if int(version_number) >= 20:
+            print_success("Node.js version is compatible (v20+)")
+        else:
+            print_warning(f"Node.js version {node_version} may not be compatible. Recommended: v20+")
+            
     except (subprocess.CalledProcessError, FileNotFoundError):
-        print_error("Node.js not found. Please install Node.js")
+        print_error("Node.js not found!")
+        print_status("Installation instructions:")
+        
+        current_platform = platform.system().lower()
+        if current_platform == 'linux':
+            print_status("For Arch Linux:")
+            print_status("  # Install nvm (Node Version Manager)")
+            print_status("  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash")
+            print_status("  source ~/.bashrc")
+            print_status("  nvm install 20")
+            print_status("  nvm use 20")
+            print_status("  nvm alias default 20")
+            print_status("")
+            print_status("For other Linux distributions:")
+            print_status("  # Install Node.js v20 specifically")
+            print_status("  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -")
+            print_status("  sudo apt-get install -y nodejs")
+            print_status("")
+            print_status("For macOS:")
+            print_status("  brew install node@20")
+            print_status("")
+            print_status("For Windows:")
+            print_status("  Download Node.js v20 from https://nodejs.org/")
         return False
     
     npm_command = "npm.cmd" if platform.system().lower() == "windows" else "npm"
@@ -161,115 +193,6 @@ def prepare_build_environment(build_dir: Path) -> Path:
     
     return temp_dir
 
-def bundle_openssl_libraries(temp_dir: Path) -> bool:
-    """Bundle OpenSSL libraries required by Node.js (Linux only)"""
-    current_platform = platform.system().lower()
-    
-    if current_platform != 'linux':
-        print_status(f"OpenSSL bundling skipped on {current_platform} (Linux only)")
-        return True
-    
-    print_status("Bundling OpenSSL libraries for Linux...")
-    
-    openssl_libs_dir = temp_dir / "openssl_libs"
-    openssl_libs_dir.mkdir(exist_ok=True)
-    
-    # Find OpenSSL libraries that Node.js depends on
-    try:
-        # Find Node.js executable path
-        node_path_result = subprocess.run(["which", "node"], capture_output=True, text=True, check=True)
-        node_path = node_path_result.stdout.strip()
-        
-        if not node_path:
-            raise FileNotFoundError("Node.js executable not found")
-        
-        print_status(f"Using Node.js at: {node_path}")
-        node_deps = subprocess.run(["ldd", node_path], capture_output=True, text=True, check=True)
-        ssl_libs = []
-        crypto_libs = []
-        
-        for line in node_deps.stdout.split('\n'):
-            if 'libssl.so' in line:
-                ssl_path = line.split('=>')[1].strip().split()[0]
-                ssl_libs.append(ssl_path)
-            elif 'libcrypto.so' in line:
-                crypto_path = line.split('=>')[1].strip().split()[0]
-                crypto_libs.append(crypto_path)
-        
-        # Copy SSL libraries
-        for ssl_lib in ssl_libs:
-            if os.path.exists(ssl_lib):
-                lib_name = os.path.basename(ssl_lib)
-                dest_path = openssl_libs_dir / lib_name
-                shutil.copy2(ssl_lib, dest_path)
-                print_status(f"Bundled SSL library: {lib_name}")
-            else:
-                print_warning(f"SSL library not found: {ssl_lib}")
-        
-        # Copy crypto libraries
-        for crypto_lib in crypto_libs:
-            if os.path.exists(crypto_lib):
-                lib_name = os.path.basename(crypto_lib)
-                dest_path = openssl_libs_dir / lib_name
-                shutil.copy2(crypto_lib, dest_path)
-                print_status(f"Bundled crypto library: {lib_name}")
-            else:
-                print_warning(f"Crypto library not found: {crypto_lib}")
-        
-        if ssl_libs or crypto_libs:
-            print_success("OpenSSL libraries bundled successfully")
-            return True
-        else:
-            print_warning("No OpenSSL libraries found for Node.js")
-            return True
-            
-    except (subprocess.CalledProcessError, FileNotFoundError) as e:
-        print_warning(f"Could not detect OpenSSL libraries: {e}")
-        
-        # Try common Node.js locations as fallback
-        common_paths = ["/usr/bin/node", "/usr/local/bin/node", "/opt/nodejs/bin/node"]
-        for path in common_paths:
-            if os.path.exists(path):
-                try:
-                    print_status(f"Trying fallback Node.js path: {path}")
-                    node_deps = subprocess.run(["ldd", path], capture_output=True, text=True, check=True)
-                    print_success(f"Found Node.js dependencies using fallback path: {path}")
-                    # Process the dependencies (same logic as above)
-                    ssl_libs = []
-                    crypto_libs = []
-                    for line in node_deps.stdout.split('\n'):
-                        if 'libssl.so' in line:
-                            ssl_path = line.split('=>')[1].strip().split()[0]
-                            ssl_libs.append(ssl_path)
-                        elif 'libcrypto.so' in line:
-                            crypto_path = line.split('=>')[1].strip().split()[0]
-                            crypto_libs.append(crypto_path)
-                    
-                    # Copy libraries if found
-                    for ssl_lib in ssl_libs:
-                        if os.path.exists(ssl_lib):
-                            lib_name = os.path.basename(ssl_lib)
-                            dest_path = openssl_libs_dir / lib_name
-                            shutil.copy2(ssl_lib, dest_path)
-                            print_status(f"Bundled SSL library: {lib_name}")
-                    
-                    for crypto_lib in crypto_libs:
-                        if os.path.exists(crypto_lib):
-                            lib_name = os.path.basename(crypto_lib)
-                            dest_path = openssl_libs_dir / lib_name
-                            shutil.copy2(crypto_lib, dest_path)
-                            print_status(f"Bundled crypto library: {lib_name}")
-                    
-                    if ssl_libs or crypto_libs:
-                        print_success("OpenSSL libraries bundled successfully using fallback")
-                        return True
-                    break
-                except (subprocess.CalledProcessError, FileNotFoundError):
-                    continue
-        
-        print_warning("Continuing without bundled OpenSSL libraries")
-        return True
-
 def bundle_core_files(temp_dir: Path) -> bool:
     print_status("Bundling core files...")
     
@@ -286,12 +209,8 @@ def bundle_core_files(temp_dir: Path) -> bool:
     print_status("Copying core files...")
     shutil.copytree(core_src, core_dest, ignore=shutil.ignore_patterns('*.log', '.npm', '__pycache__', 'node_modules'))
     
-    # Bundle OpenSSL libraries first
-    if not bundle_openssl_libraries(temp_dir):
-        print_warning("OpenSSL library bundling failed, continuing...")
-    
-    # Reinstall Node.js dependencies with current Node.js version to ensure OpenSSL compatibility
-    print_status("Installing Node.js dependencies with current Node.js version...")
+    # Install Node.js dependencies
+    print_status("Installing Node.js dependencies...")
     try:
         # Get current Node.js version for logging
         node_version_result = subprocess.run(["node", "--version"], capture_output=True, text=True, check=True)
@@ -302,13 +221,7 @@ def bundle_core_files(temp_dir: Path) -> bool:
         npm_command = "npm.cmd" if platform.system().lower() == "windows" else "npm"
         install_result = subprocess.run([npm_command, "install"], cwd=core_dest, check=True, 
                                        capture_output=True, text=True)
-        print_success("Node.js dependencies installed with current Node.js version")
-        
-        # Log OpenSSL version used by Node.js
-        openssl_check = subprocess.run(["node", "-e", "console.log(process.versions.openssl)"], 
-                                      capture_output=True, text=True, check=True)
-        openssl_version = openssl_check.stdout.strip()
-        print_status(f"Node.js bundled OpenSSL version: {openssl_version}")
+        print_success("Node.js dependencies installed successfully")
         
     except subprocess.CalledProcessError as e:
         print_error(f"Failed to install Node.js dependencies: {e}")
@@ -548,22 +461,6 @@ if relaunch_in_terminal():
 app_dir = Path(__file__).parent
 sys.path.insert(0, str(app_dir))
 os.environ['IDLEONWEB_STANDALONE'] = '1'
-
-# Set up OpenSSL library path for bundled libraries (Linux only)
-openssl_libs_dir = app_dir / 'openssl_libs'
-if openssl_libs_dir.exists():
-    import platform as platform_module
-    
-    if platform_module.system().lower() == 'linux':
-        # Add OpenSSL libraries to LD_LIBRARY_PATH
-        current_ld_path = os.environ.get('LD_LIBRARY_PATH', '')
-        if current_ld_path:
-            os.environ['LD_LIBRARY_PATH'] = f"{openssl_libs_dir}:{current_ld_path}"
-        else:
-            os.environ['LD_LIBRARY_PATH'] = str(openssl_libs_dir)
-        log(f'Set LD_LIBRARY_PATH to include bundled OpenSSL: {openssl_libs_dir}')
-    else:
-        log(f'OpenSSL libraries found but not used on {platform_module.system().lower()} (Linux only)')
 try:
     log('import_main_start')
     from main import main
@@ -590,26 +487,11 @@ except Exception as e:
     return launcher_path
 
 def get_pyinstaller_args(platform: str, temp_dir: Path, launcher_script: Path, output_dir: Path, macos_arch: str | None = None) -> List[str]:
-    # Try to find pyinstaller in various locations
-    pyinstaller_path = "pyinstaller"
-    
-    # Check if pyinstaller is available in PATH
-    try:
-        subprocess.run(["pyinstaller", "--version"], capture_output=True, check=True)
+    python_path = Path(sys.executable)
+    venv_bin = python_path.parent
+    pyinstaller_path = venv_bin / "pyinstaller"
+    if not pyinstaller_path.exists():
         pyinstaller_path = "pyinstaller"
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        # Try common locations for pyinstaller
-        possible_paths = [
-            Path.home() / ".local" / "bin" / "pyinstaller",
-            Path("/usr/local/bin/pyinstaller"),
-            Path("/usr/bin/pyinstaller"),
-        ]
-        
-        pyinstaller_path = "pyinstaller"  # fallback
-        for path in possible_paths:
-            if path.exists():
-                pyinstaller_path = str(path)
-                break
     
     args = [
         str(pyinstaller_path),
@@ -658,11 +540,6 @@ def get_pyinstaller_args(platform: str, temp_dir: Path, launcher_script: Path, o
     webui_dir = temp_dir / "webui"
     if webui_dir.exists():
         args.append(f"--add-data={webui_dir.absolute()}{separator}webui")
-    
-    # Add OpenSSL libraries
-    openssl_libs_dir = temp_dir / "openssl_libs"
-    if openssl_libs_dir.exists():
-        args.append(f"--add-data={openssl_libs_dir.absolute()}{separator}openssl_libs")
     
     args.append(str(launcher_script.absolute()))
     

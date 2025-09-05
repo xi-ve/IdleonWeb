@@ -23,8 +23,35 @@ pip install -r build_process/build-requirements.txt
 
 Required tools:
 - **Python 3.8+** with PyInstaller
-- **Node.js 22+ LTS** (for bundling core files with compatible OpenSSL)
+- **Node.js v20+** (recommended for compatibility)
 - **npm** (for installing core dependencies)
+
+### Node.js Installation
+
+**For Arch Linux (recommended):**
+```bash
+# Install nvm (Node Version Manager)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+source ~/.bashrc
+nvm install 20
+nvm use 20
+nvm alias default 20
+```
+
+**For other Linux distributions:**
+```bash
+# Install Node.js v20 specifically
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+```
+
+**For macOS:**
+```bash
+brew install node@20
+```
+
+**For Windows:**
+Download Node.js v20 from https://nodejs.org/
 
 ### Platform-Specific Requirements
 
