@@ -106,3 +106,20 @@ class PyInjector:
                 tab.call_method("Page.navigate", url=url)
         except Exception as e:
             raise RuntimeError(f"Failed to open URL: {e}")
+
+    def close_browser(self) -> None:
+        """Close the browser via CDP"""
+        if not self.browser:
+            raise RuntimeError("Browser is not connected")
+        try:
+            if self.tab:
+                self.tab.stop()
+                self.tab = None
+            tabs = self.browser.list_tab()
+            if tabs:
+                temp_tab = tabs[0]
+                temp_tab.start()
+                temp_tab.call_method("Browser.close")
+                temp_tab.stop()
+        except Exception as e:
+            raise RuntimeError(f"Failed to close browser: {e}")

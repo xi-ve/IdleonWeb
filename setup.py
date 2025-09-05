@@ -218,7 +218,7 @@ def activate_and_install_python_deps():
             return False
     else:
         print_warning("requirements.txt not found. Installing basic dependencies...")
-        basic_deps = "prompt_toolkit rich pychrome aiohttp aiohttp-jinja2 jinja2"
+        basic_deps = "prompt_toolkit rich pychrome aiohttp aiohttp-jinja2 jinja2 customtkinter"
         
         if is_windows():
             install_cmd = f"cmd /c \"{activate_cmd} && pip install {basic_deps}\""

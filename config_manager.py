@@ -46,6 +46,12 @@ class ConfigManager:
             self._config['browser']['path'] = ''
         if 'name' not in self._config['browser']:
             self._config['browser']['name'] = 'auto'
+        if 'gui' not in self._config:
+            self._config['gui'] = {}
+        if 'enabled' not in self._config['gui']:
+            self._config['gui']['enabled'] = True
+        if 'theme' not in self._config['gui']:
+            self._config['gui']['theme'] = 'default'
         
         # Auto-detect browser if not configured
         if not self._config['browser']['path']:
@@ -412,6 +418,35 @@ class ConfigManager:
                 return True
         
         return False
+
+    def get_gui_config(self) -> Dict[str, Any]:
+        return self._config.get('gui', {})
+
+    def get_gui_enabled(self) -> bool:
+        return self.get_path('gui.enabled', True)
+
+    def set_gui_enabled(self, enabled: bool) -> None:
+        self.set_path('gui.enabled', enabled)
+        logger.info(f"Updated GUI enabled setting: {enabled}")
+
+    def get_gui_theme(self) -> str:
+        return self.get_path('gui.theme', 'default')
+
+    def set_gui_theme(self, theme: str) -> None:
+        self.set_path('gui.theme', theme)
+        logger.info(f"Updated GUI theme: {theme}")
+
+    def set_gui_config(self, enabled: bool = None, theme: str = None) -> None:
+        gui_config = self.get_gui_config()
+        
+        if enabled is not None:
+            gui_config['enabled'] = enabled
+        if theme is not None:
+            gui_config['theme'] = theme
+        
+        self._config['gui'] = gui_config
+        self._save_config()
+        logger.info("Updated GUI configuration")
 
     def get_auto_inject(self) -> bool:
         return self.get_path('injector.autoInject', True)

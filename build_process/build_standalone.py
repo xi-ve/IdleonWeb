@@ -35,6 +35,7 @@ from typing import List, Dict, Any
 BUILD_CONFIG = {
     "hidden_imports": [
         "aiohttp", "aiohttp_jinja2", "jinja2", "rich", "prompt_toolkit", "pychrome",
+        "customtkinter", "darkdetect",
         "pathlib", "json", "asyncio", "logging", "importlib", "inspect"
     ],
     "exclude_modules": [

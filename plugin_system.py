@@ -419,8 +419,56 @@ class PluginBase(ABC):
         try:
             check_result = injector.evaluate(check_expr)
             if not check_result.get('result', {}).get('value', False):
-                console.print(f"[DEBUG] Function {plugin_name}.{js_name} not found in window")
-                return f"Error: Function {plugin_name}.{js_name} not found"
+                # Track consecutive function not found errors to detect tab reload
+                if not hasattr(self, '_consecutive_not_found'):
+                    self._consecutive_not_found = 0
+                
+                self._consecutive_not_found += 1
+                
+                # If we get multiple consecutive "not found" errors, likely tab was reloaded
+                if self._consecutive_not_found >= 3:
+                    # Only disconnect once - use a global flag to prevent multiple disconnections
+                    import main
+                    if not hasattr(main, '_tab_reload_disconnected'):
+                        main._tab_reload_disconnected = True
+                        
+                        # Debug messages only if debug is enabled
+                        if GLOBAL_DEBUG:
+                            console.print(f"[DEBUG] Tab appears to have been reloaded - functions not found repeatedly")
+                            console.print(f"[DEBUG] Auto-disconnecting injection due to tab reload detection")
+                        
+                        # Stop the update loop
+                        if hasattr(main, 'update_loop_stop') and main.update_loop_stop:
+                            main.update_loop_stop.set()
+                            if GLOBAL_DEBUG:
+                                console.print(f"[DEBUG] Update loop stopped due to tab reload")
+                        
+                        # Close browser via CDP and clear injector reference
+                        if hasattr(main, 'injector') and main.injector:
+                            try:
+                                # Close browser via CDP like the stop injection button does
+                                main.injector.close_browser()
+                                if GLOBAL_DEBUG:
+                                    console.print(f"[DEBUG] Browser closed via CDP due to tab reload")
+                            except Exception as e:
+                                if GLOBAL_DEBUG:
+                                    console.print(f"[DEBUG] Error closing browser via CDP: {e}")
+                            
+                            main.injector = None
+                        
+                        # Always show the clean disconnect message with dark orange styling
+                        console.print("[bold dark_orange]Tab disconnected[/bold dark_orange]")
+                    
+                    return f"Error: Tab reloaded - injection disconnected"
+                else:
+                    # Only show debug message if debug is enabled
+                    if GLOBAL_DEBUG:
+                        console.print(f"[DEBUG] Function {plugin_name}.{js_name} not found in window")
+                    return f"Error: Function {plugin_name}.{js_name} not found"
+            else:
+                # Reset counter on successful function check
+                if hasattr(self, '_consecutive_not_found'):
+                    self._consecutive_not_found = 0
         except Exception as e:
             if GLOBAL_DEBUG:
                 console.print(f"[DEBUG] Error checking function {plugin_name}.{js_name}: {e}")

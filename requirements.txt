@@ -3,4 +3,5 @@ aiohttp-jinja2
 jinja2
 rich 
 pychrome
-prompt_toolkit 
+prompt_toolkit
+customtkinter
