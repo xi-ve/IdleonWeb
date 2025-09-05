@@ -161,6 +161,65 @@ def prepare_build_environment(build_dir: Path) -> Path:
     
     return temp_dir
 
+def bundle_openssl_libraries(temp_dir: Path) -> bool:
+    """Bundle OpenSSL libraries required by Node.js (Linux only)"""
+    current_platform = platform.system().lower()
+    
+    if current_platform != 'linux':
+        print_status(f"OpenSSL bundling skipped on {current_platform} (Linux only)")
+        return True
+    
+    print_status("Bundling OpenSSL libraries for Linux...")
+    
+    openssl_libs_dir = temp_dir / "openssl_libs"
+    openssl_libs_dir.mkdir(exist_ok=True)
+    
+    # Find OpenSSL libraries that Node.js depends on
+    try:
+        node_deps = subprocess.run(["ldd", "/usr/bin/node"], capture_output=True, text=True, check=True)
+        ssl_libs = []
+        crypto_libs = []
+        
+        for line in node_deps.stdout.split('\n'):
+            if 'libssl.so' in line:
+                ssl_path = line.split('=>')[1].strip().split()[0]
+                ssl_libs.append(ssl_path)
+            elif 'libcrypto.so' in line:
+                crypto_path = line.split('=>')[1].strip().split()[0]
+                crypto_libs.append(crypto_path)
+        
+        # Copy SSL libraries
+        for ssl_lib in ssl_libs:
+            if os.path.exists(ssl_lib):
+                lib_name = os.path.basename(ssl_lib)
+                dest_path = openssl_libs_dir / lib_name
+                shutil.copy2(ssl_lib, dest_path)
+                print_status(f"Bundled SSL library: {lib_name}")
+            else:
+                print_warning(f"SSL library not found: {ssl_lib}")
+        
+        # Copy crypto libraries
+        for crypto_lib in crypto_libs:
+            if os.path.exists(crypto_lib):
+                lib_name = os.path.basename(crypto_lib)
+                dest_path = openssl_libs_dir / lib_name
+                shutil.copy2(crypto_lib, dest_path)
+                print_status(f"Bundled crypto library: {lib_name}")
+            else:
+                print_warning(f"Crypto library not found: {crypto_lib}")
+        
+        if ssl_libs or crypto_libs:
+            print_success("OpenSSL libraries bundled successfully")
+            return True
+        else:
+            print_warning("No OpenSSL libraries found for Node.js")
+            return True
+            
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        print_warning(f"Could not detect OpenSSL libraries: {e}")
+        print_warning("Continuing without bundled OpenSSL libraries")
+        return True
+
 def bundle_core_files(temp_dir: Path) -> bool:
     print_status("Bundling core files...")
     
@@ -176,6 +235,10 @@ def bundle_core_files(temp_dir: Path) -> bool:
     
     print_status("Copying core files...")
     shutil.copytree(core_src, core_dest, ignore=shutil.ignore_patterns('*.log', '.npm', '__pycache__', 'node_modules'))
+    
+    # Bundle OpenSSL libraries first
+    if not bundle_openssl_libraries(temp_dir):
+        print_warning("OpenSSL library bundling failed, continuing...")
     
     # Reinstall Node.js dependencies with current Node.js version to ensure OpenSSL compatibility
     print_status("Installing Node.js dependencies with current Node.js version...")
@@ -435,6 +498,22 @@ if relaunch_in_terminal():
 app_dir = Path(__file__).parent
 sys.path.insert(0, str(app_dir))
 os.environ['IDLEONWEB_STANDALONE'] = '1'
+
+# Set up OpenSSL library path for bundled libraries (Linux only)
+openssl_libs_dir = app_dir / 'openssl_libs'
+if openssl_libs_dir.exists():
+    import platform as platform_module
+    
+    if platform_module.system().lower() == 'linux':
+        # Add OpenSSL libraries to LD_LIBRARY_PATH
+        current_ld_path = os.environ.get('LD_LIBRARY_PATH', '')
+        if current_ld_path:
+            os.environ['LD_LIBRARY_PATH'] = f"{openssl_libs_dir}:{current_ld_path}"
+        else:
+            os.environ['LD_LIBRARY_PATH'] = str(openssl_libs_dir)
+        log(f'Set LD_LIBRARY_PATH to include bundled OpenSSL: {openssl_libs_dir}')
+    else:
+        log(f'OpenSSL libraries found but not used on {platform_module.system().lower()} (Linux only)')
 try:
     log('import_main_start')
     from main import main
@@ -461,11 +540,26 @@ except Exception as e:
     return launcher_path
 
 def get_pyinstaller_args(platform: str, temp_dir: Path, launcher_script: Path, output_dir: Path, macos_arch: str | None = None) -> List[str]:
-    python_path = Path(sys.executable)
-    venv_bin = python_path.parent
-    pyinstaller_path = venv_bin / "pyinstaller"
-    if not pyinstaller_path.exists():
+    # Try to find pyinstaller in various locations
+    pyinstaller_path = "pyinstaller"
+    
+    # Check if pyinstaller is available in PATH
+    try:
+        subprocess.run(["pyinstaller", "--version"], capture_output=True, check=True)
         pyinstaller_path = "pyinstaller"
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        # Try common locations for pyinstaller
+        possible_paths = [
+            Path.home() / ".local" / "bin" / "pyinstaller",
+            Path("/usr/local/bin/pyinstaller"),
+            Path("/usr/bin/pyinstaller"),
+        ]
+        
+        pyinstaller_path = "pyinstaller"  # fallback
+        for path in possible_paths:
+            if path.exists():
+                pyinstaller_path = str(path)
+                break
     
     args = [
         str(pyinstaller_path),
@@ -514,6 +608,11 @@ def get_pyinstaller_args(platform: str, temp_dir: Path, launcher_script: Path, o
     webui_dir = temp_dir / "webui"
     if webui_dir.exists():
         args.append(f"--add-data={webui_dir.absolute()}{separator}webui")
+    
+    # Add OpenSSL libraries
+    openssl_libs_dir = temp_dir / "openssl_libs"
+    if openssl_libs_dir.exists():
+        args.append(f"--add-data={openssl_libs_dir.absolute()}{separator}openssl_libs")
     
     args.append(str(launcher_script.absolute()))
     
