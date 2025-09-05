@@ -69,66 +69,23 @@ class BrowserLauncher {
         this.userDataDir = path.join(process.cwd(), 'idleon-chromium-profile');
     }
 
-    _doesPathMatchBrowser(path, browserName) {
-        const pathLower = path.toLowerCase();
-        const fileName = path.basename(path).toLowerCase();
-        
-        switch (browserName) {
-            case 'edge':
-                return fileName.includes('msedge') || pathLower.includes('microsoft/edge');
-            case 'chrome':
-                return fileName.includes('chrome') && !fileName.includes('chromium');
-            case 'chromium':
-                return fileName.includes('chromium');
-            case 'brave':
-                return fileName.includes('brave');
-            case 'operagx':
-            case 'opera':
-                return fileName.includes('opera');
-            default:
-                return pathLower.includes(browserName);
-        }
-    }
 
     findChromiumPath() {
         const browserConfig = this.config.browser;
+        console.log(`[Injector] Browser config:`, JSON.stringify(browserConfig, null, 2));
         
         if (browserConfig?.path && fs.existsSync(browserConfig.path)) {
-            const browserName = browserConfig.name?.toLowerCase();
-            
-            if (!browserName || browserName === 'auto') {
-                console.log(`[Injector] Using configured browser path: ${browserConfig.path}`);
-                return browserConfig.path;
-            }
-            
-            if (this._doesPathMatchBrowser(browserConfig.path, browserName)) {
-                console.log(`[Injector] Using configured browser path: ${browserConfig.path}`);
-                return browserConfig.path;
-            }
-            
-            const knownBrowsers = ['edge', 'chrome', 'chromium', 'brave', 'operagx', 'opera'];
-            if (!knownBrowsers.includes(browserName)) {
-                console.log(`[Injector] Using custom browser path for unknown browser type: ${browserConfig.path}`);
-                return browserConfig.path;
-            }
-            
-            console.log(`[Injector] Configured path does not match browser name ${browserName}, falling back to name-based detection`);
+            console.log(`[Injector] Using configured browser path: ${browserConfig.path}`);
+            return browserConfig.path;
         }
         
         if (browserConfig?.name && browserConfig.name !== 'auto') {
             const browserName = browserConfig.name.toLowerCase();
-            const filteredPaths = this.possibleChromiumPaths.filter(p => 
-                this._doesPathMatchBrowser(p, browserName)
-            );
-            
-            for (const p of filteredPaths) {
-                if (fs.existsSync(p)) {
-                    console.log(`[Injector] Using configured browser: ${browserName} at ${p}`);
-                    return p;
-                }
-            }
+            console.log(`[Injector] Browser name set to ${browserName}, but no valid path found. Please set browser path manually.`);
+            throw new Error(`Browser name '${browserName}' is configured but no valid path is set. Please configure the browser path manually.`);
         }
         
+        console.log(`[Injector] Auto-detecting browser...`);
         for (const p of this.possibleChromiumPaths) {
             if (fs.existsSync(p)) {
                 console.log(`[Injector] Auto-detected browser: ${p}`);
