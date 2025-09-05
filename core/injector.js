@@ -254,16 +254,17 @@ class CDPManager {
 
     async waitForCDP(timeout = null) {
         const actualTimeout = timeout || this.config.timeout || 120_000;
-        
-        // Add extra delay for macOS as Chrome takes longer to initialize
-        if (process.platform === 'darwin') {
-            console.log('[Injector] macOS detected - adding extra delay for Chrome initialization...');
-            await new Promise(resolve => setTimeout(resolve, 3000));
-        }
+        console.log('[Injector] Waiting for Chrome to initialize...');
         
         return new Promise((resolve, reject) => {
             const start = Date.now();
+            let attempt = 0;
+            const maxAttempts = 50;
+            
             const check = () => {
+                attempt++;
+                const elapsed = Date.now() - start;
+                
                 require('http').get(`http://localhost:${this.config.cdpPort}/json/version`, res => {
                     let data = '';
                     res.on('data', chunk => data += chunk);
@@ -271,10 +272,12 @@ class CDPManager {
                         try {
                             const json = JSON.parse(data);
                             if (json.webSocketDebuggerUrl) {
+                                console.log(`[Injector] Chrome ready after ${elapsed}ms (${attempt} attempts)`);
                                 resolve();
                                 return;
                             }
-                        } catch {}
+                        } catch (e) {
+                        }
                         retry();
                     });
                 }).on('error', retry);
@@ -283,8 +286,15 @@ class CDPManager {
             const retry = () => {
                 if (Date.now() - start > actualTimeout) {
                     reject(new Error(`Timeout waiting for CDP endpoint after ${actualTimeout/1000} seconds`));
+                } else if (attempt >= maxAttempts) {
+                    reject(new Error(`Maximum attempts (${maxAttempts}) reached waiting for Chrome initialization`));
                 } else {
-                    setTimeout(check, 500);
+                    // Exponential backoff: start with 100ms, max 2000ms
+                    const baseDelay = 100;
+                    const maxDelay = 2000;
+                    const delay = Math.min(baseDelay * Math.pow(1.5, attempt), maxDelay);
+                    
+                    setTimeout(check, delay);
                 }
             };
             check();

@@ -4,6 +4,7 @@ import sys
 import logging
 import asyncio
 import threading
+import shutil
 from pathlib import Path
 
 from prompt_toolkit import PromptSession
@@ -122,9 +123,21 @@ def ensure_node_dependencies(startup_msgs=None):
             console.print(msg)
             return
         else:
-            msg = "[bold green]Node.js dependencies found in standalone build.[/bold green]"
+            # Check for OpenSSL compatibility issues
+            try:
+                # Test if bundled Node.js works with current OpenSSL
+                test_result = subprocess.run(['node', '--version'], 
+                                           capture_output=True, text=True, timeout=5)
+                if test_result.returncode == 0:
+                    msg = "[bold green]Node.js dependencies found in standalone build.[/bold green]"
+                else:
+                    msg = "[bold yellow]Bundled Node.js has compatibility issues. Will use system Node.js.[/bold yellow]"
+            except (subprocess.TimeoutExpired, FileNotFoundError, Exception):
+                msg = "[bold yellow]Bundled Node.js has compatibility issues. Will use system Node.js.[/bold yellow]"
+            
             if startup_msgs:
                 startup_msgs.append(msg)
+            console.print(msg)
             return
     
     if not node_modules_path.exists():
@@ -171,8 +184,47 @@ def run_injector():
             console.print("[yellow]Note: Standalone builds require Node.js to be installed on the system.[/yellow]")
         raise
     except Exception as e:
-        console.print(f"[bold red]Error running injector: {e}[/bold red]")
-        raise
+        # Check if it's an OpenSSL compatibility issue
+        if "OPENSSL" in str(e).upper() or "libcrypto" in str(e).lower():
+            console.print(f"[bold yellow]OpenSSL compatibility issue detected: {e}[/bold yellow]")
+            console.print("[yellow]Attempting to use system Node.js instead of bundled version...[/yellow]")
+            
+            # Try to use system Node.js by installing dependencies locally
+            try:
+                # Install dependencies in a temporary location
+                import tempfile
+                temp_core_dir = Path(tempfile.gettempdir()) / "idleonweb_core"
+                temp_core_dir.mkdir(exist_ok=True)
+                
+                # Copy core files to temp location
+                shutil.copytree(CORE_DIR, temp_core_dir, dirs_exist_ok=True)
+                
+                # Install dependencies using system Node.js
+                result = subprocess.run(['npm', 'install'], cwd=temp_core_dir, 
+                                      check=True, capture_output=True, text=True)
+                
+                # Use the temp injector path
+                temp_injector_path = temp_core_dir / "injector.js"
+                
+                process = subprocess.Popen(
+                    ['node', str(temp_injector_path)],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    encoding='utf-8',
+                    errors='replace',
+                    creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
+                )
+                console.print("[bold green]Successfully using system Node.js with compatible dependencies.[/bold green]")
+                return process
+                
+            except Exception as fallback_error:
+                console.print(f"[bold red]Fallback to system Node.js failed: {fallback_error}[/bold red]")
+                console.print("[bold red]Please install Node.js dependencies manually or update your OpenSSL version.[/bold red]")
+                raise
+        else:
+            console.print(f"[bold red]Error running injector: {e}[/bold red]")
+            raise
 
 def collect_plugin_js(plugin_manager, include_core=True):
     js_code, plugin_sizes = plugin_manager.collect_all_plugin_js_with_sizes()
