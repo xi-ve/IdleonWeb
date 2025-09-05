@@ -6,14 +6,34 @@
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg?style=flat-square)](https://github.com/xi-ve/IdleonWeb)
 [![Integration Tests](https://github.com/xi-ve/IdleonWeb/actions/workflows/combined-tests-and-release.yml/badge.svg?style=flat-square)](https://github.com/xi-ve/IdleonWeb/actions/workflows/combined-tests-and-release.yml)
 
-A modern, user-friendly launcher and plugin system for enhancing Legends of Idleon with a beautiful web interface.
+A modern, user-friendly launcher and plugin system for enhancing Legends of Idleon with a beautiful web interface and intuitive GUI.
 
 > **For developers:** See [PLUGIN_QUICKSTART.md](PLUGIN_QUICKSTART.md) for a quick guide to creating plugins, or [DEVELOPMENT.md](DEVELOPMENT.md) for detailed technical documentation.
+
+## GUI Interface
+
+<p align="center">
+  <img src="images/GUI1.png" alt="IdleonWeb GUI Main Interface" width="800">
+</p>
+
+The new GUI provides a streamlined interface for managing plugins and configuring settings with an intuitive design that makes it easy to navigate and customize your Idleon experience.
 
 <details>
   <summary><strong>Screenshots (click to expand)</strong></summary>
 
   <p align="center">
+    <img src="images/GUI2.png" alt="IdleonWeb GUI Configuration" width="800">
+    <br/>
+    <img src="images/GUI3.png" alt="IdleonWeb GUI Plugin Management" width="800">
+    <br/>
+    <img src="images/GUI_Popup1.png" alt="IdleonWeb Login Reminder" width="800">
+    <br/>
+    <em>Note: GUI_Popup1.png shows an automatic reminder that appears to remind users that a login is needed in order for the cheat to work.</em>
+    <br/>
+    <img src="images/GUI_Popup2.png" alt="IdleonWeb Reinjection Popup" width="800">
+    <br/>
+    <em>Note: GUI_Popup2.png shows a popup that asks the user to start reinjection or close the popup if a tab was reloaded/closed or the browser was closed.</em>
+    <br/>
     <img src="images/screenshot1.png" alt="IdleonWeb " width="800">
     <br/>
     <img src="images/screenshot2.png" alt="IdleonWeb " width="800">
@@ -27,11 +47,13 @@ A modern, user-friendly launcher and plugin system for enhancing Legends of Idle
 ## Features
 
 ### For players
+- **Modern GUI Interface**: Clean, intuitive desktop application with streamlined plugin management
 - **Point‑and‑click UI**: Configure everything from a clean web page. No commands or code needed.
 - **One‑click start**: Launch the game and inject automatically; no manual steps each time.
 - **Popular cheats built‑in**: Portals, cards, statues, islands, post office, anvil, stamps, summoning, and more.
 - **Clear categories**: Character, QoL, Unlocks, and World 1/2/3/6 collections for quick discovery.
 - **Live feedback**: Changes apply immediately; status panels show current values.
+- **Automatic reminders**: Built-in notifications remind users about login requirements and reinjection needs
 - **Mobile friendly**: Works on phones and tablets.
 - **Cross‑platform**: Windows, Linux, macOS.
 
