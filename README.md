@@ -274,7 +274,7 @@ Multi-platform builds are supported via CI/CD and local build scripts in `build_
 - **Plugins not working?**
   - Ensure you typed `inject` in the launcher
   - Check the browser console for error messages
-
+ 
 **Setup fails?**
 - Make sure Python 3.8+ and Node.js v20+ are installed (for manual setup)
 - Try running `python setup.py` - it can automatically install missing dependencies using package managers
