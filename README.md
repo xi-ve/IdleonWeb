@@ -1,7 +1,7 @@
 # IdleonWeb
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg?style=flat-square)](https://www.python.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-22+-green.svg?style=flat-square)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-20+-green.svg?style=flat-square)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg?style=flat-square)](https://github.com/xi-ve/IdleonWeb)
 [![Integration Tests](https://github.com/xi-ve/IdleonWeb/actions/workflows/combined-tests-and-release.yml/badge.svg?style=flat-square)](https://github.com/xi-ve/IdleonWeb/actions/workflows/combined-tests-and-release.yml)
@@ -80,7 +80,7 @@ The new GUI provides a streamlined interface for managing plugins and configurin
    - macOS (Apple Silicon): `IdleonWeb-macos-arm64-v{version}.tar.gz`
    - macOS (Intel): `IdleonWeb-macos-x86_64-v{version}.tar.gz`
 3. Extract the archive to a folder
-4. **Install Node.js** (required): [Download Node.js](https://nodejs.org/en/download/) - Get the LTS version
+4. **Install Node.js v20** (required): [Download Node.js](https://nodejs.org/en/download/) - Get the LTS version
 5. Run the executable:
    - **Linux/macOS**: `./IdleonWeb`
    - **Windows**: `IdleonWeb.exe`
@@ -104,7 +104,7 @@ If you don't have Python or Node.js installed, download and install them first:
 
 **Required Downloads:**
 - **Python 3.8+**: [Download Python](https://www.python.org/downloads/windows/) - Get the latest stable version
-- **Node.js 22+**: [Download Node.js](https://nodejs.org/en/download/) - Get the LTS (Long Term Support) version
+- **Node.js v20+**: [Download Node.js](https://nodejs.org/en/download/) - Get the LTS (Long Term Support) version
 
 **Installation Steps:**
 1. Install Python (make sure to check "Add Python to PATH" during installation)
@@ -276,7 +276,7 @@ Multi-platform builds are supported via CI/CD and local build scripts in `build_
   - Check the browser console for error messages
 
 **Setup fails?**
-- Make sure Python 3.8+ and Node.js are installed (for manual setup)
+- Make sure Python 3.8+ and Node.js v20+ are installed (for manual setup)
 - Try running `python setup.py` - it can automatically install missing dependencies using package managers
 - Run as administrator if needed (Windows)
 - Consider using pre-compiled binaries instead
