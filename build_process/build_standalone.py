@@ -242,6 +242,10 @@ def copy_config_to_output(output_dir: Path):
                 "url": "http://localhost:8080",
                 "port": 8080
             },
+            "browser": {
+                "path": "",
+                "name": "auto"
+            },
             "injector": {
                 "cdp_port": 32123,
                 "njs_pattern": "*N.js",

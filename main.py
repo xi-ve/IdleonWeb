@@ -106,13 +106,11 @@ def collect_plugin_js(plugin_manager, include_core=True):
     js_path = CORE_DIR / "plugins_combined.js"
     
     if include_core:
-        # Include core.js for initial injection
         core_path = CORE_DIR / "core.js"
         if core_path.exists():
             with open(core_path, "r", encoding='utf-8') as f:
                 core_code = f.read()
             js_code = core_code + '\n' + js_code
-            console.print("[DEBUG] Included core.js in combined JS")
     
     with open(js_path, "w", encoding='utf-8') as f:
         f.write(js_code)
@@ -419,6 +417,107 @@ def cmd_webui_port(args=None, plugin_manager=None):
         port = config_manager.get_webui_port()
         console.print(f"[cyan]Current Web UI port: {port}[/cyan]")
 
+def cmd_browser_path(args=None, plugin_manager=None):
+    if args and args[0]:
+        config_manager.set_browser_path(args[0])
+        console.print(f"[green]Browser path set to {args[0]}[/green]")
+    else:
+        path = config_manager.get_browser_path()
+        if path:
+            console.print(f"[cyan]Current browser path: {path}[/cyan]")
+        else:
+            console.print("[cyan]No browser path configured (using auto-detection)[/cyan]")
+
+def cmd_browser_name(args=None, plugin_manager=None):
+    if args and args[0]:
+        browser_name = args[0].lower()
+        valid_browsers = ['auto', 'chrome', 'chromium', 'edge', 'brave', 'operagx', 'opera']
+        if browser_name not in valid_browsers:
+            console.print(f"[red]Invalid browser name. Valid options: {', '.join(valid_browsers)}[/red]")
+            return
+        config_manager.set_browser_name(browser_name)
+        console.print(f"[green]Browser name set to {browser_name}[/green]")
+    else:
+        name = config_manager.get_browser_name()
+        console.print(f"[cyan]Current browser name: {name}[/cyan]")
+
+def cmd_browser_detect(args=None, plugin_manager=None):
+    """Detect and set browser automatically"""
+    import os
+    import platform
+    
+    possible_paths = []
+    system = platform.system().lower()
+    
+    if system == 'windows':
+        username = os.environ.get('USERNAME', '')
+        possible_paths = [
+            f'C:/Program Files/Google/Chrome/Application/chrome.exe',
+            f'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
+            f'C:/Users/{username}/AppData/Local/Google/Chrome/Application/chrome.exe',
+            f'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
+            f'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+            f'C:/Users/{username}/AppData/Local/Microsoft/Edge/Application/msedge.exe',
+            f'C:/Program Files/BraveSoftware/Brave-Browser/Application/brave.exe',
+            f'C:/Program Files (x86)/BraveSoftware/Brave-Browser/Application/brave.exe',
+            f'C:/Users/{username}/AppData/Local/BraveSoftware/Brave-Browser/Application/brave.exe',
+            f'C:/Users/{username}/AppData/Local/Programs/Opera GX/opera.exe',
+            f'C:/Program Files/Opera GX/opera.exe',
+            f'C:/Program Files (x86)/Opera GX/opera.exe',
+        ]
+    elif system == 'linux':
+        possible_paths = [
+            '/usr/bin/google-chrome',
+            '/usr/bin/google-chrome-stable',
+            '/usr/bin/chromium',
+            '/usr/bin/chromium-browser',
+            '/usr/bin/microsoft-edge',
+            '/usr/bin/brave',
+            '/usr/bin/opera-gx',
+            '/usr/bin/opera',
+            '/snap/bin/opera',
+        ]
+    elif system == 'darwin':  # macOS
+        possible_paths = [
+            '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+            '/Applications/Chromium.app/Contents/MacOS/Chromium',
+            '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+            '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
+            '/Applications/Opera GX.app/Contents/MacOS/Opera GX',
+        ]
+    
+    found_browsers = []
+    for path in possible_paths:
+        if os.path.exists(path):
+            browser_name = os.path.basename(path).lower()
+            if 'chrome' in browser_name:
+                browser_type = 'chrome'
+            elif 'chromium' in browser_name:
+                browser_type = 'chromium'
+            elif 'edge' in browser_name:
+                browser_type = 'edge'
+            elif 'brave' in browser_name:
+                browser_type = 'brave'
+            elif 'opera' in browser_name:
+                browser_type = 'operagx'
+            else:
+                browser_type = 'unknown'
+            
+            found_browsers.append((path, browser_type))
+    
+    if found_browsers:
+        console.print("[green]Found browsers:[/green]")
+        for i, (path, browser_type) in enumerate(found_browsers, 1):
+            console.print(f"  {i}. {browser_type.title()}: {path}")
+        
+        # Auto-select the first one
+        best_path, best_type = found_browsers[0]
+        config_manager.set_browser_path(best_path)
+        config_manager.set_browser_name(best_type)
+        console.print(f"[green]Auto-selected: {best_type.title()} at {best_path}[/green]")
+    else:
+        console.print("[red]No browsers detected. Please install Chrome, Chromium, Edge, Brave, or OperaGX.[/red]")
+
 def cmd_exit(args=None, plugin_manager=None):
     global update_loop_stop, update_loop_task, web_server_task
     console.print("[bold green]Shutting down...[/bold green]")
@@ -628,6 +727,9 @@ def main():
         'webui_auto_open': {'func': cmd_webui_auto_open, 'help': 'Toggle or set auto-open of Web UI after injection (on/off).'},
         'webui_url': {'func': cmd_webui_url, 'help': 'Set or view the Web UI URL to open after injection.'},
         'webui_port': {'func': cmd_webui_port, 'help': 'Set or view the Web UI port (1-65535).'},
+        'browser_path': {'func': cmd_browser_path, 'help': 'Set or view the browser executable path.'},
+        'browser_name': {'func': cmd_browser_name, 'help': 'Set or view the browser name (auto, chrome, chromium, edge, brave, operagx).'},
+        'browser_detect': {'func': cmd_browser_detect, 'help': 'Auto-detect and configure browser.'},
         'help': {'func': cmd_help, 'help': 'Show this help menu.'},
         'exit': {'func': cmd_exit, 'help': 'Exit the CLI.'},
         'reload': {'func': cmd_reload, 'help': 'Hot reload all plugins, JS, and web UI into the active injector session.'}

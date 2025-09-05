@@ -40,6 +40,16 @@ class ConfigManager:
             self._config['webui']['url'] = 'http://localhost:8080'
         if 'port' not in self._config['webui']:
             self._config['webui']['port'] = 8080
+        if 'browser' not in self._config:
+            self._config['browser'] = {}
+        if 'path' not in self._config['browser']:
+            self._config['browser']['path'] = ''
+        if 'name' not in self._config['browser']:
+            self._config['browser']['name'] = 'auto'
+        
+        # Auto-detect browser if not configured
+        if not self._config['browser']['path']:
+            self.auto_detect_browser()
         
         # Migrate autoInject to injector section if it exists at root level
         if 'autoInject' in self._config and 'injector' in self._config:
@@ -300,6 +310,108 @@ class ConfigManager:
         self._config['webui'] = webui_config
         self._save_config()
         logger.info("Updated webui configuration")
+
+    def get_browser_config(self) -> Dict[str, Any]:
+        return self._config.get('browser', {})
+
+    def get_browser_path(self) -> str:
+        return self.get_path('browser.path', '')
+
+    def set_browser_path(self, path: str) -> None:
+        self.set_path('browser.path', path)
+        logger.info(f"Updated browser path: {path}")
+
+    def get_browser_name(self) -> str:
+        return self.get_path('browser.name', 'auto')
+
+    def set_browser_name(self, name: str) -> None:
+        self.set_path('browser.name', name)
+        logger.info(f"Updated browser name: {name}")
+
+    def set_browser_config(self, path: str = None, name: str = None) -> None:
+        browser_config = self.get_browser_config()
+        
+        if path is not None:
+            browser_config['path'] = path
+        if name is not None:
+            browser_config['name'] = name
+        
+        self._config['browser'] = browser_config
+        self._save_config()
+        logger.info("Updated browser configuration")
+
+    def auto_detect_browser(self) -> bool:
+        """Auto-detect browser and write to config if found"""
+        import os
+        import platform
+        
+        # Only auto-detect if no browser is configured
+        if self.get_browser_path():
+            return True
+        
+        possible_paths = []
+        system = platform.system().lower()
+        
+        if system == 'windows':
+            username = os.environ.get('USERNAME', '')
+            possible_paths = [
+                f'C:/Program Files/Google/Chrome/Application/chrome.exe',
+                f'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
+                f'C:/Users/{username}/AppData/Local/Google/Chrome/Application/chrome.exe',
+                f'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
+                f'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+                f'C:/Users/{username}/AppData/Local/Microsoft/Edge/Application/msedge.exe',
+                f'C:/Program Files/BraveSoftware/Brave-Browser/Application/brave.exe',
+                f'C:/Program Files (x86)/BraveSoftware/Brave-Browser/Application/brave.exe',
+                f'C:/Users/{username}/AppData/Local/BraveSoftware/Brave-Browser/Application/brave.exe',
+                f'C:/Users/{username}/AppData/Local/Programs/Opera GX/opera.exe',
+                f'C:/Program Files/Opera GX/opera.exe',
+                f'C:/Program Files (x86)/Opera GX/opera.exe',
+            ]
+        elif system == 'linux':
+            possible_paths = [
+                '/usr/bin/google-chrome',
+                '/usr/bin/google-chrome-stable',
+                '/usr/bin/chromium',
+                '/usr/bin/chromium-browser',
+                '/usr/bin/microsoft-edge',
+                '/usr/bin/brave',
+                '/usr/bin/opera-gx',
+                '/usr/bin/opera',
+                '/snap/bin/opera',
+            ]
+        elif system == 'darwin':  # macOS
+            possible_paths = [
+                '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+                '/Applications/Chromium.app/Contents/MacOS/Chromium',
+                '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+                '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
+                '/Applications/Opera GX.app/Contents/MacOS/Opera GX',
+            ]
+        
+        for path in possible_paths:
+            if os.path.exists(path):
+                browser_name = os.path.basename(path).lower()
+                if 'chrome' in browser_name:
+                    browser_type = 'chrome'
+                elif 'chromium' in browser_name:
+                    browser_type = 'chromium'
+                elif 'edge' in browser_name:
+                    browser_type = 'edge'
+                elif 'brave' in browser_name:
+                    browser_type = 'brave'
+                elif 'opera' in browser_name:
+                    browser_type = 'operagx'
+                else:
+                    browser_type = 'auto'
+                
+                # Auto-write the detected browser to config
+                self.set_browser_path(path)
+                self.set_browser_name(browser_type)
+                logger.info(f"Auto-detected browser: {browser_type} at {path}")
+                return True
+        
+        return False
 
     def get_auto_inject(self) -> bool:
         return self.get_path('injector.autoInject', True)

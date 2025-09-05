@@ -54,14 +54,48 @@ class BrowserLauncher {
             'C:/Program Files (x86)/BraveSoftware/Brave-Browser/Application/brave.exe',
             'C:/Users/' + process.env.USERNAME + '/AppData/Local/BraveSoftware/Brave-Browser/Application/brave.exe',
             // Brave on linux
-            '/usr/bin/brave'
+            '/usr/bin/brave',
+            // Support OperaGX
+            'C:/Users/' + process.env.USERNAME + '/AppData/Local/Programs/Opera GX/opera.exe',
+            'C:/Program Files/Opera GX/opera.exe',
+            'C:/Program Files (x86)/Opera GX/opera.exe',
+            // OperaGX on linux
+            '/usr/bin/opera-gx',
+            '/usr/bin/opera',
+            '/snap/bin/opera',
+            // OperaGX on macOS
+            '/Applications/Opera GX.app/Contents/MacOS/Opera GX'
         ];
         this.userDataDir = path.join(process.cwd(), 'idleon-chromium-profile');
     }
 
     findChromiumPath() {
+        // Check if a specific browser path is configured
+        if (this.config.browser && this.config.browser.path && fs.existsSync(this.config.browser.path)) {
+            console.log(`[Injector] Using configured browser path: ${this.config.browser.path}`);
+            return this.config.browser.path;
+        }
+        
+        // Check if a specific browser name is configured
+        if (this.config.browser && this.config.browser.name && this.config.browser.name !== 'auto') {
+            const browserName = this.config.browser.name.toLowerCase();
+            const filteredPaths = this.possibleChromiumPaths.filter(p => {
+                const pathLower = p.toLowerCase();
+                return pathLower.includes(browserName);
+            });
+            
+            for (const p of filteredPaths) {
+                if (fs.existsSync(p)) {
+                    console.log(`[Injector] Using configured browser: ${browserName} at ${p}`);
+                    return p;
+                }
+            }
+        }
+        
+        // Fall back to auto-detection
         for (const p of this.possibleChromiumPaths) {
             if (fs.existsSync(p)) {
+                console.log(`[Injector] Auto-detected browser: ${p}`);
                 return p;
             }
         }
