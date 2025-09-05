@@ -286,7 +286,10 @@ class PluginWebAPI:
                 'error': f'Error generating UI: {str(e)}'
             }, status=500)
     
-    async def start_server(self, host='localhost', port=8080):
+    async def start_server(self, host='localhost', port=None):
+        if port is None:
+            port = config_manager.get_webui_port()
+        
         runner = web.AppRunner(self.app)
         await runner.setup()
         site = web.TCPSite(runner, host, port)

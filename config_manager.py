@@ -38,6 +38,8 @@ class ConfigManager:
             self._config['webui']['autoOpenOnInject'] = True
         if 'url' not in self._config['webui']:
             self._config['webui']['url'] = 'http://localhost:8080'
+        if 'port' not in self._config['webui']:
+            self._config['webui']['port'] = 8080
         
         # Migrate autoInject to injector section if it exists at root level
         if 'autoInject' in self._config and 'injector' in self._config:
@@ -268,7 +270,22 @@ class ConfigManager:
         self.set_path('webui.url', url)
         logger.info(f"Updated web UI URL: {url}")
 
-    def set_webui_config(self, darkmode: bool = None, autoOpenOnInject: bool = None, url: str = None) -> None:
+    def get_webui_port(self) -> int:
+        return self.get_path('webui.port', 8080)
+
+    def set_webui_port(self, port: int) -> None:
+        self.set_path('webui.port', port)
+        # Automatically update the URL to match the new port
+        url = f"http://localhost:{port}"
+        self.set_path('webui.url', url)
+        logger.info(f"Updated web UI port: {port} and URL: {url}")
+
+    def get_webui_url_from_port(self) -> str:
+        """Get the webui URL constructed from the current port setting"""
+        port = self.get_webui_port()
+        return f"http://localhost:{port}"
+
+    def set_webui_config(self, darkmode: bool = None, autoOpenOnInject: bool = None, url: str = None, port: int = None) -> None:
         webui_config = self.get_webui_config()
         
         if darkmode is not None:
@@ -277,6 +294,8 @@ class ConfigManager:
             webui_config['autoOpenOnInject'] = autoOpenOnInject
         if url is not None:
             webui_config['url'] = url
+        if port is not None:
+            webui_config['port'] = port
         
         self._config['webui'] = webui_config
         self._save_config()

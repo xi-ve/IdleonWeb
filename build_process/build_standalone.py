@@ -237,8 +237,9 @@ def copy_config_to_output(output_dir: Path):
             "debugMode": False,
             "chromePath": "",
             "webui": {
-                "enabled": True,
-                "host": "localhost",
+                "darkmode": False,
+                "autoOpenOnInject": True,
+                "url": "http://localhost:8080",
                 "port": 8080
             },
             "injector": {

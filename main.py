@@ -199,10 +199,12 @@ def cmd_inject(args=None, plugin_manager=None):
                 daemon=True
             )
             web_server_task.start()
-            console.print("[green]Plugin UI web server started at http://localhost:8080[/green]")
+            webui_port = config_manager.get_webui_port()
+            webui_url = f"http://localhost:{webui_port}"
+            console.print(f"[green]Plugin UI web server started at {webui_url}[/green]")
             try:
                 if config_manager.get_webui_auto_open():
-                    url_to_open = config_manager.get_webui_url()
+                    url_to_open = config_manager.get_webui_url_from_port()
                     console.print(f"[cyan]Opening Web UI at {url_to_open} in the target browser...[/cyan]")
                     import time
                     time.sleep(0.5)
@@ -359,8 +361,11 @@ def cmd_help(args=None, plugin_manager=None, all_commands=None):
 
 def cmd_web_ui(args=None, plugin_manager=None):
     global web_server_task
+    webui_port = config_manager.get_webui_port()
+    webui_url = f"http://localhost:{webui_port}"
+    
     if web_server_task and web_server_task.is_alive():
-        console.print("[yellow]Web server is already running at http://localhost:8080[/yellow]")
+        console.print(f"[yellow]Web server is already running at {webui_url}[/yellow]")
         return
     
     try:
@@ -370,7 +375,7 @@ def cmd_web_ui(args=None, plugin_manager=None):
             daemon=True
         )
         web_server_task.start()
-        console.print("[green]Plugin UI web server started at http://localhost:8080[/green]")
+        console.print(f"[green]Plugin UI web server started at {webui_url}[/green]")
         console.print("[cyan]Open your browser to configure plugins with a modern web interface![/cyan]")
     except Exception as e:
         console.print(f"[red]Failed to start web server: {e}[/red]")
@@ -398,6 +403,21 @@ def cmd_webui_url(args=None, plugin_manager=None):
         console.print(f"[green]Web UI URL set to {args[0]}[/green]")
     else:
         console.print(f"[cyan]Current Web UI URL: {config_manager.get_webui_url()}[/cyan]")
+
+def cmd_webui_port(args=None, plugin_manager=None):
+    if args and args[0]:
+        try:
+            port = int(args[0])
+            if port < 1 or port > 65535:
+                console.print("[red]Port must be between 1 and 65535[/red]")
+                return
+            config_manager.set_webui_port(port)
+            console.print(f"[green]Web UI port set to {port}[/green]")
+        except ValueError:
+            console.print("[red]Port must be a valid number[/red]")
+    else:
+        port = config_manager.get_webui_port()
+        console.print(f"[cyan]Current Web UI port: {port}[/cyan]")
 
 def cmd_exit(args=None, plugin_manager=None):
     global update_loop_stop, update_loop_task, web_server_task
@@ -607,6 +627,7 @@ def main():
         'web_ui': {'func': cmd_web_ui, 'help': 'Start the plugin web UI server.'},
         'webui_auto_open': {'func': cmd_webui_auto_open, 'help': 'Toggle or set auto-open of Web UI after injection (on/off).'},
         'webui_url': {'func': cmd_webui_url, 'help': 'Set or view the Web UI URL to open after injection.'},
+        'webui_port': {'func': cmd_webui_port, 'help': 'Set or view the Web UI port (1-65535).'},
         'help': {'func': cmd_help, 'help': 'Show this help menu.'},
         'exit': {'func': cmd_exit, 'help': 'Exit the CLI.'},
         'reload': {'func': cmd_reload, 'help': 'Hot reload all plugins, JS, and web UI into the active injector session.'}
