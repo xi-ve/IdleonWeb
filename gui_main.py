@@ -82,7 +82,10 @@ class IdleonWebGUI:
         self.root.geometry("900x600")
         self.root.minsize(700, 500)
         
-        self.root.attributes('-type', 'dialog')
+        try:
+            self.root.attributes('-type', 'dialog')
+        except Exception:
+            pass
         self.root.attributes('-topmost', False)
         
         self.plugin_manager: Optional[PluginManager] = None
@@ -862,7 +865,10 @@ class IdleonWebGUI:
         popup.geometry("400x200")
         popup.resizable(False, False)
         
-        popup.attributes('-type', 'dialog')
+        try:
+            popup.attributes('-type', 'dialog')
+        except Exception:
+            pass
         popup.attributes('-topmost', True)
         
         main_window_x = self.root.winfo_x()
