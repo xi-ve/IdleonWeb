@@ -2,6 +2,11 @@
 # The main build pipeline is in combined-tests-and-release.yml
 # This workflow should only be used for emergency builds or testing.
 
+# Self-hosted runners with fallback to GitHub-hosted runners:
+# - kemo: Linux X64 (fallback: ubuntu-latest)  
+# - MARIO: Windows X64 (fallback: windows-latest)
+# - kemotic-bigmac: macOS ARM64 (fallback: macos-latest)
+
 name: Manual Build Multi-Platform Releases
 
 on:
@@ -19,21 +24,21 @@ on:
 
 jobs:
   build:
-    name: Build for ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: Build for ${{ matrix.platform }}
+    runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            platform: linux
+          - platform: linux
+            runner: [self-hosted, kemo, ubuntu-latest]
             artifact-name: IdleonWeb-linux
             executable-name: IdleonWeb
-          - os: windows-latest
-            platform: windows
+          - platform: windows
+            runner: [self-hosted, MARIO, windows-latest]
             artifact-name: IdleonWeb-windows
             executable-name: IdleonWeb.exe
-          - os: macos-latest
-            platform: macos
+          - platform: macos
+            runner: [self-hosted, kemotic-bigmac, macos-latest]
             artifact-name: IdleonWeb-macos-universal2
             executable-name: IdleonWeb
 
@@ -122,7 +127,7 @@ jobs:
   release:
     name: Create Release
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, kemo, ubuntu-latest]
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     
     steps:

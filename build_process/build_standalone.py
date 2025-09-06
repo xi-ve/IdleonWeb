@@ -604,7 +604,7 @@ def get_pyinstaller_args(platform: str, temp_dir: Path, launcher_script: Path, o
             "--exclude-module=PIL",
         ])
     elif platform == "windows":
-        # Create version info file for Windows - use absolute path to avoid PyInstaller path resolution issues
+         # Create version info file for Windows - use absolute path to avoid PyInstaller path resolution issues
         version_file = create_version_file(temp_dir, version, root_fallback=True)
         version_file_abs = str(version_file.absolute())
         print_debug(f"Version file absolute: {version_file.absolute()}")
@@ -627,23 +627,30 @@ def get_pyinstaller_args(platform: str, temp_dir: Path, launcher_script: Path, o
     
     # Use platform-specific icon, fallback to icon.ico
     icon_file = None
+    icon_path = None
     if platform == "windows":
         if Path("icon.ico").exists():
             icon_file = "icon.ico"
+            icon_path = Path("icon.ico").absolute()
     elif platform == "macos":
         if Path("icon.icns").exists():
             icon_file = "icon.icns"
+            icon_path = Path("icon.icns").absolute()
         elif Path("icon.ico").exists():
             icon_file = "icon.ico"
+            icon_path = Path("icon.ico").absolute()
     elif platform == "linux":
         if Path("icon.png").exists():
             icon_file = "icon.png"
+            icon_path = Path("icon.png").absolute()
         elif Path("icon.ico").exists():
             icon_file = "icon.ico"
+            icon_path = Path("icon.ico").absolute()
     
-    if icon_file:
-        args.extend(["--icon", icon_file])
+    if icon_file and icon_path:
+        args.extend(["--icon", str(icon_path)])
         print_debug(f"Using icon: {icon_file}")
+        print_debug(f"Icon absolute path: {icon_path}")
     else:
         print_warning("No icon file found")
     
