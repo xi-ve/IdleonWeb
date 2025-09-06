@@ -395,6 +395,8 @@ VSVersionInfo(
 '''
     
     version_file = temp_dir / "version_info.txt"
+    print_debug(f"Creating version file at: {version_file.absolute()}")
+    
     with open(version_file, "w", encoding="utf-8") as f:
         f.write(version_info_content)
     
@@ -599,8 +601,13 @@ def get_pyinstaller_args(platform: str, temp_dir: Path, launcher_script: Path, o
     elif platform == "windows":
         # Create version info file for Windows
         version_file = create_version_file(temp_dir, version)
+        # Use relative path from current working directory to avoid path duplication issues
+        version_file_rel = os.path.relpath(version_file, Path.cwd())
+        print_debug(f"Version file absolute: {version_file.absolute()}")
+        print_debug(f"Version file relative: {version_file_rel}")
+        print_debug(f"Current working directory: {Path.cwd()}")
         args.extend([
-            f"--version-file={version_file}",
+            f"--version-file={version_file_rel}",
             "--exclude-module=matplotlib",
             "--exclude-module=PIL",
         ])
