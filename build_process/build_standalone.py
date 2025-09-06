@@ -604,12 +604,14 @@ def get_pyinstaller_args(platform: str, temp_dir: Path, launcher_script: Path, o
             "--exclude-module=PIL",
         ])
     elif platform == "windows":
-        # Create version info file for Windows - try root directory to avoid path issues
+        # Create version info file for Windows - use absolute path to avoid PyInstaller path resolution issues
         version_file = create_version_file(temp_dir, version, root_fallback=True)
+        version_file_abs = str(version_file.absolute())
         print_debug(f"Version file absolute: {version_file.absolute()}")
+        print_debug(f"Version file path for PyInstaller: {version_file_abs}")
         print_debug(f"Current working directory: {Path.cwd()}")
         args.extend([
-            f"--version-file={version_file.name}",  # Use just filename since it's in CWD
+            f"--version-file={version_file_abs}",  # Use absolute path to avoid specpath resolution
             "--exclude-module=matplotlib",
             "--exclude-module=PIL",
         ])
