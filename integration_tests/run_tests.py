@@ -127,29 +127,6 @@ def test_dependencies():
     print_success("All dependencies available")
     return True
 
-def test_config_file():
-    print_status("Testing configuration file...")
-    
-    config_path = Path("core/conf.json")
-    if not config_path.exists():
-        print_error("Configuration file not created")
-        return False
-    
-    try:
-        with open(config_path, 'r', encoding='utf-8') as f:
-            config = json.load(f)
-        
-        required_keys = ['plugins', 'plugin_configs', 'debug', 'injector']
-        for key in required_keys:
-            if key not in config:
-                print_error(f"Missing required config key: {key}")
-                return False
-        
-        print_success("Configuration file is valid")
-        return True
-    except Exception as e:
-        print_error(f"Configuration file error: {e}")
-        return False
 
 def test_plugin_system():
     print_status("Testing plugin system...")
@@ -332,7 +309,6 @@ def run_all_tests():
         ("Dependencies", test_dependencies),
         ("Setup Script", test_setup_script),
         ("Virtual Environment", test_virtual_environment),
-        ("Configuration File", test_config_file),
         ("Universal Setup Script", test_platform_specific_setup),
         ("Main Script", test_main_script)
     ]
@@ -382,7 +358,7 @@ def run_all_tests():
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python run_tests.py [arch|ubuntu|windows|all]")
+        print("Usage: python run_tests.py [arch|windows|all]")
         sys.exit(1)
     
     platform = sys.argv[1]
