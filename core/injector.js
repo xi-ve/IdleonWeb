@@ -7,7 +7,7 @@ const _ = require('lodash');
 
 class ConfigManager {
     constructor() {
-        this.confPath = path.join(__dirname, 'conf.json');
+        this.confPath = this.getConfigPath();
         this.config = this.loadConfig();
         this.injectorConfig = this.config.injector || {};
         this.cdpPort = this.injectorConfig.cdp_port || 32123;
@@ -17,6 +17,24 @@ class ConfigManager {
         this.profileInitTimeout = this.injectorConfig.profile_init_timeout || 5000;
         this.debug = this.config.debug || false;
         this.debugLogPath = path.join(process.cwd(), 'injector-debug.log');
+    }
+
+    getConfigPath() {
+        // Check if running in compiled binary mode
+        if (process.env.IDLEONWEB_STANDALONE === '1' || process.pkg) {
+            // In compiled mode, look for config next to the binary
+            const binaryDir = path.dirname(process.execPath);
+            const configPath = path.join(binaryDir, 'conf.json');
+            if (fs.existsSync(configPath)) {
+                console.log(`[Injector] Using config from binary directory: ${configPath}`);
+                return configPath;
+            }
+        }
+        
+        // Default to core directory
+        const coreConfigPath = path.join(__dirname, 'conf.json');
+        console.log(`[Injector] Using config from core directory: ${coreConfigPath}`);
+        return coreConfigPath;
     }
 
     debugLog(message) {
@@ -32,13 +50,14 @@ class ConfigManager {
     }
 
     loadConfig() {
+        console.log(`[Injector] Loading config from: ${this.confPath}`);
         if (fs.existsSync(this.confPath)) {
             const config = JSON.parse(fs.readFileSync(this.confPath, 'utf-8'));
             if (typeof config.interactive === 'undefined') config.interactive = false;
             console.log('[Injector] Loaded config from conf.json:', config);
             return config;
         } else {
-            console.warn('[Injector] conf.json not found, using default config.');
+            console.warn(`[Injector] conf.json not found at ${this.confPath}, using default config.`);
             return { openDevTools: false, interactive: false };
         }
     }
