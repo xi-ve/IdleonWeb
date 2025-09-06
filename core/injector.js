@@ -5,10 +5,16 @@ const os = require('os');
 const path = require('path');
 const _ = require('lodash');
 
+console.log('[Injector] Starting injector.js...');
+console.log(`[Injector] Process arguments: ${JSON.stringify(process.argv)}`);
+
 class ConfigManager {
     constructor() {
+        console.log('[Injector] ConfigManager constructor called');
         this.confPath = this.getConfigPath();
+        console.log(`[Injector] Config path determined: ${this.confPath}`);
         this.config = this.loadConfig();
+        console.log(`[Injector] Config loaded: ${this.config ? 'success' : 'failed'}`);
         this.injectorConfig = this.config.injector || {};
         this.cdpPort = this.injectorConfig.cdp_port || 32123;
         this.njsPattern = this.injectorConfig.njs_pattern || '*N.js';
@@ -138,16 +144,16 @@ class BrowserLauncher {
 
 
     findChromiumPath() {
-        const browserConfig = this.config.browser;
+        const browserConfig = this.config.config.browser;
         this.config.debugLog(`[Injector] DEBUG: Browser config: ${JSON.stringify(browserConfig, null, 2)}`);
         
-        if (this.config.debug) {
+        if (this.config.config.debug) {
             console.log(`[Injector] === BROWSER DETECTION DEBUG ===`);
             console.log(`[Injector] Browser config: ${JSON.stringify(browserConfig, null, 2)}`);
         }
         
         if (browserConfig?.path) {
-            if (this.config.debug) {
+            if (this.config.config.debug) {
                 console.log(`[Injector] Checking configured browser path: ${browserConfig.path}`);
                 console.log(`[Injector] Path exists: ${fs.existsSync(browserConfig.path)}`);
             }
@@ -159,7 +165,7 @@ class BrowserLauncher {
                 console.log(`[Injector] Configured path does not exist: ${browserConfig.path}`);
             }
         } else {
-            if (this.config.debug) {
+            if (this.config.config.debug) {
                 console.log(`[Injector] No browser path configured`);
             }
         }
@@ -617,6 +623,7 @@ class GameContextManager {
 
 class IdleonInjector {
     constructor() {
+        console.log('[Injector] IdleonInjector constructor called');
         this.configManager = new ConfigManager();
         this.browserLauncher = new BrowserLauncher(this.configManager);
         this.cdpManager = new CDPManager(this.configManager);
@@ -671,5 +678,7 @@ class IdleonInjector {
     }
 }
 
+console.log('[Injector] Creating IdleonInjector instance...');
 const injector = new IdleonInjector();
+console.log('[Injector] Starting injector.run()...');
 injector.run();
