@@ -1,10 +1,5 @@
 name: Integration Tests and Release
 
-# Self-hosted runners with fallback to GitHub-hosted runners:
-# - kemo: Linux X64 (fallback: ubuntu-latest)  
-# - MARIO: Windows X64 (fallback: windows-latest)
-# - kemotic-bigmac: macOS ARM64 (fallback: macos-14)
-# - macOS x86_64 builds use GitHub-hosted macos-13
 
 on:
   push:
@@ -18,38 +13,6 @@ permissions:
   actions: read
 
 jobs:
-  # Decide per-platform runner targets with fallback
-  select-runners:
-    runs-on: ubuntu-latest
-    outputs:
-      linux: ${{ steps.pick.outputs.linux }}
-      windows: ${{ steps.pick.outputs.windows }}
-      macos: ${{ steps.pick.outputs.macos }}
-    steps:
-      - name: Pick runners (self-hosted when online, else GitHub-hosted)
-        id: pick
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GH_RUNNER || github.token }}
-          script: |
-            try {
-              const {owner, repo} = context.repo;
-              const res = await github.request('GET /repos/{owner}/{repo}/actions/runners', { owner, repo, per_page: 100 });
-              function available(label) {
-                return res.data.runners.some(r => r.status === 'online' && !r.busy && r.labels.some(l => l.name === label));
-              }
-              const linux = available('Linux') ? '["self-hosted","Linux"]' : '"ubuntu-latest"';
-              const windows = available('Windows') ? '["self-hosted","Windows"]' : '"windows-latest"';
-              const macos = available('macOS') ? '["self-hosted","macOS"]' : '"macos-14"';
-              core.setOutput('linux', linux);
-              core.setOutput('windows', windows);
-              core.setOutput('macos', macos);
-            } catch (error) {
-              core.warning(`Falling back to GitHub-hosted due to API error: ${error.message}`);
-              core.setOutput('linux', '"ubuntu-latest"');
-              core.setOutput('windows', '"windows-latest"');
-              core.setOutput('macos', '"macos-14"');
-            }
   # Check if we should run tests
   check-commit:
     runs-on: ubuntu-latest
@@ -89,16 +52,10 @@ jobs:
           fi
 
   test-arch:
-    needs: [check-commit, select-runners]
+    needs: check-commit
     if: needs.check-commit.outputs.should-run == 'true'
-    runs-on: ${{ fromJSON(needs.select-runners.outputs.linux) }}
+    runs-on: [ubuntu-latest]
     steps:
-      - name: Fix workspace permissions (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          sudo chown -R "$USER":"$USER" "$GITHUB_WORKSPACE" || true
-          sudo find "$GITHUB_WORKSPACE" -type d -exec chmod u+rwx {} \; || true
-          sudo find "$GITHUB_WORKSPACE" -type f -exec chmod u+rw {} \; || true
       - uses: actions/checkout@v4
       
       - name: Set up Docker Buildx
@@ -115,9 +72,9 @@ jobs:
           docker compose --profile arch-test up --build --force-recreate --exit-code-from test-arch
 
   test-windows:
-    needs: [check-commit, select-runners]
+    needs: check-commit
     if: needs.check-commit.outputs.should-run == 'true'
-    runs-on: ${{ fromJSON(needs.select-runners.outputs.windows) }}
+    runs-on: [windows-latest]
     steps:
       - uses: actions/checkout@v4
       
@@ -151,9 +108,9 @@ jobs:
           python integration_tests/run_tests.py windows
 
   test-summary:
-    needs: [check-commit, select-runners, test-arch, test-windows]
+    needs: [check-commit, test-arch, test-windows]
     if: needs.check-commit.outputs.should-run == 'true'
-    runs-on: ${{ fromJSON(needs.select-runners.outputs.linux) }}
+    runs-on: [ubuntu-latest]
     steps:
       - name: Show test summary
         run: |
@@ -170,22 +127,16 @@ jobs:
 
   # Build binaries on native platforms
   build-linux:
-    needs: [check-commit, select-runners, test-arch, test-windows]
+    needs: [check-commit, test-arch, test-windows]
     if: |
       always() && 
       needs.check-commit.outputs.should-release == 'true' &&
       needs.test-arch.result == 'success' &&
       needs.test-windows.result == 'success'
-    runs-on: ${{ fromJSON(needs.select-runners.outputs.linux) }}
+    runs-on: [ubuntu-latest]
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - name: Fix workspace permissions (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          sudo chown -R "$USER":"$USER" "$GITHUB_WORKSPACE" || true
-          sudo find "$GITHUB_WORKSPACE" -type d -exec chmod u+rwx {} \; || true
-          sudo find "$GITHUB_WORKSPACE" -type f -exec chmod u+rw {} \; || true
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -264,14 +215,14 @@ jobs:
           path: IdleonWeb-linux-v${{ steps.version.outputs.version }}.tar.gz
 
   build-windows:
-    needs: [check-commit, select-runners, test-arch, test-windows, build-linux]
+    needs: [check-commit, test-arch, test-windows, build-linux]
     if: |
       always() && 
       needs.check-commit.outputs.should-release == 'true' &&
       needs.test-arch.result == 'success' &&
       needs.test-windows.result == 'success' &&
       needs.build-linux.result == 'success'
-    runs-on: ${{ fromJSON(needs.select-runners.outputs.windows) }}
+    runs-on: [windows-latest]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -320,14 +271,14 @@ jobs:
           path: IdleonWeb-windows-v${{ needs.build-linux.outputs.version }}.zip
 
   build-macos-arm64:
-    needs: [check-commit, select-runners, test-arch, test-windows, build-linux]
+    needs: [check-commit, test-arch, test-windows, build-linux]
     if: |
       always() && 
       needs.check-commit.outputs.should-release == 'true' &&
       needs.test-arch.result == 'success' &&
       needs.test-windows.result == 'success' &&
       needs.build-linux.result == 'success'
-    runs-on: ${{ fromJSON(needs.select-runners.outputs.macos) }}
+    runs-on: [macos-14]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -432,16 +383,10 @@ jobs:
           path: IdleonWeb-macos-x86_64-v${{ needs.build-linux.outputs.version }}.tar.gz
 
   release:
-    needs: [select-runners, build-linux, build-windows, build-macos-arm64, build-macos-x86_64]
+    needs: [build-linux, build-windows, build-macos-arm64, build-macos-x86_64]
     if: always() && needs.build-linux.result == 'success'
-    runs-on: ${{ fromJSON(needs.select-runners.outputs.linux) }}
+    runs-on: [ubuntu-latest]
     steps:
-      - name: Fix workspace permissions (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          sudo chown -R "$USER":"$USER" "$GITHUB_WORKSPACE" || true
-          sudo find "$GITHUB_WORKSPACE" -type d -exec chmod u+rwx {} \; || true
-          sudo find "$GITHUB_WORKSPACE" -type f -exec chmod u+rw {} \; || true
       - name: Checkout code
         uses: actions/checkout@v4
         with:
