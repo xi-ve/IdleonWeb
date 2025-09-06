@@ -346,7 +346,7 @@ def copy_config_to_output(output_dir: Path):
             json.dump(default_config, f, indent=2)
         print_status(f"Created default config at {output_config}")
 
-def create_version_file(temp_dir: Path, version: str) -> Path:
+def create_version_file(temp_dir: Path, version: str, root_fallback: bool = False) -> Path:
     """Create version info file for Windows builds"""
     version_info_content = f'''# UTF-8
 #
@@ -394,7 +394,12 @@ VSVersionInfo(
 )
 '''
     
-    version_file = temp_dir / "version_info.txt"
+    # Create version file in root directory to avoid PyInstaller path resolution issues
+    if root_fallback:
+        version_file = Path.cwd() / f"version_info_{version.replace('.', '_')}.txt"
+    else:
+        version_file = temp_dir / "version_info.txt"
+        
     print_debug(f"Creating version file at: {version_file.absolute()}")
     
     with open(version_file, "w", encoding="utf-8") as f:
@@ -599,15 +604,12 @@ def get_pyinstaller_args(platform: str, temp_dir: Path, launcher_script: Path, o
             "--exclude-module=PIL",
         ])
     elif platform == "windows":
-        # Create version info file for Windows
-        version_file = create_version_file(temp_dir, version)
-        # Use relative path from current working directory to avoid path duplication issues
-        version_file_rel = os.path.relpath(version_file, Path.cwd())
+        # Create version info file for Windows - try root directory to avoid path issues
+        version_file = create_version_file(temp_dir, version, root_fallback=True)
         print_debug(f"Version file absolute: {version_file.absolute()}")
-        print_debug(f"Version file relative: {version_file_rel}")
         print_debug(f"Current working directory: {Path.cwd()}")
         args.extend([
-            f"--version-file={version_file_rel}",
+            f"--version-file={version_file.name}",  # Use just filename since it's in CWD
             "--exclude-module=matplotlib",
             "--exclude-module=PIL",
         ])
@@ -729,6 +731,14 @@ def cleanup_build_files(build_dir: Path, keep_dist: bool = True):
     temp_dir = build_dir / "temp"
     if temp_dir.exists():
         shutil.rmtree(temp_dir)
+    
+    # Clean up temporary version files from root directory
+    for version_file in Path.cwd().glob("version_info_*.txt"):
+        try:
+            version_file.unlink()
+            print_debug(f"Cleaned up version file: {version_file}")
+        except Exception as e:
+            print_warning(f"Could not remove version file {version_file}: {e}")
     
     if not keep_dist:
         dist_dir = build_dir / "dist"
