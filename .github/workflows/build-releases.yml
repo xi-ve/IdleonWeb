@@ -42,9 +42,9 @@ jobs:
             function available(label) {
               return res.data.runners.some(r => r.status === 'online' && !r.busy && r.labels.some(l => l.name === label));
             }
-            const linux = available('kemo') ? '["self-hosted","kemo"]' : '"ubuntu-latest"';
-            const windows = available('MARIO') ? '["self-hosted","MARIO"]' : '"windows-latest"';
-            const macos = available('kemotic-bigmac') ? '["self-hosted","kemotic-bigmac"]' : '"macos-latest"';
+            const linux = available('Linux') ? '["self-hosted","Linux"]' : '"ubuntu-latest"';
+            const windows = available('Windows') ? '["self-hosted","Windows"]' : '"windows-latest"';
+            const macos = available('macOS') ? '["self-hosted","macOS"]' : '"macos-latest"';
             core.setOutput('linux', linux);
             core.setOutput('windows', windows);
             core.setOutput('macos', macos);
@@ -76,6 +76,12 @@ jobs:
             executable-name: IdleonWeb
 
     steps:
+    - name: Fix workspace permissions (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo chown -R "$USER":"$USER" "$GITHUB_WORKSPACE" || true
+        sudo find "$GITHUB_WORKSPACE" -type d -exec chmod u+rwx {} \; || true
+        sudo find "$GITHUB_WORKSPACE" -type f -exec chmod u+rw {} \; || true
     - name: Checkout code
       uses: actions/checkout@v4
 
