@@ -168,8 +168,9 @@ def ensure_node_dependencies(startup_msgs=None):
 
 def run_injector():
     try:
+        config_path = str(config_manager.conf_path)
         process = subprocess.Popen(
-            [NODE_PATH, str(INJECTOR_PATH)],
+            [NODE_PATH, str(INJECTOR_PATH), '--config', config_path],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,

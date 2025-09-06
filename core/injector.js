@@ -20,6 +20,18 @@ class ConfigManager {
     }
 
     getConfigPath() {
+        // Check for --config command line argument
+        const configArgIndex = process.argv.indexOf('--config');
+        if (configArgIndex !== -1 && configArgIndex + 1 < process.argv.length) {
+            const configPath = process.argv[configArgIndex + 1];
+            if (fs.existsSync(configPath)) {
+                console.log(`[Injector] Using config from command line: ${configPath}`);
+                return configPath;
+            } else {
+                console.log(`[Injector] Config file not found at: ${configPath}, falling back to default`);
+            }
+        }
+        
         // Check if running in compiled binary mode
         if (process.env.IDLEONWEB_STANDALONE === '1' || process.pkg) {
             // In compiled mode, look for config next to the binary
