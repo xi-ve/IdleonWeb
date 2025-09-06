@@ -653,6 +653,10 @@ class IdleonWebGUI:
                 if not self.plugin_manager:
                     self.log_message("No plugin manager available", "error")
                     return
+                
+                if self.login_reminder_timer:
+                    self.root.after_cancel(self.login_reminder_timer)
+                    self.login_reminder_timer = None
                     
                 self.injection_in_progress = True
                 self.login_reminder_popup_shown = False
@@ -690,11 +694,17 @@ class IdleonWebGUI:
                     self.log_message("Game injection failed - could not connect to browser", "error")
                     self.injection_status = "error"
                     self.update_status_indicator(self.injection_status_indicator, "error")
+                    if self.login_reminder_timer:
+                        self.root.after_cancel(self.login_reminder_timer)
+                        self.login_reminder_timer = None
                 
             except Exception as e:
                 self.log_message(f"Injection failed: {e}", "error")
                 self.injection_status = "error"
                 self.update_status_indicator(self.injection_status_indicator, "error")
+                if self.login_reminder_timer:
+                    self.root.after_cancel(self.login_reminder_timer)
+                    self.login_reminder_timer = None
             finally:
                 self.injection_in_progress = False
                 self.update_button_states()
@@ -703,6 +713,12 @@ class IdleonWebGUI:
     
     def stop_injection(self):
         try:
+            if self.login_reminder_timer:
+                self.root.after_cancel(self.login_reminder_timer)
+                self.login_reminder_timer = None
+            self.login_reminder_popup_shown = False
+            self.injection_in_progress = False
+            
             if self.injector:
                 from main import cmd_stop_injection
                 cmd_stop_injection(plugin_manager=self.plugin_manager)
@@ -1040,6 +1056,10 @@ class IdleonWebGUI:
     
     def on_closing(self):
         try:
+            if self.login_reminder_timer:
+                self.root.after_cancel(self.login_reminder_timer)
+                self.login_reminder_timer = None
+            
             if self.injection_status == "connected" and self.injector:
                 self.log_message("Closing browser via CDP before shutdown...")
                 try:

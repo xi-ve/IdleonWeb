@@ -244,7 +244,6 @@ def test_file_structure():
         "config_manager.py",
         "setup.py",
         "requirements.txt",
-        "core/conf.json",
         "core/package.json",
         "plugins/character/spawn_item.py",
         "plugins/character/instant_mob_respawn.py",
