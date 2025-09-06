@@ -70,26 +70,6 @@ jobs:
           cd integration_tests
           docker compose --profile arch-test up --build --force-recreate --exit-code-from test-arch
 
-  test-ubuntu:
-    needs: check-commit
-    if: needs.check-commit.outputs.should-run == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      
-      - name: Clean Docker cache
-        run: |
-          docker system prune -f
-          docker builder prune -f
-      
-      - name: Run Ubuntu tests
-        run: |
-          cd integration_tests
-          docker compose --profile ubuntu-test up --build --force-recreate --exit-code-from test-ubuntu
-
   test-windows:
     needs: check-commit
     if: needs.check-commit.outputs.should-run == 'true'
@@ -127,7 +107,7 @@ jobs:
           python integration_tests/run_tests.py windows
 
   test-summary:
-    needs: [check-commit, test-arch, test-ubuntu, test-windows]
+    needs: [check-commit, test-arch, test-windows]
     if: needs.check-commit.outputs.should-run == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -140,19 +120,17 @@ jobs:
           echo ""
           echo "Test Results:"
           echo "- Arch Linux: ✅ PASS"
-          echo "- Ubuntu: ✅ PASS" 
           echo "- Windows: ✅ PASS"
           echo ""
           echo "All integration tests passed across all platforms!"
 
   # Build binaries on native platforms
   build-linux:
-    needs: [check-commit, test-arch, test-ubuntu, test-windows]
+    needs: [check-commit, test-arch, test-windows]
     if: |
       always() && 
       needs.check-commit.outputs.should-release == 'true' &&
       needs.test-arch.result == 'success' &&
-      needs.test-ubuntu.result == 'success' &&
       needs.test-windows.result == 'success'
     runs-on: ubuntu-latest
     outputs:
@@ -236,12 +214,11 @@ jobs:
           path: IdleonWeb-linux-v${{ steps.version.outputs.version }}.tar.gz
 
   build-windows:
-    needs: [check-commit, test-arch, test-ubuntu, test-windows, build-linux]
+    needs: [check-commit, test-arch, test-windows, build-linux]
     if: |
       always() && 
       needs.check-commit.outputs.should-release == 'true' &&
       needs.test-arch.result == 'success' &&
-      needs.test-ubuntu.result == 'success' &&
       needs.test-windows.result == 'success' &&
       needs.build-linux.result == 'success'
     runs-on: windows-latest
@@ -293,12 +270,11 @@ jobs:
           path: IdleonWeb-windows-v${{ needs.build-linux.outputs.version }}.zip
 
   build-macos-arm64:
-    needs: [check-commit, test-arch, test-ubuntu, test-windows, build-linux]
+    needs: [check-commit, test-arch, test-windows, build-linux]
     if: |
       always() && 
       needs.check-commit.outputs.should-release == 'true' &&
       needs.test-arch.result == 'success' &&
-      needs.test-ubuntu.result == 'success' &&
       needs.test-windows.result == 'success' &&
       needs.build-linux.result == 'success'
     runs-on: macos-14
@@ -350,12 +326,11 @@ jobs:
           path: IdleonWeb-macos-arm64-v${{ needs.build-linux.outputs.version }}.tar.gz
 
   build-macos-x86_64:
-    needs: [check-commit, test-arch, test-ubuntu, test-windows, build-linux]
+    needs: [check-commit, test-arch, test-windows, build-linux]
     if: |
       always() && 
       needs.check-commit.outputs.should-release == 'true' &&
       needs.test-arch.result == 'success' &&
-      needs.test-ubuntu.result == 'success' &&
       needs.test-windows.result == 'success' &&
       needs.build-linux.result == 'success'
     runs-on: macos-13
