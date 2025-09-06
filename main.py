@@ -169,6 +169,15 @@ def ensure_node_dependencies(startup_msgs=None):
 def run_injector():
     try:
         config_path = str(config_manager.conf_path)
+        debug = config_manager.get_path('debug', False)
+        
+        if debug:
+            console.print(f"[cyan]DEBUG: Launching injector with config: {config_path}[/cyan]")
+            console.print(f"[cyan]DEBUG: Config file exists: {Path(config_path).exists()}[/cyan]")
+            console.print(f"[cyan]DEBUG: Node path: {NODE_PATH}[/cyan]")
+            console.print(f"[cyan]DEBUG: Injector path: {INJECTOR_PATH}[/cyan]")
+            console.print(f"[cyan]DEBUG: Full command: {[NODE_PATH, str(INJECTOR_PATH), '--config', config_path]}[/cyan]")
+        
         process = subprocess.Popen(
             [NODE_PATH, str(INJECTOR_PATH), '--config', config_path],
             stdout=subprocess.PIPE,

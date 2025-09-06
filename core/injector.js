@@ -24,6 +24,7 @@ class ConfigManager {
         const configArgIndex = process.argv.indexOf('--config');
         if (configArgIndex !== -1 && configArgIndex + 1 < process.argv.length) {
             const configPath = process.argv[configArgIndex + 1];
+            console.log(`[Injector] Found --config argument: ${configPath}`);
             if (fs.existsSync(configPath)) {
                 console.log(`[Injector] Using config from command line: ${configPath}`);
                 return configPath;
@@ -63,11 +64,32 @@ class ConfigManager {
 
     loadConfig() {
         console.log(`[Injector] Loading config from: ${this.confPath}`);
+        
         if (fs.existsSync(this.confPath)) {
-            const config = JSON.parse(fs.readFileSync(this.confPath, 'utf-8'));
-            if (typeof config.interactive === 'undefined') config.interactive = false;
-            console.log('[Injector] Loaded config from conf.json:', config);
-            return config;
+            try {
+                const configContent = fs.readFileSync(this.confPath, 'utf-8');
+                const config = JSON.parse(configContent);
+                if (typeof config.interactive === 'undefined') config.interactive = false;
+                
+                // Now that we have the config, check if debug is enabled for detailed logging
+                if (config.debug) {
+                    console.log(`[Injector] === CONFIG LOADING DEBUG ===`);
+                    console.log(`[Injector] Config file content length: ${configContent.length} characters`);
+                    console.log(`[Injector] Config file content preview: ${configContent.substring(0, 200)}...`);
+                    console.log(`[Injector] Successfully parsed config with keys: ${Object.keys(config)}`);
+                    if (config.browser) {
+                        console.log(`[Injector] Browser config: ${JSON.stringify(config.browser)}`);
+                    }
+                    console.log(`[Injector] Debug setting in config: ${config.debug}`);
+                    console.log('[Injector] Loaded config from conf.json:', config);
+                }
+                
+                return config;
+            } catch (error) {
+                console.error(`[Injector] Error parsing config file: ${error.message}`);
+                console.warn(`[Injector] Using default config due to parse error`);
+                return { openDevTools: false, interactive: false };
+            }
         } else {
             console.warn(`[Injector] conf.json not found at ${this.confPath}, using default config.`);
             return { openDevTools: false, interactive: false };
@@ -119,10 +141,27 @@ class BrowserLauncher {
         const browserConfig = this.config.browser;
         this.config.debugLog(`[Injector] DEBUG: Browser config: ${JSON.stringify(browserConfig, null, 2)}`);
         
-        if (browserConfig?.path && fs.existsSync(browserConfig.path)) {
-            console.log(`[Injector] Using configured browser path: ${browserConfig.path}`);
-            this.config.debugLog(`[Injector] DEBUG: Path exists and will be used: ${browserConfig.path}`);
-            return browserConfig.path;
+        if (this.config.debug) {
+            console.log(`[Injector] === BROWSER DETECTION DEBUG ===`);
+            console.log(`[Injector] Browser config: ${JSON.stringify(browserConfig, null, 2)}`);
+        }
+        
+        if (browserConfig?.path) {
+            if (this.config.debug) {
+                console.log(`[Injector] Checking configured browser path: ${browserConfig.path}`);
+                console.log(`[Injector] Path exists: ${fs.existsSync(browserConfig.path)}`);
+            }
+            if (fs.existsSync(browserConfig.path)) {
+                console.log(`[Injector] Using configured browser path: ${browserConfig.path}`);
+                this.config.debugLog(`[Injector] DEBUG: Path exists and will be used: ${browserConfig.path}`);
+                return browserConfig.path;
+            } else {
+                console.log(`[Injector] Configured path does not exist: ${browserConfig.path}`);
+            }
+        } else {
+            if (this.config.debug) {
+                console.log(`[Injector] No browser path configured`);
+            }
         }
         
         if (browserConfig?.name && browserConfig.name !== 'auto') {
