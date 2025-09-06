@@ -23,22 +23,47 @@ on:
         default: false
 
 jobs:
+  select-runners:
+    runs-on: ubuntu-latest
+    outputs:
+      linux: ${{ steps.pick.outputs.linux }}
+      windows: ${{ steps.pick.outputs.windows }}
+      macos: ${{ steps.pick.outputs.macos }}
+    steps:
+    - name: Pick runners (self-hosted when online, else GitHub-hosted)
+      id: pick
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const {owner, repo} = context.repo;
+          const res = await github.request('GET /repos/{owner}/{repo}/actions/runners', { owner, repo, per_page: 100 });
+          function available(label) {
+            return res.data.runners.some(r => r.status === 'online' && !r.busy && r.labels.some(l => l.name === label));
+          }
+          const linux = available('kemo') ? '["self-hosted","kemo"]' : '"ubuntu-latest"';
+          const windows = available('MARIO') ? '["self-hosted","MARIO"]' : '"windows-latest"';
+          const macos = available('kemotic-bigmac') ? '["self-hosted","kemotic-bigmac"]' : '"macos-latest"';
+          core.setOutput('linux', linux);
+          core.setOutput('windows', windows);
+          core.setOutput('macos', macos);
+
   build:
     name: Build for ${{ matrix.platform }}
-    runs-on: ${{ matrix.runner }}
+    needs: select-runners
+    runs-on: ${{ fromJSON(matrix.runner) }}
     strategy:
       matrix:
         include:
           - platform: linux
-            runner: [self-hosted, kemo, ubuntu-latest]
+            runner: ${{ needs.select-runners.outputs.linux }}
             artifact-name: IdleonWeb-linux
             executable-name: IdleonWeb
           - platform: windows
-            runner: [self-hosted, MARIO, windows-latest]
+            runner: ${{ needs.select-runners.outputs.windows }}
             artifact-name: IdleonWeb-windows
             executable-name: IdleonWeb.exe
           - platform: macos
-            runner: [self-hosted, kemotic-bigmac, macos-latest]
+            runner: ${{ needs.select-runners.outputs.macos }}
             artifact-name: IdleonWeb-macos-universal2
             executable-name: IdleonWeb
 
@@ -126,8 +151,8 @@ jobs:
 
   release:
     name: Create Release
-    needs: build
-    runs-on: [self-hosted, kemo, ubuntu-latest]
+    needs: [select-runners, build]
+    runs-on: ${{ fromJSON(needs.select-runners.outputs.linux) }}
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     
     steps:
