@@ -30,15 +30,15 @@ jobs:
       matrix:
         include:
           - platform: linux
-            runner: [self-hosted, kemo, ubuntu-latest]
+            runner: [self-hosted, Linux, ubuntu-latest]
             artifact-name: IdleonWeb-linux
             executable-name: IdleonWeb
           - platform: windows
-            runner: [self-hosted, MARIO, windows-latest]
+            runner: [self-hosted, Windows, windows-latest]
             artifact-name: IdleonWeb-windows
             executable-name: IdleonWeb.exe
           - platform: macos
-            runner: [self-hosted, kemotic-bigmac, macos-latest]
+            runner: [self-hosted, macOS, macos-latest]
             artifact-name: IdleonWeb-macos-universal2
             executable-name: IdleonWeb
 
@@ -127,7 +127,7 @@ jobs:
   release:
     name: Create Release
     needs: build
-    runs-on: [self-hosted, kemo, ubuntu-latest]
+    runs-on: [self-hosted, Linux, ubuntu-latest]
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     
     steps:

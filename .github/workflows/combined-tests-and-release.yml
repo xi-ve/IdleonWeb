@@ -59,7 +59,7 @@ jobs:
   test-arch:
     needs: check-commit
     if: needs.check-commit.outputs.should-run == 'true'
-    runs-on: [self-hosted, kemo, ubuntu-latest]
+    runs-on: [self-hosted, Linux, ubuntu-latest]
     steps:
       - uses: actions/checkout@v4
       
@@ -79,7 +79,7 @@ jobs:
   test-windows:
     needs: check-commit
     if: needs.check-commit.outputs.should-run == 'true'
-    runs-on: [self-hosted, MARIO, windows-latest]
+    runs-on: [self-hosted, Windows, windows-latest]
     steps:
       - uses: actions/checkout@v4
       
@@ -115,7 +115,7 @@ jobs:
   test-summary:
     needs: [check-commit, test-arch, test-windows]
     if: needs.check-commit.outputs.should-run == 'true'
-    runs-on: [self-hosted, kemo, ubuntu-latest]
+    runs-on: [self-hosted, Linux, ubuntu-latest]
     steps:
       - name: Show test summary
         run: |
@@ -138,7 +138,7 @@ jobs:
       needs.check-commit.outputs.should-release == 'true' &&
       needs.test-arch.result == 'success' &&
       needs.test-windows.result == 'success'
-    runs-on: [self-hosted, kemo, ubuntu-latest]
+    runs-on: [self-hosted, Linux, ubuntu-latest]
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -227,7 +227,7 @@ jobs:
       needs.test-arch.result == 'success' &&
       needs.test-windows.result == 'success' &&
       needs.build-linux.result == 'success'
-    runs-on: [self-hosted, MARIO, windows-latest]
+    runs-on: [self-hosted, Windows, windows-latest]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -283,7 +283,7 @@ jobs:
       needs.test-arch.result == 'success' &&
       needs.test-windows.result == 'success' &&
       needs.build-linux.result == 'success'
-    runs-on: [self-hosted, kemotic-bigmac, macos-14]
+    runs-on: [self-hosted, macOS, macos-14]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -390,7 +390,7 @@ jobs:
   release:
     needs: [build-linux, build-windows, build-macos-arm64, build-macos-x86_64]
     if: always() && needs.build-linux.result == 'success'
-    runs-on: [self-hosted, kemo, ubuntu-latest]
+    runs-on: [self-hosted, Linux, ubuntu-latest]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

@@ -1,0 +1,35 @@
+name: Test Self-Hosted Runners
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-linux:
+    runs-on: [self-hosted, kemo]
+    steps:
+      - name: Test Linux Runner
+        run: |
+          echo "✅ Linux runner is working!"
+          echo "Runner: $(hostname)"
+          echo "OS: $(uname -a)"
+          echo "Labels: self-hosted, Linux, X64"
+
+  test-windows:
+    runs-on: [self-hosted, MARIO]
+    steps:
+      - name: Test Windows Runner
+        run: |
+          echo "✅ Windows runner is working!"
+          echo "Runner: $env:COMPUTERNAME"
+          echo "OS: $env:OS"
+          echo "Labels: self-hosted, Windows, X64"
+
+  test-macos:
+    runs-on: [self-hosted, kemotic-bigmac]
+    steps:
+      - name: Test macOS Runner
+        run: |
+          echo "✅ macOS runner is working!"
+          echo "Runner: $(hostname)"
+          echo "OS: $(uname -a)"
+          echo "Labels: self-hosted, macOS, ARM64"
