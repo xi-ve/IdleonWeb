@@ -32,6 +32,25 @@ import platform
 from pathlib import Path
 from typing import List, Dict, Any
 
+# Project metadata
+PROJECT_NAME = "IdleonWeb"
+PROJECT_DESCRIPTION = "A modern, user-friendly launcher and plugin system for enhancing Legends of Idleon"
+PROJECT_URL = "https://github.com/xi-ve/IdleonWeb"
+PROJECT_AUTHOR = "xi-ve"
+PROJECT_COPYRIGHT = "Copyright (C) 2025 xi-ve"
+
+def get_project_version() -> str:
+    """Get version from VERSION file"""
+    version_file = Path("VERSION")
+    if version_file.exists():
+        try:
+            version = version_file.read_text().strip()
+            print_debug(f"Found version: {version}")
+            return version
+        except Exception as e:
+            print_warning(f"Failed to read VERSION file: {e}")
+    return "0.0.1"
+
 BUILD_CONFIG = {
     "hidden_imports": [
         "aiohttp", "aiohttp_jinja2", "jinja2", "rich", "prompt_toolkit", "pychrome",
@@ -52,15 +71,23 @@ PLATFORM_COMPATIBILITY = {
 
 def print_status(message: str):
     print(f"[BUILD] {message}")
+    sys.stdout.flush()
 
 def print_success(message: str):
     print(f"[SUCCESS] {message}")
+    sys.stdout.flush()
 
 def print_error(message: str):
     print(f"[ERROR] {message}")
+    sys.stderr.flush()
 
 def print_warning(message: str):
     print(f"[WARNING] {message}")
+    sys.stdout.flush()
+
+def print_debug(message: str):
+    print(f"[DEBUG] {message}")
+    sys.stdout.flush()
 
 def check_platform_compatibility(target_platform: str) -> bool:
     current_platform = platform.system().lower()
@@ -102,12 +129,15 @@ def check_platform_compatibility(target_platform: str) -> bool:
 
 def check_dependencies():
     print_status("Checking build dependencies...")
+    print_debug("Starting dependency check...")
     
     try:
         import PyInstaller
         print_success(f"PyInstaller {PyInstaller.__version__} found")
-    except ImportError:
+        print_debug(f"PyInstaller path: {PyInstaller.__file__}")
+    except ImportError as e:
         print_error("PyInstaller not found. Install with: pip install pyinstaller")
+        print_debug(f"PyInstaller import error: {e}")
         return False
     
     # Check Node.js requirements
@@ -316,6 +346,61 @@ def copy_config_to_output(output_dir: Path):
             json.dump(default_config, f, indent=2)
         print_status(f"Created default config at {output_config}")
 
+def create_version_file(temp_dir: Path, version: str) -> Path:
+    """Create version info file for Windows builds"""
+    version_info_content = f'''# UTF-8
+#
+# For more details about fixed file info 'ffi' see:
+# http://msdn.microsoft.com/en-us/library/ms646997.aspx
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    # filevers and prodvers should be always a tuple with four items: (1, 2, 3, 4)
+    # Set not needed items to zero 0. Must be set as tuple, not list
+    filevers=({version.replace('.', ',')},0),
+    prodvers=({version.replace('.', ',')},0),
+    # Contains a bitmask that specifies the valid bits 'flags'r
+    mask=0x3f,
+    # Contains a bitmask that specifies the Boolean attributes of the file.
+    flags=0x0,
+    # The operating system for which this file was designed.
+    # 0x4 - NT and there is no need to change it.
+    OS=0x4,
+    # The general type of file.
+    # 0x1 - the file is an application.
+    fileType=0x1,
+    # The function of the file.
+    # 0x0 - the function is not defined for this fileType
+    subtype=0x0,
+    # Creation date and time stamp.
+    date=(0, 0)
+    ),
+  kids=[
+    StringFileInfo(
+      [
+      StringTable(
+        u'040904B0',
+        [StringStruct(u'CompanyName', u'{PROJECT_AUTHOR}'),
+        StringStruct(u'FileDescription', u'{PROJECT_DESCRIPTION}'),
+        StringStruct(u'FileVersion', u'{version}'),
+        StringStruct(u'InternalName', u'{PROJECT_NAME}'),
+        StringStruct(u'LegalCopyright', u'{PROJECT_COPYRIGHT}'),
+        StringStruct(u'OriginalFilename', u'{PROJECT_NAME}.exe'),
+        StringStruct(u'ProductName', u'{PROJECT_NAME}'),
+        StringStruct(u'ProductVersion', u'{version}'),
+        StringStruct(u'Comments', u'Visit {PROJECT_URL} for more information')])
+      ]), 
+    VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
+  ]
+)
+'''
+    
+    version_file = temp_dir / "version_info.txt"
+    with open(version_file, "w", encoding="utf-8") as f:
+        f.write(version_info_content)
+    
+    print_status(f"Created version info file: {version_file}")
+    return version_file
+
 def create_launcher_script(temp_dir: Path):
     launcher_content = '''#!/usr/bin/env python3
 import sys
@@ -486,7 +571,7 @@ except Exception as e:
     print_status("Created launcher script")
     return launcher_path
 
-def get_pyinstaller_args(platform: str, temp_dir: Path, launcher_script: Path, output_dir: Path, macos_arch: str | None = None) -> List[str]:
+def get_pyinstaller_args(platform: str, temp_dir: Path, launcher_script: Path, output_dir: Path, version: str, macos_arch: str | None = None) -> List[str]:
     python_path = Path(sys.executable)
     venv_bin = python_path.parent
     pyinstaller_path = venv_bin / "pyinstaller"
@@ -501,7 +586,7 @@ def get_pyinstaller_args(platform: str, temp_dir: Path, launcher_script: Path, o
         f"--distpath={output_dir}",
         f"--workpath={temp_dir / 'work'}",
         f"--specpath={temp_dir}",
-        f"--name=IdleonWeb",
+        f"--name={PROJECT_NAME}",
         "--noupx",
     ]
     
@@ -511,15 +596,45 @@ def get_pyinstaller_args(platform: str, temp_dir: Path, launcher_script: Path, o
             "--exclude-module=matplotlib",
             "--exclude-module=PIL",
         ])
+    elif platform == "windows":
+        # Create version info file for Windows
+        version_file = create_version_file(temp_dir, version)
+        args.extend([
+            f"--version-file={version_file}",
+            "--exclude-module=matplotlib",
+            "--exclude-module=PIL",
+        ])
     elif platform == "macos":
         if macos_arch and macos_arch != "auto":
             args.extend(["--target-arch", macos_arch])
+        # Add macOS specific info
+        args.extend([
+            f"--osx-bundle-identifier=com.{PROJECT_AUTHOR.lower()}.{PROJECT_NAME.lower()}",
+            "--exclude-module=matplotlib",
+            "--exclude-module=PIL",
+        ])
     
-    icon_files = ["icon.ico", "icon.png", "icon.icns"]
-    for icon_file in icon_files:
-        if Path(icon_file).exists():
-            args.extend(["--icon", icon_file])
-            break
+    # Use platform-specific icon, fallback to icon.ico
+    icon_file = None
+    if platform == "windows":
+        if Path("icon.ico").exists():
+            icon_file = "icon.ico"
+    elif platform == "macos":
+        if Path("icon.icns").exists():
+            icon_file = "icon.icns"
+        elif Path("icon.ico").exists():
+            icon_file = "icon.ico"
+    elif platform == "linux":
+        if Path("icon.png").exists():
+            icon_file = "icon.png"
+        elif Path("icon.ico").exists():
+            icon_file = "icon.ico"
+    
+    if icon_file:
+        args.extend(["--icon", icon_file])
+        print_debug(f"Using icon: {icon_file}")
+    else:
+        print_warning("No icon file found")
     
     for module in BUILD_CONFIG["hidden_imports"]:
         args.extend(["--hidden-import", module])
@@ -547,30 +662,58 @@ def get_pyinstaller_args(platform: str, temp_dir: Path, launcher_script: Path, o
 
 def build_platform(target_platform: str, build_dir: Path, macos_arch: str = "auto"):
     print_status(f"Building for {target_platform}...")
+    print_debug(f"Target platform: {target_platform}, Build dir: {build_dir}, macOS arch: {macos_arch}")
+    
+    print_debug("Checking platform compatibility...")
     if not check_platform_compatibility(target_platform):
+        print_error("Platform compatibility check failed")
         return False
+        
+    print_debug("Preparing build environment...")
     temp_dir = prepare_build_environment(build_dir)
+    print_debug(f"Temp directory: {temp_dir}")
+    
+    print_debug("Bundling core files...")
     if not bundle_core_files(temp_dir):
+        print_error("Core file bundling failed")
         return False
+        
+    print_debug("Copying essential files...")
     copy_essential_files(temp_dir)
+    
+    print_debug("Creating launcher script...")
     launcher_script = create_launcher_script(temp_dir)
     if launcher_script.exists():
         print_status(f"Launcher script created at: {launcher_script}")
+        print_debug(f"Launcher script size: {launcher_script.stat().st_size} bytes")
     else:
         print_error(f"Launcher script not found at: {launcher_script}")
         return False
+        
     output_dir = build_dir / "dist" / target_platform
+    print_debug(f"Output directory: {output_dir}")
     output_dir.mkdir(parents=True, exist_ok=True)
+    
     mac_arch = macos_arch if target_platform == "macos" else None
-    pyinstaller_args = get_pyinstaller_args(target_platform, temp_dir, launcher_script, output_dir, mac_arch)
+    version = get_project_version()
+    print_debug(f"Using project version: {version}")
+    print_debug("Getting PyInstaller arguments...")
+    pyinstaller_args = get_pyinstaller_args(target_platform, temp_dir, launcher_script, output_dir, version, mac_arch)
+    print_debug(f"PyInstaller command: {' '.join(pyinstaller_args)}")
+    
     try:
+        print_debug("Running PyInstaller...")
         run_command(pyinstaller_args, cwd=Path.cwd())
         
+        print_debug("Copying config to output...")
         copy_config_to_output(output_dir)
         print_success(f"Build completed for {target_platform}")
         return True
-    except subprocess.CalledProcessError:
-        print_error(f"Build failed for {target_platform}")
+    except subprocess.CalledProcessError as e:
+        print_error(f"Build failed for {target_platform}: {e}")
+        return False
+    except Exception as e:
+        print_error(f"Unexpected error during build for {target_platform}: {e}")
         return False
 
 def cleanup_build_files(build_dir: Path, keep_dist: bool = True):
@@ -588,6 +731,11 @@ def cleanup_build_files(build_dir: Path, keep_dist: bool = True):
     print_success("Cleanup completed")
 
 def main():
+    print_debug("Starting IdleonWeb build process...")
+    print_debug(f"Python version: {sys.version}")
+    print_debug(f"Working directory: {Path.cwd()}")
+    print_debug(f"Command line args: {sys.argv}")
+    
     parser = argparse.ArgumentParser(description="Build IdleonWeb standalone executables")
     parser.add_argument("--platform", choices=["all", "windows", "linux", "macos"], 
                        default="all", help="Target platform(s) to build for")
@@ -599,19 +747,32 @@ def main():
     parser.add_argument("--optimize", action="store_true", 
                        help="Optimize build for size (experimental)")
     
-    args = parser.parse_args()
+    print_debug("Parsing command line arguments...")
+    try:
+        args = parser.parse_args()
+        print_debug(f"Parsed arguments: {args}")
+    except Exception as e:
+        print_error(f"Failed to parse arguments: {e}")
+        return 1
     
+    print_debug("Checking build dependencies...")
     if not check_dependencies():
+        print_error("Dependency check failed")
         return 1
     
     build_dir = Path(args.output)
+    print_debug(f"Build directory: {build_dir.absolute()}")
     
     if args.clean and build_dir.exists():
+        print_debug("Cleaning existing build directory...")
         shutil.rmtree(build_dir)
+        
     if args.platform == "all":
         platforms = ["windows", "linux", "macos"]
     else:
         platforms = [args.platform]
+    
+    print_debug(f"Target platforms: {platforms}")
     
     print("=" * 50)
     print(f"Building for {args.platform.upper()}")
@@ -622,15 +783,21 @@ def main():
     
     for target_platform in platforms:
         print_status(f"Building for {target_platform}...")
+        print_debug(f"Starting build process for {target_platform}")
         try:
             mac_arch = args.macos_arch if target_platform == "macos" else "auto"
+            print_debug(f"Using macOS arch: {mac_arch}")
             if build_platform(target_platform, build_dir, mac_arch):
                 successful_builds += 1
+                print_debug(f"Successfully built for {target_platform}")
             else:
                 failed_builds.append(target_platform)
                 print_error(f"Failed to build for {target_platform}")
         except Exception as e:
             print_error(f"Unexpected error building for {target_platform}: {e}")
+            print_debug(f"Exception details: {type(e).__name__}: {str(e)}")
+            import traceback
+            print_debug(f"Traceback: {traceback.format_exc()}")
             failed_builds.append(target_platform)
     
     cleanup_build_files(build_dir, keep_dist=True)
@@ -652,4 +819,11 @@ def main():
         return 0
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        print_debug("Script started from command line")
+        sys.exit(main())
+    except Exception as e:
+        print_error(f"Critical error in main: {e}")
+        import traceback
+        print_debug(f"Full traceback: {traceback.format_exc()}")
+        sys.exit(1)

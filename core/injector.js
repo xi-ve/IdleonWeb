@@ -220,6 +220,7 @@ class BrowserLauncher {
             '--no-first-run',
             '--no-default-browser-check',
             '--remote-allow-origins=*',
+            '--new-window',
         ];
         
         if (process.platform === 'linux') {
